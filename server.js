@@ -1321,13 +1321,22 @@ app.post("/register-teacher", (req, res) => {
 });
 // ---------- SERVER ----------
 const startServer = async () => {
- await connectDB();
- console.log("Test user created");   // 👈 HERE
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
-});
+
+  await connectDB();
+
+  console.log("Test user created");
+
+  const PORT = process.env.PORT || 3000;
+
+  app.listen(PORT, () => {
+
+    console.log("Server running on port " + PORT);
+
+  });
+
 };
+
+startServer();
 // ---------- SCHOOL DASHBOARD ----------
 app.get("/school-dashboard", async (req, res) => {
  try {
