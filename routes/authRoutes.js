@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const authController = require("../controllers/authController");
 // ---------- REGISTER ----------
 router.post("/register", async (req, res) => {
   const { name, email, password, role, class: studentClass, teacherId } = req.body;
@@ -114,4 +115,8 @@ res.json({
     res.status(500).json({ error: err.message });
   }
 });
+router.post(
+  "/register-teacher",
+  authController.registerTeacher
+);
 module.exports = router;

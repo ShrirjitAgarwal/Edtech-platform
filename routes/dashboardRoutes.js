@@ -52,9 +52,7 @@ function layout(content, active = "") {
   return `
   <body style="margin:0;font-family:Arial;">
     <div style="display:flex;height:100vh;">
-      
       ${sidebar(active)}
-
       <div style="
         flex:1;
         padding:30px;
@@ -63,24 +61,19 @@ function layout(content, active = "") {
       ">
         ${content}
       </div>
-
     </div>
-
     <script>
       const user = JSON.parse(localStorage.getItem("user") || "null");
       if (!user || user.role !== "teacher") {
         window.location.replace("/");
       }
-
       function go(path){
         window.location.replace(path);
       }
-
       function logout(){
         localStorage.clear();
         window.location.replace("/");
       }
-
       function toggleManage(){
         const menu = document.getElementById("manageMenu");
         if (!menu) return;

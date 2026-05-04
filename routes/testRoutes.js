@@ -1,141 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const { readJSON, writeJSON } = require("../utils/file");
-const jwt = require("jsonwebtoken");
+const authMiddleware = require("../middleware/auth");
 const Test = require("../models/Test");
-function authMiddleware(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header) {
-    return res.status(401).json({ error: "No token" });
-  }
-  const token = header.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: "Invalid token" });
-  }
-}
-// ---------- SIDEBAR ----------
-function sidebar(active = "") {
-  return `
-<div style="
-  width:240px;
-  background:#1e293b;
-  color:white;
-  padding:20px 16px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-">
-  <div>
-    <h2 style="margin-bottom:25px;">Teacher</h2>
-    <div onclick="go('/teacher')" style="
-      padding:12px 14px;
-      border-radius:8px;
-      margin-bottom:10px;
-      cursor:pointer;
-      ${active === "dashboard" ? "background:#334155;font-weight:600;" : ""}
-    "
-    onmouseover="this.style.background='#334155'"
-    onmouseout="this.style.background='${active === "dashboard" ? "#334155" : "transparent"}'">
-      Dashboard
-    </div>
-    <div onclick="toggleManage()" style="
-      padding:12px 14px;
-      border-radius:8px;
-      cursor:pointer;
-    "
-    onmouseover="this.style.background='#334155'"
-    onmouseout="this.style.background='transparent'">
-      Manage ▼
-    </div>
-    <div id="manageMenu" style="display:block;margin-left:6px;">
-      <div onclick="go('/library')" style="
-        padding:10px 12px;
-        border-radius:6px;
-        cursor:pointer;
-        ${active === "library" ? "background:#334155;font-weight:600;" : ""}
-      "
-      onmouseover="this.style.background='#334155'"
-      onmouseout="this.style.background='${active === "library" ? "#334155" : "transparent"}'">
-        Library
-      </div>
-      <div onclick="go('/teacher-tests')" style="
-        padding:10px 12px;
-        border-radius:6px;
-        cursor:pointer;
-        ${active === "tests" ? "background:#334155;font-weight:600;" : ""}
-      "
-      onmouseover="this.style.background='#334155'"
-      onmouseout="this.style.background='${active === "tests" ? "#334155" : "transparent"}'">
-        Tests
-      </div>
-      <div onclick="go('/classes')" style="
-        padding:10px 12px;
-        border-radius:6px;
-        cursor:pointer;
-        ${active === "classes" ? "background:#334155;font-weight:600;" : ""}
-      "
-      onmouseover="this.style.background='#334155'"
-      onmouseout="this.style.background='${active === "classes" ? "#334155" : "transparent"}'">
-        Classes
-      </div>
-    </div>
-  </div>
-  <div>
-    <div onclick="logout()" style="
-      padding:12px 14px;
-      border-radius:8px;
-      cursor:pointer;
-      color:#f87171;
-    "
-    onmouseover="this.style.background='#7f1d1d';this.style.color='white'"
-    onmouseout="this.style.background='transparent';this.style.color='#f87171'">
-      Logout
-    </div>
-  </div>
-</div>
-`;
-}
-// ---------- GLOBAL LAYOUT ----------
-function layout(content, active = "") {
-  return `
-  <body style="margin:0;font-family:Arial;">
-    <div style="display:flex;height:100vh;">
-      ${sidebar(active)}
-      <div style="
-        flex:1;
-        padding:30px;
-        background:#eef2ff;
-        overflow:auto;
-      ">
-        ${content}
-      </div>
-    </div>
-    <script>
-      const user = JSON.parse(localStorage.getItem("user") || "null");
-      if (!user || user.role !== "teacher") {
-        window.location.replace("/");
-      }
-      function go(path){
-        window.location.replace(path);
-      }
-      function logout(){
-        localStorage.clear();
-        window.location.replace("/");
-      }
-      function toggleManage(){
-        const menu = document.getElementById("manageMenu");
-        if (!menu) return;
-        menu.style.display =
-          menu.style.display === "none" ? "block" : "none";
-      }
-    </script>
-  </body>
-  `;
-}
+const layout = require("../views/layout");
 // ---------- NAVBAR ----------
 function navbar(){
 return `
@@ -181,113 +49,303 @@ function logout(){
 </script>
 `;
 }
-// ---------- GET CLASSES ----------
-router.get("/get-classes", async (req, res) => {
-  try {
-    const Student = require("../models/Student");
-    let classes;
-const teacherId = String(req.query.teacherId || "").trim();
-if (teacherId) {
-  classes = await Student.find({ teacherId }).distinct("class");
-} else {
-  // fallback for student-entry page
-  classes = await Student.distinct("class");
-}
-    res.json(classes);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch classes" });
-  }
-});
-// ---------- GET STUDENTS BY CLASS ----------
-router.get("/get-students", async (req, res) => {
-  try {
-    const { className } = req.query;
-    if (!className) {
-      return res.status(400).json({ error: "Class required" });
-    }
-    const Student = require("../models/Student");
-const students = await Student.find(
-  { class: className },
-  { studentId: 1, name: 1, teacherId: 1, _id: 0 }
-);
-    res.json(students);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch students" });
-  }
-});
-// ---------- DATA ----------
-const questions = readJSON("data/questions.json");
 // ---------- TEACHER TEST LIST ----------
 router.get("/teacher-tests", async (req, res) => {
   const Test = require("../models/Test");
+  const Assignment = require("../models/Assignment");
+  const Student = require("../models/Student");
+  const Result = require("../models/Result");
   const tests = await Test.find();
+  const assignments = await Assignment.find();
+  const students = await Student.find();
+  const results = await Result.find();
   const content = `
     <h1 style="margin-bottom:20px;">Tests</h1>
-    <button onclick="go('/create-test')" style="
-      padding:14px 20px;
-      background:linear-gradient(135deg,#4f46e5,#6366f1);
-      color:white;
-      border:none;
-      border-radius:10px;
-      font-weight:700;
-      cursor:pointer;
-      margin-bottom:15px;
-      font-size:15px;
-    ">
-      + Create Test
-    </button>
-    <button onclick="deleteSelected()" style="
-      margin-left:10px;
-      padding:12px 16px;
-      background:#dc3545;
-      color:white;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-      font-weight:600;
-    ">
-      Delete Selected
-    </button>
-    <div id="testList"></div>
+    <div style="margin-bottom:20px;">
+      <button onclick="go('/create-test')" style="
+        padding:14px 20px;
+        background:linear-gradient(135deg,#4f46e5,#6366f1);
+        color:white;
+        border:none;
+        border-radius:10px;
+        font-weight:700;
+        cursor:pointer;
+        margin-bottom:15px;
+        font-size:15px;
+      ">
+        + Create Test
+      </button>
+      <button onclick="deleteSelected()" style="
+        margin-left:10px;
+        padding:12px 16px;
+        background:#dc3545;
+        color:white;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:600;
+      ">
+        Delete Selected
+      </button>
+    </div>
+    <div style="
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:22px;
+ align-items:stretch;
+ height:calc(100vh - 180px);
+ min-height:620px;
+ ">
+      <div style="
+        background:white;
+        padding:20px;
+        border-radius:14px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.08);
+        height:100%;
+box-sizing:border-box;
+overflow-y:auto;
+      ">
+        <h2 style="margin-top:0;">Test List</h2>
+        <div id="testList"></div>
+      </div>
+      <div
+        id="testPreview"
+        style="
+          background:white;
+          padding:22px;
+          border-radius:14px;
+          box-shadow:0 4px 12px rgba(0,0,0,0.08);
+          height:100%;
+overflow-y:auto;
+box-sizing:border-box;
+        "
+      >
+        <h2 style="margin-top:0;">Test Analytics</h2>
+        <p style="color:#64748b;">
+          Select a test to preview analytics here.
+        </p>
+      </div>
+    </div>
     <script>
       window.onload = function(){
         const user = JSON.parse(localStorage.getItem("user") || "null");
+        if(!user){
+          return window.location.replace("/");
+        }
+        const teacherId = user._id || user.id;
         const allTests = ${JSON.stringify(tests)};
+        const allAssignments = ${JSON.stringify(assignments)};
+        const allStudents = ${JSON.stringify(students)};
+        const allResults = ${JSON.stringify(results)};
         const myTests = allTests.filter(t =>
-          String(t.teacherId) === String(user._id || user.id)
+          String(t.teacherId) === String(teacherId)
+        );
+        const myAssignments = allAssignments.filter(a =>
+          String(a.teacherId) === String(teacherId)
+        );
+        const myStudents = allStudents.filter(s =>
+          String(s.teacherId) === String(teacherId)
+        );
+        const myResults = allResults.filter(r =>
+          String(r.teacherId) === String(teacherId)
         );
         const html = myTests.map(t => \`
-          <div style="
-            background:white;
-            padding:18px 20px;
-            margin:15px 0;
-            border-radius:12px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-          ">
+          <div
+            onclick="previewTest('\${t._id}')"
+            style="
+              background:#f8fafc;
+              padding:18px 20px;
+              margin:15px 0;
+              border-radius:12px;
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              cursor:pointer;
+              border:1px solid #e5e7eb;
+            "
+          >
             <div style="display:flex;align-items:center;gap:10px;">
-              <input type="checkbox" class="testCheckbox" value="\${t._id}">
-              <div style="font-size:18px;font-weight:600;">
-                \${t.name}
+              <input
+                type="checkbox"
+                class="testCheckbox"
+                value="\${t._id}"
+                onclick="event.stopPropagation()"
+              >
+              <div>
+                <div style="font-size:18px;font-weight:700;">
+                  \${t.name || "Untitled Test"}
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+  <span style="
+    font-size:12px;
+    background:#4f46e5;
+    color:white;
+    padding:5px 10px;
+    border-radius:999px;
+    font-weight:700;
+  ">
+    \${t.subject || "No Subject"}
+  </span>
+  <span style="
+    font-size:12px;
+    background:#6366f1;
+    color:white;
+    padding:5px 10px;
+    border-radius:999px;
+    font-weight:700;
+  ">
+    \${t.className || "No Class"}
+  </span>
+  <span style="
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:999px;
+    font-weight:700;
+    background:\${t.status === "published" ? "#16a34a" : "#7c3aed"};
+    color:white;
+  ">
+    \${t.status === "published" ? "Published" : "Draft"}
+  </span>
+</div>
               </div>
             </div>
-            <div>
-              <button onclick="assignTest('\${t._id}')"
-                style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;margin-right:10px;cursor:pointer;">
-                Assign
-              </button>
-              <button onclick="confirmDelete('\${t._id}')"
-                style="padding:8px 12px;background:#dc3545;color:white;border:none;border-radius:8px;cursor:pointer;">
-                Delete
-              </button>
-            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button onclick="event.stopPropagation(); go('/test-settings?id=\${t._id}')"
+    style="padding:10px 16px;background:#334155;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
+    Settings
+  </button>
+  \${t.status !== "published" ? \`
+    <button onclick="event.stopPropagation(); go('/create-test?id=\${t._id}')"
+      style="padding:10px 16px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
+      Edit
+    </button>
+  \` : ""}
+  <button onclick="event.stopPropagation(); assignTest('\${t._id}')"
+    style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
+    \${t.status === "published" ? "Published" : "Publish"}
+  </button>
+  <button onclick="event.stopPropagation(); confirmDelete('\${t._id}')"
+    style="padding:10px 16px;background:#dc3545;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
+    Delete
+  </button>
+</div>
           </div>
         \`).join("");
         document.getElementById("testList").innerHTML =
           html || "<p>No tests found</p>";
+        window.previewTest = function(testId){
+          const test = myTests.find(t =>
+            String(t._id) === String(testId)
+          );
+          if(!test){
+            return;
+          }
+          const assignment = myAssignments.find(a =>
+            String(a.testId) === String(testId)
+          );
+          const className =
+            test.className ||
+            assignment?.className ||
+            "N/A";
+          const classStudents = myStudents.filter(s =>
+            String(s.class || "").trim().toUpperCase() ===
+            String(className || "").trim().toUpperCase()
+          );
+          const testResults = myResults.filter(r =>
+            String(r.testId) === String(testId)
+          );
+          const attempted = testResults.length;
+          const totalStudents = classStudents.length;
+          const notAttempted = Math.max(totalStudents - attempted, 0);
+          let passed = 0;
+          let failed = 0;
+          let totalPercent = 0;
+          testResults.forEach(r => {
+            const percent = r.total
+              ? Math.round((r.score / r.total) * 100)
+              : 0;
+            totalPercent += percent;
+            if(percent >= 50){
+              passed++;
+            } else {
+              failed++;
+            }
+          });
+          const classAverage = attempted
+            ? Math.round(totalPercent / attempted)
+            : 0;
+          const createdDate = test.createdAt
+            ? new Date(test.createdAt).toLocaleString()
+            : "N/A";
+          const assignedDate = assignment?.createdAt
+            ? new Date(assignment.createdAt).toLocaleString()
+            : "N/A";
+          document.getElementById("testPreview").innerHTML = \`
+            <h2 style="margin-top:0;">\${test.name || "Untitled Test"}</h2>
+            <div style="
+              background:#f8fafc;
+              padding:14px;
+              border-radius:10px;
+              margin-bottom:14px;
+              border:1px solid #e5e7eb;
+            ">
+              <p><b>Assigned Class:</b> \${className}</p>
+              <p><b>Subject:</b> \${test.subject || "N/A"}</p>
+              <p><b>Status:</b> \${test.status === "published" ? "Published" : "Draft"}</p>
+<p><b>Test Type:</b> \${test.testType || "practice"}</p>
+<p><b>Duration:</b> \${test.durationMinutes || 60} minutes</p>
+<p><b>Scheduled At:</b> \${test.scheduledAt ? new Date(test.scheduledAt).toLocaleString() : "Not scheduled"}</p>
+<p><b>Date Created:</b> \${createdDate}</p>
+              <p><b>Date Assigned:</b> \${assignedDate}</p>
+            </div>
+            <div style="
+              display:grid;
+              grid-template-columns:1fr 1fr;
+              gap:12px;
+              margin-bottom:14px;
+            ">
+              <div style="background:#eef2ff;padding:14px;border-radius:10px;">
+                <b>Total Students</b>
+                <div style="font-size:28px;font-weight:800;margin-top:8px;">
+                  \${totalStudents}
+                </div>
+              </div>
+              <div style="background:#ecfdf5;padding:14px;border-radius:10px;">
+                <b>Attempted</b>
+                <div style="font-size:28px;font-weight:800;margin-top:8px;">
+                  \${attempted}
+                </div>
+              </div>
+              <div style="background:#fff7ed;padding:14px;border-radius:10px;">
+                <b>Not Attempted</b>
+                <div style="font-size:28px;font-weight:800;margin-top:8px;">
+                  \${notAttempted}
+                </div>
+              </div>
+              <div style="background:#f8fafc;padding:14px;border-radius:10px;">
+                <b>Class Average</b>
+                <div style="font-size:28px;font-weight:800;margin-top:8px;">
+                  \${classAverage}%
+                </div>
+              </div>
+              <div style="background:#ecfdf5;padding:14px;border-radius:10px;">
+                <b>Passed</b>
+                <div style="font-size:28px;font-weight:800;margin-top:8px;color:#16a34a;">
+                  \${passed}
+                </div>
+              </div>
+              <div style="background:#fef2f2;padding:14px;border-radius:10px;">
+                <b>Failed</b>
+                <div style="font-size:28px;font-weight:800;margin-top:8px;color:#dc2626;">
+                  \${failed}
+                </div>
+              </div>
+            </div>
+            <p style="color:#64748b;">
+              Passing score is 50% and above.
+            </p>
+          \`;
+        };
       };
       function assignTest(testId){
         fetch("/assign-test", {
@@ -305,6 +363,7 @@ router.get("/teacher-tests", async (req, res) => {
             return;
           }
           alert(data.message || "Test assigned");
+          location.reload();
         })
         .catch(() => alert("Assignment failed"));
       }
@@ -362,143 +421,352 @@ router.get("/teacher-tests", async (req, res) => {
   res.send(layout(content, "tests"));
 });
 // ---------- CREATE TEST ----------
-router.get("/create-test", (req, res) => {
-  const questions = readJSON("data/questions.json");
-  const questionList = questions.map(q => `
-    <label style="
-      display:block;
-      padding:10px;
-      border:1px solid #ddd;
-      border-radius:8px;
-      margin-bottom:10px;
-      cursor:pointer;
-      background:white;
-    ">
-      <input type="checkbox" value="${q.id}" class="qbox">
-      ${q.question}
-    </label>
-  `).join("");
-  const content = `
-    <h1 style="margin-bottom:20px;">Create Test</h1>
-    <div style="
-      max-width:700px;
-      background:white;
-      padding:25px;
-      border-radius:12px;
-      box-shadow:0 4px 12px rgba(0,0,0,0.08);
-    ">
-      <input id="testName" placeholder="Enter test name" style="
-        width:100%;
-        padding:12px;
-        margin-bottom:15px;
-        border-radius:8px;
-        border:1px solid #ccc;
-      "/>
-      <select id="className" style="
-        width:100%;
-        padding:12px;
-        margin-bottom:15px;
-        border-radius:8px;
-        border:1px solid #ccc;
-      ">
-        <option value="">Select Class</option>
-        <option value="C1">C1</option>
-        <option value="C2">C2</option>
-        <option value="C3">C3</option>
-      </select>
-      <select id="subject" style="
-        width:100%;
-        padding:12px;
-        margin-bottom:20px;
-        border-radius:8px;
-        border:1px solid #ccc;
-      ">
-        <option value="">Select Subject</option>
-        <option value="Maths">Maths</option>
-        <option value="CS">CS</option>
-        <option value="Physics">Physics</option>
-      </select>
-      <h3>Select Questions</h3>
-      <div style="max-height:300px;overflow:auto;">
-        ${questionList}
-      </div>
-      <button onclick="clearSelection()" style="
-        margin-top:10px;
-        padding:8px 12px;
-        background:#dc3545;
-        color:white;
-        border:none;
-        border-radius:6px;
-        cursor:pointer;
-      ">
-        Clear Selection
-      </button>
-      <button onclick="saveTest()" style="
-        margin-top:20px;
-        width:100%;
-        padding:12px;
-        background:#4f46e5;
-        color:white;
-        border:none;
-        border-radius:8px;
-        font-weight:600;
-        cursor:pointer;
-        font-size:16px;
-      ">
-        Save Test
-      </button>
-    </div>
-    <script>
-      function saveTest(){
-        const name = document.getElementById("testName").value;
-        const subject = document.getElementById("subject").value;
-        const className = document.getElementById("className").value;
-        const selected = Array.from(
-          document.querySelectorAll("input[type=checkbox]:checked")
-        ).map(i => parseInt(i.value));
-        if(!name) return alert("Enter test name");
-        if(!className) return alert("Select class");
-        if(!subject) return alert("Select subject");
-        if(selected.length === 0) return alert("Select at least one question");
-        fetch("/save-test", {
-          method:"POST",
-          headers:{
-            "Content-Type":"application/json",
-            "Authorization": "Bearer " + localStorage.getItem("token")
-          },
-          body: JSON.stringify({
-            name,
-            questionIds: selected,
-            className,
-            subject
-          })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if(data.error) return alert(data.error);
-          alert("Test created!");
-          window.location.replace("/teacher-tests");
-        })
-        .catch(() => alert("Failed to create test"));
-      }
-      function clearSelection(){
-        localStorage.removeItem("selectedQuestions");
-        location.reload();
-      }
-      const selected = JSON.parse(localStorage.getItem("selectedQuestions") || "[]");
-      document.querySelectorAll(".qbox").forEach(cb => {
-        if(selected.includes(parseInt(cb.value))){
-          cb.checked = true;
-        }
-      });
-    </script>
-  `;
-  res.send(layout(content, "tests"));
+router.get("/create-test", async (req, res) => {
+try {
+const Question = require("../models/Question");
+const questions = await Question.find().lean();
+let editTest = null;
+if (req.query.id) {
+  editTest = await Test.findById(req.query.id).lean();
+}
+const content = `
+<h1 style="margin-bottom:20px;">Create Test</h1>
+<div style="
+background:white;
+padding:20px;
+border-radius:14px;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+margin-bottom:20px;
+">
+<div style="
+ display:grid;
+ grid-template-columns:1.2fr 0.9fr 0.9fr;
+ gap:14px;
+">
+ <input id="testName" value="${editTest?.name || ""}" placeholder="Enter test name" style="
+ padding:12px;
+ border-radius:8px;
+ border:1px solid #ccc;
+ "/>
+ <select id="className" style="
+ padding:12px;
+ border-radius:8px;
+ border:1px solid #ccc;
+ ">
+ <option value="">Select Class</option>
+<option value="C1" ${editTest?.className === "C1" ? "selected" : ""}>C1</option>
+<option value="C2" ${editTest?.className === "C2" ? "selected" : ""}>C2</option>
+<option value="C3" ${editTest?.className === "C3" ? "selected" : ""}>C3</option>
+ </select>
+ <select id="subject" style="
+ padding:12px;
+ border-radius:8px;
+ border:1px solid #ccc;
+ ">
+ <option value="">Select Subject</option>
+<option value="Maths" ${editTest?.subject === "Maths" ? "selected" : ""}>Maths</option>
+<option value="CS" ${editTest?.subject === "CS" ? "selected" : ""}>CS</option>
+<option value="Physics" ${editTest?.subject === "Physics" ? "selected" : ""}>Physics</option>
+ </select>
+</div>
+</div>
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:22px;
+align-items:start;
+">
+<div style="
+background:white;
+padding:20px;
+border-radius:14px;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+height:620px;
+box-sizing:border-box;
+display:flex;
+flex-direction:column;
+">
+ <div style="
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:12px;
+ margin-bottom:14px;
+ flex-wrap:wrap;
+ ">
+ <h3 style="margin:0;">Select Questions</h3>
+ <div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+min-width:260px;
+">
+ <select id="questionSubjectFilter" onchange="filterQuestions()" style="
+ padding:8px;
+ border-radius:8px;
+ border:1px solid #cbd5e1;
+ ">
+ <option value="all">All Subjects</option>
+ </select>
+ <select id="questionBoardFilter" onchange="filterQuestions()" style="
+ padding:8px;
+ border-radius:8px;
+ border:1px solid #cbd5e1;
+ ">
+ <option value="all">All Boards</option>
+ </select>
+ </div>
+ </div>
+<div
+id="questionList"
+style="
+ flex:1;
+ overflow-y:auto;
+ padding-right:6px;
+ min-height:0;
+"
+>
+ <p style="color:#64748b;">Loading questions...</p>
+</div>
+ <button onclick="clearSelection()" style="
+ margin-top:14px;
+ padding:8px 12px;
+ background:#dc3545;
+ color:white;
+ border:none;
+ border-radius:6px;
+ cursor:pointer;
+ ">
+ Clear Selection
+ </button>
+ <button onclick="saveTest()" style="
+ margin-top:20px;
+ width:100%;
+ padding:12px;
+ background:#4f46e5;
+ color:white;
+ border:none;
+ border-radius:8px;
+ font-weight:600;
+ cursor:pointer;
+ font-size:16px;
+ ">
+ Save Test
+ </button>
+</div>
+<div
+ id="questionPreview"
+ style="
+ background:white;
+ padding:22px;
+ border-radius:14px;
+ box-shadow:0 4px 12px rgba(0,0,0,0.08);
+ height:620px;
+ overflow-y:auto;
+ box-sizing:border-box;
+ "
+>
+ <h3 style="margin-top:0;">Question Preview</h3>
+ <p style="color:#64748b;">
+ Select a question to preview it here.
+ </p>
+</div>
+</div>
+<script>
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user || user.role !== "teacher"){
+ window.location.replace("/");
+}
+const teacherId = user._id || user.id;
+const editingTestId = "${editTest?._id || ""}";
+const editingQuestionIds = ${JSON.stringify((editTest?.questionIds || []).map(id => String(id)))};
+if(editingTestId){
+ localStorage.setItem("selectedQuestions", JSON.stringify(editingQuestionIds));
+}
+const allQuestions = ${JSON.stringify(questions)};
+const questions = allQuestions.filter(q =>
+ q.scope === "public" ||
+ (
+   q.scope === "teacher" &&
+   String(q.teacherId) === String(teacherId)
+ )
+);
+function getQuestionId(q){
+ return String(q._id);
+}
+function buildQuestionRow(q){
+ const id = getQuestionId(q);
+ return \`
+<label
+onclick="previewQuestion('\${id}')"
+style="
+ display:block;
+ padding:12px;
+ border:1px solid #ddd;
+ border-radius:10px;
+ margin-bottom:10px;
+ cursor:pointer;
+ background:white;
+"
+>
+<input type="checkbox" value="\${id}" class="qbox" onclick="event.stopPropagation()">
+\${q.question}
+</label>
+\`;
+}
+function populateQuestionFilters(){
+ const subjectSelect =
+ document.getElementById("questionSubjectFilter");
+ const boardSelect =
+ document.getElementById("questionBoardFilter");
+ const subjects = [...new Set(
+ questions.map(q => q.subject || q.category).filter(Boolean)
+ )];
+ const boards = [...new Set(
+ questions.map(q => q.board || "General").filter(Boolean)
+ )];
+ subjects.forEach(s => {
+ const option = document.createElement("option");
+ option.value = s;
+ option.textContent = s;
+ subjectSelect.appendChild(option);
+ });
+ boards.forEach(b => {
+ const option = document.createElement("option");
+ option.value = b;
+ option.textContent = b;
+ boardSelect.appendChild(option);
+ });
+}
+function filterQuestions(){
+ const subject =
+ document.getElementById("questionSubjectFilter").value;
+ const board =
+ document.getElementById("questionBoardFilter").value;
+ const filtered = questions.filter(q => {
+ const qSubject = q.subject || q.category;
+ const qBoard = q.board || "General";
+ const subjectMatch =
+ subject === "all" || qSubject === subject;
+ const boardMatch =
+ board === "all" || qBoard === board;
+ return subjectMatch && boardMatch;
+ });
+ document.getElementById("questionList").innerHTML =
+ filtered.length
+ ? filtered.map(q => buildQuestionRow(q)).join("")
+ : "<p style='color:#64748b;'>No questions found</p>";
+ restoreSelectedQuestions();
+}
+function restoreSelectedQuestions(){
+ const selected = JSON.parse(
+ localStorage.getItem("selectedQuestions") || "[]"
+ ).map(id => String(id));
+ document.querySelectorAll(".qbox").forEach(cb => {
+ if(selected.includes(String(cb.value))){
+ cb.checked = true;
+ }
+ cb.addEventListener("change", function(){
+ let selectedQuestions = JSON.parse(
+ localStorage.getItem("selectedQuestions") || "[]"
+ ).map(id => String(id));
+ const value = String(this.value);
+ if(this.checked && !selectedQuestions.includes(value)){
+ selectedQuestions.push(value);
+ }
+ if(!this.checked){
+ selectedQuestions = selectedQuestions.filter(id => id !== value);
+ }
+ localStorage.setItem(
+ "selectedQuestions",
+ JSON.stringify(selectedQuestions)
+ );
+ });
+ });
+}
+function previewQuestion(id){
+ const q = questions.find(item =>
+ String(item._id) === String(id)
+ );
+ if(!q){
+ return;
+ }
+ const optionsHtml =
+ q.options && q.options.length
+ ? q.options.map((opt, index) =>
+ "<div style='background:#f8fafc;padding:10px;margin:8px 0;border-radius:8px;'>" +
+ "<b>Option " + (index + 1) + ":</b> " + opt +
+ "</div>"
+ ).join("")
+ : "<p style='color:#64748b;'>No options found. This may be a coding or written question.</p>";
+ document.getElementById("questionPreview").innerHTML =
+ "<h3 style='margin-top:0;'>Question Preview</h3>" +
+ "<div style='background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:15px;'>" +
+ "<b>Question:</b><br>" +
+ "<div style='margin-top:8px;line-height:1.5;'>" + (q.question || "No question text") + "</div>" +
+ "</div>" +
+ "<div style='margin-bottom:15px;'>" +
+ optionsHtml +
+ "</div>" +
+ "<div style='background:#ecfdf5;padding:12px;border-radius:10px;margin-bottom:12px;'>" +
+ "<b>Correct Answer:</b> " + (q.correct || "N/A") +
+ "</div>" +
+ "<p><b>Subject:</b> " + (q.subject || q.category || "N/A") + "</p>" +
+ "<p><b>Board:</b> " + (q.board || "N/A") + "</p>" +
+ "<p><b>Difficulty:</b> " + (q.difficulty || "N/A") + "</p>";
+}
+function saveTest(){
+ const name = document.getElementById("testName").value;
+ const subject = document.getElementById("subject").value;
+ const className = document.getElementById("className").value;
+ const selected = Array.from(
+ document.querySelectorAll(".qbox:checked")
+ ).map(i => String(i.value));
+ if(!name) return alert("Enter test name");
+ if(!className) return alert("Select class");
+ if(!subject) return alert("Select subject");
+ if(selected.length === 0) return alert("Select at least one question");
+ fetch("/save-test", {
+ method:"POST",
+ headers:{
+ "Content-Type":"application/json",
+ "Authorization": "Bearer " + localStorage.getItem("token")
+ },
+body: JSON.stringify({
+ testId: editingTestId,
+ name,
+ questionIds: selected,
+ className,
+ subject
+})
+ })
+ .then(res => res.json())
+ .then(data => {
+ if(data.error) return alert(data.error);
+ localStorage.removeItem("selectedQuestions");
+ alert(editingTestId ? "Draft updated!" : "Test saved as draft!");
+ window.location.replace("/teacher-tests");
+ })
+ .catch(() => alert("Failed to create test"));
+}
+function clearSelection(){
+ localStorage.removeItem("selectedQuestions");
+ location.reload();
+}
+populateQuestionFilters();
+filterQuestions();
+</script>
+`;
+res.send(layout(content, "tests"));
+} catch (err) {
+console.error("CREATE TEST ERROR:", err);
+res.send("Error loading create test");
+}
 });
 // ---------- SAVE TEST ----------
 router.post("/save-test", authMiddleware, async (req, res) => {
   try {
-    const { name, questionIds, className, subject } = req.body;
+    const { testId, name, questionIds, className, subject } = req.body;
     if (!name || !Array.isArray(questionIds) || !questionIds.length) {
   return res.status(400).json({ error: "Invalid test data" });
 }
@@ -526,31 +794,249 @@ const mapping = await ClassSubject.findOne({
         error: "You are not assigned to this class and subject"
       });
     }
+        if (testId) {
+      const existingTest = await Test.findOne({
+        _id: testId,
+        teacherId: String(req.user.id),
+        status: "draft"
+      });
+      if (!existingTest) {
+        return res.status(404).json({
+          error: "Draft test not found or cannot be edited"
+        });
+      }
+      existingTest.name = name;
+      existingTest.questionIds = questionIds;
+      existingTest.className = normalizedClass;
+      existingTest.subject = normalizedSubject;
+      await existingTest.save();
+      return res.json({
+        status: "draft_updated",
+        test: existingTest
+      });
+    }
     const newTest = await Test.create({
       name,
       questionIds,
       teacherId: req.user.id,
       className: normalizedClass,
-      subject: normalizedSubject
+      subject: normalizedSubject,
+      status: "draft",
+      publishedAt: null
     });
-const Assignment = require("../models/Assignment");
-const exists = await Assignment.findOne({
-  testId: newTest._id,
-  className: newTest.className,
-  teacherId: req.user.id
-});
-if (!exists) {
-  await Assignment.create({
-    testId: newTest._id,
-    testName: newTest.name,
-    className: newTest.className,
-    teacherId: req.user.id
-  });
-}
-    res.json({ status: "saved", test: newTest });
+    res.json({ status: "draft_saved", test: newTest });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to save test" });
+  }
+});
+// ---------- TEST SETTINGS PAGE ----------
+router.get("/test-settings", async (req, res) => {
+  try {
+    const testId = req.query.id;
+    if (!testId) {
+      return res.redirect("/teacher-tests");
+    }
+    const test = await Test.findById(testId).lean();
+    if (!test) {
+      return res.send("Test not found");
+    }
+    const scheduledValue = test.scheduledAt
+      ? new Date(test.scheduledAt).toISOString().slice(0, 16)
+      : "";
+    const content = `
+<h1 style="margin-bottom:20px;">Test Settings</h1>
+<div style="
+  background:white;
+  padding:24px;
+  border-radius:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  max-width:720px;
+">
+  <h2 style="margin-top:0;">${test.name || "Untitled Test"}</h2>
+  <div style="
+    background:#f8fafc;
+    padding:14px;
+    border-radius:10px;
+    margin-bottom:20px;
+    border:1px solid #e5e7eb;
+  ">
+    <p><b>Class:</b> ${test.className || "N/A"}</p>
+    <p><b>Subject:</b> ${test.subject || "N/A"}</p>
+    <p><b>Status:</b> ${test.status === "published" ? "Published" : "Draft"}</p>
+  </div>
+  <div style="margin-bottom:16px;">
+    <label style="font-weight:700;">Schedule Date / Time</label><br>
+    <input
+      id="scheduledAt"
+      type="datetime-local"
+      value="${scheduledValue}"
+      style="
+        width:100%;
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        margin-top:6px;
+      "
+    />
+    <p style="color:#64748b;font-size:13px;margin-top:6px;">
+      Published tests appear to students only after this date and time. Leave blank to make it available immediately after publishing.
+    </p>
+  </div>
+  <div style="margin-bottom:16px;">
+    <label style="font-weight:700;">Timer Duration</label><br>
+    <input
+      id="durationMinutes"
+      type="number"
+      min="1"
+      max="1440"
+      value="${test.durationMinutes || 60}"
+      style="
+        width:100%;
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        margin-top:6px;
+      "
+    />
+    <p style="color:#64748b;font-size:13px;margin-top:6px;">
+      Duration is in minutes. Maximum allowed is 1440 minutes / 24 hours.
+    </p>
+  </div>
+  <div style="margin-bottom:22px;">
+    <label style="font-weight:700;">Test Type</label><br>
+    <select
+      id="testType"
+      style="
+        width:100%;
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        margin-top:6px;
+      "
+    >
+      <option value="practice" ${test.testType === "practice" ? "selected" : ""}>Practice</option>
+      <option value="unit" ${test.testType === "unit" ? "selected" : ""}>Unit</option>
+      <option value="exam" ${test.testType === "exam" ? "selected" : ""}>Exam</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:12px;">
+    <button onclick="saveSettings()" style="
+      padding:12px 18px;
+      background:#4f46e5;
+      color:white;
+      border:none;
+      border-radius:8px;
+      font-weight:700;
+      cursor:pointer;
+    ">
+      Save Settings
+    </button>
+    <button onclick="go('/teacher-tests')" style="
+      padding:12px 18px;
+      background:#64748b;
+      color:white;
+      border:none;
+      border-radius:8px;
+      font-weight:700;
+      cursor:pointer;
+    ">
+      Back
+    </button>
+  </div>
+</div>
+<script>
+const testId = "${test._id}";
+function saveSettings(){
+  const scheduledAt = document.getElementById("scheduledAt").value;
+  const durationMinutes = Number(document.getElementById("durationMinutes").value);
+  const testType = document.getElementById("testType").value;
+  if(!durationMinutes || durationMinutes < 1){
+    return alert("Duration must be at least 1 minute");
+  }
+  if(durationMinutes > 1440){
+    return alert("Duration cannot exceed 1440 minutes");
+  }
+  fetch("/save-test-settings", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      testId,
+      scheduledAt,
+      durationMinutes,
+      testType
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("Settings saved");
+    window.location.replace("/teacher-tests");
+  })
+  .catch(() => alert("Failed to save settings"));
+}
+</script>
+`;
+    res.send(layout(content, "tests"));
+  } catch (err) {
+    console.error("TEST SETTINGS PAGE ERROR:", err);
+    res.send("Error loading test settings");
+  }
+});
+// ---------- SAVE TEST SETTINGS ----------
+router.post("/save-test-settings", authMiddleware, async (req, res) => {
+  try {
+    const {
+      testId,
+      scheduledAt,
+      durationMinutes,
+      testType
+    } = req.body;
+    if (!testId) {
+      return res.status(400).json({ error: "Missing test id" });
+    }
+    const duration = Number(durationMinutes);
+    if (!duration || duration < 1 || duration > 1440) {
+      return res.status(400).json({
+        error: "Duration must be between 1 and 1440 minutes"
+      });
+    }
+    if (!["practice", "unit", "exam"].includes(testType)) {
+      return res.status(400).json({
+        error: "Invalid test type"
+      });
+    }
+    const test = await Test.findOne({
+      _id: testId,
+      teacherId: String(req.user.id)
+    });
+    if (!test) {
+      return res.status(404).json({
+        error: "Test not found or unauthorized"
+      });
+    }
+    test.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
+    test.durationMinutes = duration;
+    test.testType = testType;
+    await test.save();
+    res.json({
+      status: "settings_saved",
+      test
+    });
+  } catch (err) {
+    console.error("SAVE TEST SETTINGS ERROR:", err);
+    res.status(500).json({
+      error: "Failed to save test settings"
+    });
   }
 });
 // ---------- DELETE TEST ----------
@@ -620,30 +1106,39 @@ router.get("/test", async (req, res) => {
     }
     const test = await Test.findById(id);
     if (!test) return res.send("<h1>Test not found</h1>");
-    const questions = readJSON("data/questions.json");
-    const testQuestions = test.questionIds
-      .map(i => questions.find(q => q.id === i))
-      .filter(Boolean);
-    const html = testQuestions.map((q, i) => {
-      if (q.options && q.options.length) {
-        return `
-          <div style="background:white;padding:20px;margin:15px 0;border-radius:12px;">
-            <p><b>Q${i + 1}: ${q.question}</b></p>
-            ${q.options.map(o => `
-              <label>
-                <input type="radio" name="q${q.id}" value="${o}"> ${o}
-              </label><br>
-            `).join("")}
-          </div>
-        `;
-      }
-      return `
-        <div style="background:white;padding:20px;margin:15px 0;border-radius:12px;">
-          <p><b>Q${i + 1}: ${q.question}</b></p>
-          <textarea id="code-${q.id}" style="width:100%;height:150px;"></textarea>
-        </div>
-      `;
-    }).join("");
+const Question = require("../models/Question");
+const questionIds = test.questionIds.map(id => String(id));
+const mongoQuestions = await Question.find({
+ _id: { $in: questionIds }
+}).lean();
+const questionMap = {};
+mongoQuestions.forEach(q => {
+ questionMap[String(q._id)] = q;
+});
+const testQuestions = questionIds
+ .map(id => questionMap[String(id)])
+ .filter(Boolean);
+const html = testQuestions.map((q, i) => {
+ const qid = String(q._id);
+ if (q.options && q.options.length) {
+ return `
+ <div style="background:white;padding:20px;margin:15px 0;border-radius:12px;">
+ <p><b>Q${i + 1}: ${q.question}</b></p>
+ ${q.options.map(o => `
+ <label>
+ <input type="radio" name="q${qid}" value="${o}"> ${o}
+ </label><br>
+ `).join("")}
+ </div>
+ `;
+ }
+ return `
+ <div style="background:white;padding:20px;margin:15px 0;border-radius:12px;">
+ <p><b>Q${i + 1}: ${q.question}</b></p>
+ <textarea id="code-${qid}" style="width:100%;height:150px;"></textarea>
+ </div>
+ `;
+}).join("");
     res.send(`
 <body style="margin:0;font-family:Arial;">
 <div id="examGate" style="
@@ -678,6 +1173,9 @@ router.get("/test", async (req, res) => {
   </div>
   <div style="flex:1;padding:30px;background:#eef2ff;overflow:auto;">
     <h1>${test.name}</h1>
+<p style="color:#64748b;">
+  Type: ${test.testType || "practice"}
+</p>
     ${html}
     <button id="submitBtn" onclick="submitTest()">Submit</button>
   </div>
@@ -688,9 +1186,13 @@ const testId = "${test._id}";
 const testName = "${test.name}";
 const studentId = "${studentId}";
 document.getElementById("startExamBtn").onclick = function(){
+  const startTime = Date.now();
+  localStorage.setItem("testStartTime_" + testId, startTime);
+
   if (document.documentElement.requestFullscreen) {
     document.documentElement.requestFullscreen();
   }
+
   startExamMode();
   document.getElementById("examGate").remove();
 };
@@ -739,18 +1241,19 @@ function submitTest(){
   btn.disabled = true;
   let score = 0;
   let answers = [];
-  qs.forEach(q => {
-    const s = document.querySelector('input[name="q'+q.id+'"]:checked');
-    const selected = s ? s.value : null;
-    const isCorrect = selected === q.correct;
-    if(isCorrect) score++;
-    answers.push({
-      questionId: q.id,
-      selected,
-      correctAnswer: q.correct,
-      isCorrect
-    });
-  });
+qs.forEach(q => {
+ const qid = String(q._id);
+ const s = document.querySelector('input[name="q'+qid+'"]:checked');
+ const selected = s ? s.value : null;
+ const isCorrect = selected === q.correct;
+ if(isCorrect) score++;
+ answers.push({
+ questionId: qid,
+ selected,
+ correctAnswer: q.correct,
+ isCorrect
+ });
+});
   fetch("/submit", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
@@ -777,42 +1280,285 @@ function submitTest(){
     res.send("Error loading test");
   }
 });
-// ---------- LIBRARY ----------
-router.get("/library", (req, res) => {
-console.log("LIBRARY ROUTE HIT");
-const questions = readJSON("data/questions.json");
-console.log("TOTAL QUESTIONS:", questions.length);
-const subject = req.query.subject || "all";
-const board = req.query.board || "all";
-const subjects = [...new Set(questions.map(q => q.subject || q.category))];
-const boards = [...new Set(questions.map(q => q.board || "General"))];
-const filtered = questions.filter(q => {
-const qSubject = q.subject || q.category;
-const qBoard = q.board || "General";
-const subjectMatch = subject === "all" || qSubject === subject;
-const boardMatch = board === "all" || qBoard === board;
-return subjectMatch && boardMatch;
+// ---------- SUBMIT TEST ----------
+router.post("/submit", async (req, res) => {
+try {
+ const {
+   studentId,
+   testId,
+   testName,
+   score,
+   total,
+   answers
+ } = req.body;
+ if (!studentId || !testId || !Array.isArray(answers)) {
+   return res.status(400).json({ error: "Invalid submission data" });
+ }
+ const Result = require("../models/Result");
+ const Test = require("../models/Test");
+ const Question = require("../models/Question");
+ const test = await Test.findById(testId);
+ if (!test) {
+   return res.status(404).json({ error: "Test not found" });
+ }
+ const existing = await Result.findOne({
+   studentId,
+   testId
+ });
+ if (existing) {
+  if(!test.allowRetake){
+    return res.status(409).json({ error: "Test already submitted" });
+  }
+}
+ const result = await Result.create({
+   studentId,
+   name: "",
+   class: test.className || "",
+   testId,
+   testName: testName || test.name,
+   teacherId: test.teacherId,
+   score,
+   total,
+   answers,
+   date: new Date()
+ });
+ for (const answer of answers) {
+   if (!answer.questionId) continue;
+   await Question.updateOne(
+     { _id: answer.questionId },
+     {
+       $inc: {
+         "analytics.attempted": 1,
+         [answer.isCorrect ? "analytics.correct" : "analytics.incorrect"]: 1
+       }
+     }
+   );
+ }
+ res.json({
+   status: "submitted",
+   result
+ });
+} catch (err) {
+ console.error("SUBMIT ERROR:", err);
+ if (err.code === 11000) {
+   return res.status(409).json({ error: "Test already submitted" });
+ }
+ res.status(500).json({ error: "Failed to submit test" });
+}
 });
-const list = filtered.map(q => `
+// ---------- LIBRARY ----------
+router.get("/library", async (req, res) => {
+  try {
+    console.log("LIBRARY ROUTE HIT");
+    const Question = require("../models/Question");
+    const questions = await Question.find();
+    const content = `
 <div style="
- background:white;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+">
+  <h1 style="margin:0;">Questions Library</h1>
+  <button onclick="go('/bulk-upload')" style="
+    padding:10px 14px;
+    background:#16a34a;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+  ">
+    Bulk Question Upload
+  </button>
+</div>
+<div style="
+  background:white;
+  padding:18px;
+  border-radius:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom:14px;
+  width:70%;
+  box-sizing:border-box;
+">
+<div style="
+    display:grid;
+    grid-template-columns:240px 180px 180px 180px;
+    gap:12px;
+    justify-content:flex-start;
+  ">
+  <div>
+      <label style="font-size:13px;">Search</label><br>
+      <input
+        id="questionSearch"
+        placeholder="Search questions"
+        oninput="renderLibrary()"
+        style="
+          width:100%;
+          padding:6px 8px;
+          border-radius:8px;
+          border:1px solid #cbd5e1;
+          font-size:13px;
+          box-sizing:border-box;
+        "
+      />
+    </div>
+    <div>
+      <label style="font-size:13px;">Subject</label><br>
+      <select id="subjectFilter" onchange="renderLibrary()" style="
+        width:100%;
+        padding:6px 8px;
+border:1px solid #cbd5e1;
+font-size:13px;
+      ">
+        <option value="all">All</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:13px;">Board</label><br>
+      <select id="boardFilter" onchange="renderLibrary()" style="
+        width:100%;
+        padding:6px 8px;
+border:1px solid #cbd5e1;
+font-size:13px;
+      ">
+        <option value="all">All</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:13px;">Library Type</label><br>
+      <select id="scopeFilter" onchange="renderLibrary()" style="
+        width:100%;
+       padding:6px 8px;
+border:1px solid #cbd5e1;
+font-size:13px;
+      ">
+        <option value="all">All</option>
+        <option value="public">Platform Questions</option>
+        <option value="teacher">My Questions</option>
+      </select>
+    </div>
+  </div>
+</div>
+<div style="
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
+  align-items:stretch;
+  height:calc(100vh - 210px);
+  min-height:620px;
+">
+  <div style="
+    background:white;
+    padding:20px;
+    border-radius:14px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    height:100%;
+    box-sizing:border-box;
+    overflow-y:auto;
+  ">
+    <h2 style="margin-top:0;">Questions</h2>
+    <div id="libraryList"></div>
+  </div>
+  <div
+    id="questionPreview"
+    style="
+      background:white;
+      padding:22px;
+      border-radius:14px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.08);
+      height:100%;
+      overflow-y:auto;
+      box-sizing:border-box;
+    "
+  >
+    <h2 style="margin-top:0;">Question Preview</h2>
+    <p style="color:#64748b;">
+      Select a question to preview it here.
+    </p>
+  </div>
+</div>
+<script>
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user || user.role !== "teacher"){
+  window.location.replace("/");
+}
+const teacherId = user._id || user.id;
+const questions = ${JSON.stringify(questions)};
+function getVisibleQuestions(){
+  return questions.filter(q =>
+    q.scope === "public" ||
+    (
+      q.scope === "teacher" &&
+      String(q.teacherId) === String(teacherId)
+    )
+  );
+}
+function populateFilters(){
+  const visibleQuestions = getVisibleQuestions();
+  const subjects = [...new Set(
+    visibleQuestions
+      .map(q => q.subject || q.category)
+      .filter(Boolean)
+  )];
+  const boards = [...new Set(
+    visibleQuestions
+      .map(q => q.board || "General")
+      .filter(Boolean)
+  )];
+  const subjectFilter = document.getElementById("subjectFilter");
+  const boardFilter = document.getElementById("boardFilter");
+  subjects.forEach(s => {
+    const option = document.createElement("option");
+    option.value = s;
+    option.textContent = s;
+    subjectFilter.appendChild(option);
+  });
+  boards.forEach(b => {
+    const option = document.createElement("option");
+    option.value = b;
+    option.textContent = b;
+    boardFilter.appendChild(option);
+  });
+}
+function buildQuestionCard(q){
+  const sourceLabel =
+    q.scope === "teacher"
+      ? "My Question"
+      : "Platform Question";
+  return \`
+<div
+ onclick="previewQuestion('\${q._id}')"
+ style="
+ background:#f8fafc;
  padding:18px;
  margin:12px 0;
  border-radius:12px;
- box-shadow:0 2px 8px rgba(0,0,0,0.06);
+ border:1px solid #e5e7eb;
  display:flex;
  justify-content:space-between;
  align-items:center;
+ gap:16px;
+ cursor:pointer;
 ">
  <div>
    <p style="margin:0 0 8px 0;font-weight:600;">
-     ${q.question}
+     \${q.question || "Untitled Question"}
    </p>
    <p style="margin:0;color:#666;font-size:14px;">
-     ${q.subject || q.category} | ${q.board || "Other"} | ${q.difficulty}
+     \${q.subject || q.category || "No Subject"} |
+     \${q.board || "Other"} |
+     \${q.difficulty || "No Difficulty"} |
+     \${sourceLabel}
+   </p>
+   <p style="margin:6px 0 0 0;color:#64748b;font-size:13px;">
+     Attempted: \${q.analytics?.attempted || 0} |
+     Correct: \${q.analytics?.correct || 0} |
+     Incorrect: \${q.analytics?.incorrect || 0}
    </p>
  </div>
- <button onclick="addToTest(${q.id})" style="
+ <button onclick="event.stopPropagation(); addToTest('\${q._id}')" style="
    padding:10px 14px;
    background:#4f46e5;
    color:white;
@@ -824,269 +1570,196 @@ const list = filtered.map(q => `
    + Add to Test
  </button>
 </div>
-`).join("");
-const content = `
-<h1 style="margin-bottom:20px;">Questions Library</h1>
-<div style="display:flex; gap:20px;">
-  <!-- FILTER PANEL -->
-  <div style="
-    width:250px;
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    height:fit-content;
-  ">
-    <h3 style="margin-top:0;">Filters</h3>
-    <form>
-      <div style="margin-bottom:10px;">
-        <label>Subject</label><br>
-        <select name="subject" onchange="this.form.submit()">
-          <option value="all">All</option>
-          ${subjects.map(s => `
-            <option value="${s}" ${s === subject ? "selected" : ""}>
-              ${s}
-            </option>
-          `).join("")}
-        </select>
-      </div>
-      <div style="margin-bottom:10px;">
-        <label>Board</label><br>
-        <select name="board" onchange="this.form.submit()">
-          <option value="all">All</option>
-          ${boards.map(b => `
-            <option value="${b}" ${b === board ? "selected" : ""}>
-              ${b}
-            </option>
-          `).join("")}
-        </select>
-      </div>
-    </form>
-  </div>
-  <!-- QUESTIONS -->
-  <div style="flex:1;">
-    ${list || "<p>No questions found</p>"}
-  </div>
-</div>
-<script>
+\`;
+}
+function previewQuestion(id){
+  const q = questions.find(item =>
+    String(item._id) === String(id)
+  );
+  if(!q){
+    return;
+  }
+  const optionsHtml =
+    q.options && q.options.length
+      ? q.options.map((opt, index) =>
+          "<div style='background:#f8fafc;padding:10px;margin:8px 0;border-radius:8px;'>" +
+            "<b>Option " + (index + 1) + ":</b> " + opt +
+          "</div>"
+        ).join("")
+      : "<p style='color:#64748b;'>No options found. This may be a coding or written question.</p>";
+  const sourceLabel =
+    q.scope === "teacher"
+      ? "My Question"
+      : "Platform Question";
+  document.getElementById("questionPreview").innerHTML =
+    "<h2 style='margin-top:0;'>Question Preview</h2>" +
+    "<div style='background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:15px;'>" +
+      "<b>Question:</b><br>" +
+      "<div style='margin-top:8px;line-height:1.5;'>" + (q.question || "No question text") + "</div>" +
+    "</div>" +
+    "<div style='margin-bottom:15px;'>" +
+      optionsHtml +
+    "</div>" +
+    "<div style='background:#ecfdf5;padding:12px;border-radius:10px;margin-bottom:12px;'>" +
+      "<b>Correct Answer:</b> " + (q.correct || "N/A") +
+    "</div>" +
+    "<p><b>Subject:</b> " + (q.subject || q.category || "N/A") + "</p>" +
+    "<p><b>Board:</b> " + (q.board || "N/A") + "</p>" +
+    "<p><b>Difficulty:</b> " + (q.difficulty || "N/A") + "</p>" +
+    "<p><b>Library Type:</b> " + sourceLabel + "</p>" +
+    "<div style='background:#eef2ff;padding:12px;border-radius:10px;margin-top:12px;'>" +
+      "<b>Analytics</b><br>" +
+      "Attempted: " + (q.analytics?.attempted || 0) + "<br>" +
+      "Correct: " + (q.analytics?.correct || 0) + "<br>" +
+      "Incorrect: " + (q.analytics?.incorrect || 0) +
+    "</div>" +
+    "<button onclick=\\"addToTest('" + q._id + "')\\" style=\\"" +
+      "margin-top:18px;" +
+      "padding:10px 14px;" +
+      "background:#4f46e5;" +
+      "color:white;" +
+      "border:none;" +
+      "border-radius:8px;" +
+      "font-weight:600;" +
+      "cursor:pointer;" +
+    "\\">+ Add to Test</button>";
+}
+function renderLibrary(){
+  const subject = document.getElementById("subjectFilter").value;
+  const board = document.getElementById("boardFilter").value;
+  const scope = document.getElementById("scopeFilter").value;
+  const searchValue =
+  (document.getElementById("questionSearch").value || "")
+    .trim()
+    .toLowerCase();
+  let visibleQuestions = getVisibleQuestions();
+  visibleQuestions = visibleQuestions.filter(q => {
+    const qSubject = q.subject || q.category;
+    const qBoard = q.board || "General";
+    const questionText = String(q.question || "").toLowerCase();
+    const subjectMatch =
+      subject === "all" || qSubject === subject;
+    const boardMatch =
+      board === "all" || qBoard === board;
+    const scopeMatch =
+      scope === "all" || q.scope === scope;
+      const searchMatch =
+  !searchValue || questionText.includes(searchValue);
+    return subjectMatch && boardMatch && scopeMatch && searchMatch;
+  });
+  document.getElementById("libraryList").innerHTML =
+    visibleQuestions.length
+      ? visibleQuestions.map(q => buildQuestionCard(q)).join("")
+      : "<p>No questions found</p>";
+}
 function addToTest(id){
   let selected = JSON.parse(localStorage.getItem("selectedQuestions") || "[]");
   if(!selected.includes(id)){
     selected.push(id);
     localStorage.setItem("selectedQuestions", JSON.stringify(selected));
     alert("Added to test");
+  } else {
+    alert("Question already added");
   }
 }
+populateFilters();
+renderLibrary();
 </script>
 `;
-res.send(layout(content, "library"));
-});
-// ---------- BULK UPLOAD HUB ----------
-router.get("/bulk-upload", (req, res) => {
-res.send(`
-<body style="margin:0;background:#eef2ff;font-family:Arial;">
- ${navbar()}
- <div style="padding-top:70px;">
-   <div style="max-width:900px;margin:20px auto;padding:0 10px;">
-     <h1>📥 Bulk Upload Center</h1>
-     <!-- QUESTIONS -->
-     <div style="background:white;padding:20px;margin:20px 0;border-radius:12px;">
-<h2>Upload Questions</h2>
-<p style="color:gray;">Upload CSV and map fields</p>
-<input type="file" id="questionFile" accept=".csv" />
-<br><br>
-<button onclick="loadQuestionCSV()" style="
-padding:10px 16px;
-background:#4f46e5;
-color:white;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-">
-Load CSV
-</button>
-<div id="questionMapping" style="margin-top:20px;"></div>
-<br>
-<button onclick="processQuestionUpload()" style="
-padding:10px 16px;
-background:#4f46e5;
-color:white;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-">
-Upload Questions
-</button>
-     </div>
-     <!-- STUDENTS -->
-     <div style="background:white;padding:20px;margin:20px 0;border-radius:12px;">
-<h2>Upload Students</h2>
-<p style="color:gray;">Upload CSV and map fields</p>
-<input type="file" id="studentFile" accept=".csv" />
-<br><br>
-<button onclick="loadStudentCSV()" style="
-padding:10px 16px;
-background:#4f46e5;
-color:white;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-">
-Load CSV
-</button>
-<div id="studentMapping" style="margin-top:20px;"></div>
-<br>
-<button onclick="processStudentUpload()" style="
-padding:10px 16px;
-background:#4f46e5;
-color:white;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-">
-Upload Students
-</button>
-     </div>
-     <!-- TEACHERS -->
-     <div style="background:white;padding:20px;margin:20px 0;border-radius:12px;">
-<h2>Upload Teachers</h2>
-<p style="color:gray;">Upload CSV and map fields</p>
-<input type="file" id="teacherFile" accept=".csv" />
-<br><br>
-<button onclick="loadTeacherCSV()" style="
-padding:10px 16px;
-background:#4f46e5;
-color:white;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-">
-Load CSV
-</button>
-<div id="teacherMapping" style="margin-top:20px;"></div>
-<br>
-<button onclick="processTeacherUpload()" style="
-padding:10px 16px;
-background:#4f46e5;
-color:white;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-">
-Upload Teachers
-</button>
-     </div>
-   </div>
- </div>
-<script>
-const user = JSON.parse(localStorage.getItem("user") || "null");
-if (!user || user.role !== "teacher") {
-  window.location.replace("/");
-}
-window.addEventListener("pageshow", function (event) {
-  if (event.persisted) {
-    window.location.reload();
+    res.send(layout(content, "library"));
+  } catch (err) {
+    console.error(err);
+    res.send("Error loading library");
   }
 });
-// =========================
-// TEACHER CSV LOGIC
-// =========================
-let teacherCSV = [];
-let teacherHeaders = [];
-function loadTeacherCSV(){
- const file = document.getElementById("teacherFile").files[0];
- if(!file) return alert("Select a CSV file");
- const reader = new FileReader();
- reader.onload = function(e){
-   const rows = e.target.result.split("\\n")
-     .map(r => r.replace("\\r","").trim())
-     .filter(r => r);
-   teacherHeaders = rows[0].split(",").map(h => h.trim());
-   teacherCSV = rows.slice(1).map(row =>
-     row.split(",").map(v => v.trim())
-   );
-   showTeacherMapping();
- };
- reader.readAsText(file);
+// ---------- BULK QUESTION UPLOAD ----------
+router.get("/bulk-upload", (req, res) => {
+  const content = `
+<h1 style="margin-bottom:20px;">Bulk Question Upload</h1>
+<div style="
+  max-width:900px;
+  background:white;
+  padding:24px;
+  border-radius:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.06);
+">
+  <h2 style="margin-top:0;">Upload Questions</h2>
+  <p style="color:#64748b;margin-bottom:18px;">
+    Upload a CSV file and map the columns to question fields.
+  </p>
+  <input type="file" id="questionFile" accept=".csv" />
+  <br><br>
+  <button onclick="loadQuestionCSV()" style="
+    padding:10px 16px;
+    background:#4f46e5;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+  ">
+    Load CSV
+  </button>
+  <div id="questionMapping" style="margin-top:24px;"></div>
+  <button onclick="processQuestionUpload()" style="
+    margin-top:20px;
+    padding:10px 16px;
+    background:#16a34a;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+  ">
+    Upload Questions
+  </button>
+</div>
+<script>
+let questionCSV = [];
+let questionHeaders = [];
+function loadQuestionCSV(){
+  const file = document.getElementById("questionFile").files[0];
+  if(!file) return alert("Select a CSV file");
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const rows = e.target.result.split("\\n")
+      .map(r => r.replace("\\r", "").trim())
+      .filter(r => r);
+    questionHeaders = rows[0].split(",").map(h => h.trim());
+    questionCSV = rows.slice(1).map(row =>
+      row.split(",").map(v => v.trim())
+    );
+    showQuestionMapping();
+  };
+  reader.readAsText(file);
 }
-function showTeacherMapping(){
- const fields = ["name","email","password"];
- let html = "<h3>Map CSV Fields</h3>";
- teacherHeaders.forEach((h, i) => {
-   html += "<div><b>"+h+"</b> → <select id='teacher-map-"+i+"'>" +
-     "<option value=''>Ignore</option>" +
-     fields.map(f => "<option value='"+f+"'>"+f+"</option>").join("") +
-     "</select></div>";
- });
- document.getElementById("teacherMapping").innerHTML = html;
-}
-function processTeacherUpload(){
- let mapping = {};
- teacherHeaders.forEach((h, i) => {
-   const val = document.getElementById("teacher-map-"+i).value;
-   if(val) mapping[i] = val;
- });
- const data = teacherCSV.map(row => {
-   let obj = {};
-   row.forEach((val, i) => {
-     if(mapping[i]) obj[mapping[i]] = val;
-   });
-   return obj;
- });
- fetch("/upload-teachers", {
-   method:"POST",
-   headers:{ "Content-Type":"application/json" },
-   body: JSON.stringify(data)
- })
- .then(res => res.json())
- .then(res => alert("Created: "+res.created+" | Skipped: "+res.skipped));
-}
-// =========================
-// STUDENT CSV LOGIC
-// =========================
-let studentCSV = [];
-let studentHeaders = [];
-function loadStudentCSV(){
- const file = document.getElementById("studentFile").files[0];
- if(!file) return alert("Select a CSV file");
- const reader = new FileReader();
- reader.onload = function(e){
-   const rows = e.target.result.split("\\n")
-     .map(r => r.replace("\\r","").trim())
-     .filter(r => r);
-   studentHeaders = rows[0].split(",").map(h => h.trim());
-   studentCSV = rows.slice(1).map(row =>
-     row.split(",").map(v => v.trim())
-   );
-   showStudentMapping();
- };
- reader.readAsText(file);
-}
-function showStudentMapping(){
-  const fields = ["studentId","name","class","teacherEmail"];
+function showQuestionMapping(){
+  const fields = [
+    "question",
+    "option1",
+    "option2",
+    "option3",
+    "option4",
+    "correct",
+    "subject",
+    "board",
+    "difficulty",
+    "category"
+  ];
   let html = "<h3>Map CSV Fields</h3>";
-  studentHeaders.forEach(function(h, i){
-    html += "<div style='margin:8px 0;'>" +
-      "<b>" + h + "</b> → " +
-      "<select id='student-map-" + i + "'>" +
+  questionHeaders.forEach((h, i) => {
+    html += "<div style='margin:10px 0;'><b>" + h + "</b> → <select id='question-map-" + i + "'>" +
       "<option value=''>Ignore</option>" +
-      fields.map(function(f){
-        return "<option value='" + f + "'>" + f + "</option>";
-      }).join("") +
+      fields.map(f => "<option value='" + f + "'>" + f + "</option>").join("") +
       "</select></div>";
   });
-  document.getElementById("studentMapping").innerHTML = html;
+  document.getElementById("questionMapping").innerHTML = html;
 }
-function processStudentUpload(){
-  if(!studentCSV.length) return alert("Load CSV first");
+function processQuestionUpload(){
+  if(!questionCSV.length) return alert("Load CSV first");
   let mapping = {};
-  studentHeaders.forEach(function(h, i){
-    const el = document.getElementById("student-map-" + i);
+  questionHeaders.forEach((h, i) => {
+    const el = document.getElementById("question-map-" + i);
     if(!el) return;
     const val = el.value;
     if(val) mapping[i] = val;
@@ -1094,109 +1767,91 @@ function processStudentUpload(){
   if(Object.keys(mapping).length === 0){
     return alert("Map at least one field");
   }
-  const data = studentCSV.map(function(row){
+  const data = questionCSV.map(row => {
     let obj = {};
-    row.forEach(function(val, i){
-      if(mapping[i]){
-        obj[mapping[i]] = val;
-      }
+    row.forEach((val, i) => {
+      if(mapping[i]) obj[mapping[i]] = val;
     });
-    return obj;
+    return {
+      type: "mcq",
+      question: obj.question,
+      options: [obj.option1, obj.option2, obj.option3, obj.option4],
+      correct: obj.correct,
+      subject: obj.subject,
+      board: obj.board,
+      difficulty: obj.difficulty,
+      category: obj.category
+    };
   });
-  console.log("UPLOAD DATA:", data);
-fetch("/upload-students", {
-  method:"POST",
-  headers:{ 
-    "Content-Type":"application/json",
-    "Authorization": "Bearer " + localStorage.getItem("token")
-  },
-  body: JSON.stringify(data)
-})
-.then(res => res.json())
-.then(res => {
-  alert(
-    "Created: " + res.created +
-    " | Updated: " + res.updated +
-    " | Skipped: " + res.skipped
-  );
-});
-}
-// =========================
-// QUESTION CSV LOGIC
-// =========================
-let questionCSV = [];
-let questionHeaders = [];
-function loadQuestionCSV(){
- const file = document.getElementById("questionFile").files[0];
- if(!file) return alert("Select a CSV file");
- const reader = new FileReader();
- reader.onload = function(e){
-   const rows = e.target.result.split("\\n")
-     .map(r => r.replace("\\r","").trim())
-     .filter(r => r);
-   questionHeaders = rows[0].split(",").map(h => h.trim());
-   questionCSV = rows.slice(1).map(row =>
-     row.split(",").map(v => v.trim())
-   );
-   showQuestionMapping();
- };
- reader.readAsText(file);
-}
-function showQuestionMapping(){
- const fields = ["question","option1","option2","option3","option4","correct","subject","board","difficulty","category"];
- let html = "<h3>Map CSV Fields</h3>";
- questionHeaders.forEach((h, i) => {
-   html += "<div><b>"+h+"</b> → <select id='question-map-"+i+"'>" +
-     "<option value=''>Ignore</option>" +
-     fields.map(f => "<option value='"+f+"'>"+f+"</option>").join("") +
-     "</select></div>";
- });
- document.getElementById("questionMapping").innerHTML = html;
-}
-function processQuestionUpload(){
- let mapping = {};
- questionHeaders.forEach((h, i) => {
-   const val = document.getElementById("question-map-"+i).value;
-   if(val) mapping[i] = val;
- });
- const data = questionCSV.map(row => {
-   let obj = {};
-   row.forEach((val, i) => {
-     if(mapping[i]) obj[mapping[i]] = val;
-   });
-   return {
-     type:"mcq",
-     question: obj.question,
-     options:[obj.option1,obj.option2,obj.option3,obj.option4],
-     correct: obj.correct,
-     subject: obj.subject
-   };
- });
- fetch("/upload-questions", {
-   method:"POST",
-   headers:{ "Content-Type":"application/json" },
-   body: JSON.stringify(data)
- })
- .then(() => alert("Questions uploaded"));
+  fetch("/upload-questions", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("Questions uploaded: " + (data.added || 0));
+    window.location.replace("/library");
+  })
+  .catch(() => alert("Question upload failed"));
 }
 </script>
-</body>
-`);
+`;
+  res.send(layout(content, "bulk-upload"));
 });
-router.post("/upload-questions", (req, res) => {
-const existing = readJSON("data/questions.json");
-const newQuestions = req.body;
-if (!Array.isArray(newQuestions) || !newQuestions.length) {
-  return res.status(400).json({ error: "Invalid data" });
-}
-let lastId = existing.length ? existing[existing.length - 1].id : 0;
-const processed = newQuestions.map((q, i) => ({
- id: lastId + i + 1,
- ...q
-}));
-const updated = [...existing, ...processed];
-writeJSON("data/questions.json", updated);
-res.json({ status: "ok", added: processed.length });
+// ---------- UPLOAD QUESTIONS ----------
+router.post("/upload-questions", async (req, res) => {
+  try {
+    const Question = require("../models/Question");
+    const newQuestions = req.body;
+    if (!Array.isArray(newQuestions) || !newQuestions.length) {
+      return res.status(400).json({
+        error: "Invalid data"
+      });
+    }
+    const processed = newQuestions
+      .filter(q => q.question)
+      .map(q => ({
+        type: q.type || "mcq",
+        scope: "public",
+        teacherId: null,
+        schoolId: null,
+        question: q.question,
+        options: Array.isArray(q.options)
+          ? q.options.filter(Boolean)
+          : [],
+        correct: q.correct || "",
+        subject: q.subject || "",
+        board: q.board || "General",
+        difficulty: q.difficulty || "",
+        category: q.category || "",
+        testCases: Array.isArray(q.testCases) ? q.testCases : [],
+        analytics: {
+          attempted: 0,
+          correct: 0,
+          incorrect: 0
+        }
+      }));
+    if (!processed.length) {
+      return res.status(400).json({
+        error: "No valid questions found"
+      });
+    }
+    const created = await Question.insertMany(processed);
+    res.json({
+      status: "ok",
+      added: created.length
+    });
+  } catch (err) {
+    console.error("UPLOAD QUESTIONS ERROR:", err);
+    res.status(500).json({
+      error: "Failed to upload questions"
+    });
+  }
 });
 // ---------- BULK UPLOAD STUDENTS ----------
 router.post("/upload-students", authMiddleware, async (req, res) => {
@@ -1214,19 +1869,18 @@ try {
      skipped++;
      continue;
    }
-   // ✅ FIND TEACHER
-   const teacher = await User.findOne({
-     email: row.teacherEmail,
-     role: "teacher"
-   });
-   if (String(teacher._id) !== String(req.user.id)) {
+const teacher = await User.findOne({
+  email: row.teacherEmail,
+  role: "teacher"
+});
+if (!teacher) {
   skipped++;
   continue;
 }
-   if(!teacher){
-     skipped++;
-     continue;
-   }
+if (String(teacher._id) !== String(req.user.id)) {
+  skipped++;
+  continue;
+}
 // ✅ CHECK IF STUDENT EXISTS
 let student = await Student.findOne({ studentId: row.studentId });
 if(!student){
@@ -1275,7 +1929,7 @@ updated++; // ✅ ADD THIS LINE
  res.status(500).json({ error: "Upload failed" });
 }
 });
-// ---------- ASSIGN TEST ----------
+// ---------- PUBLISH TEST ----------
 router.post("/assign-test", authMiddleware, async (req, res) => {
   try {
     const Test = require("../models/Test");
@@ -1285,16 +1939,17 @@ router.post("/assign-test", authMiddleware, async (req, res) => {
     if (!testId) {
       return res.status(400).json({ error: "Missing testId" });
     }
-    // ✅ GET TEST
-    const test = await Test.findById(testId);
+    const test = await Test.findOne({
+      _id: testId,
+      teacherId: String(req.user.id)
+    });
     if (!test) {
-      return res.status(404).json({ error: "Test not found" });
+      return res.status(404).json({ error: "Test not found or unauthorized" });
     }
     const className = String(test.className).trim().toUpperCase();
     const subject =
       String(test.subject).charAt(0).toUpperCase() +
       String(test.subject).slice(1).toLowerCase();
-    // 🔒 VALIDATE TEACHER MAPPING
     const mapping = await ClassSubject.findOne({
       className,
       subject,
@@ -1302,528 +1957,33 @@ router.post("/assign-test", authMiddleware, async (req, res) => {
     });
     if (!mapping) {
       return res.status(403).json({
-        error: "You are not allowed to assign this test"
+        error: "You are not allowed to publish this test"
       });
     }
-    // 🚫 PREVENT DUPLICATE ASSIGN
     const exists = await Assignment.findOne({
       testId: String(testId),
       className,
       teacherId: String(req.user.id)
     });
-    if (exists) {
-      return res.json({ message: "Test already assigned" });
+    if (!exists) {
+      await Assignment.create({
+        testId: String(testId),
+        testName: test.name,
+        className,
+        teacherId: String(req.user.id)
+      });
     }
-    // ✅ CREATE ASSIGNMENT
-    const assignment = await Assignment.create({
-      testId: String(testId),
-      testName: test.name,
-      className,
-      teacherId: String(req.user.id)
-    });
+    test.status = "published";
+    test.publishedAt = test.publishedAt || new Date();
+    await test.save();
     res.json({
-      status: "assigned",
-      message: "Test assigned successfully",
-      assignment
+      status: "published",
+      message: "Test published successfully",
+      test
     });
   } catch (err) {
-    console.error("ASSIGN ERROR:", err);
-    res.status(500).json({ error: "Failed to assign test" });
-  }
-});
-// ---------- LOGIN PAGE ----------
-router.get("/login", (req, res) => {
-res.send(`
- <body style="margin:0;background:#eef2ff;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
-    <div style="
-     background:white;
-     padding:30px;
-     border-radius:12px;
-     box-shadow:0 4px 12px rgba(0,0,0,0.1);
-     width:320px;
-   ">
-     <h2 style="text-align:center;margin-bottom:20px;">Login</h2>
-     <input id="email" placeholder="Email" style="
-       width:100%;
-       padding:10px;
-       margin-bottom:10px;
-       border-radius:6px;
-       border:1px solid #ccc;
-     "/>
-     <input id="password" type="password" placeholder="Password" style="
-       width:100%;
-       padding:10px;
-       margin-bottom:20px;
-       border-radius:6px;
-       border:1px solid #ccc;
-     "/>
-     <button onclick="login()" style="
-       width:100%;
-       padding:10px;
-       background:#4f46e5;
-       color:white;
-       border:none;
-       border-radius:6px;
-       cursor:pointer;
-       font-weight:600;
-     ">
-       Login
-     </button>
-   </div>
-   <script>
-// ✅ RESET SESSION ON LOGIN PAGE LOAD
-localStorage.clear();
-// 🔁 FORCE RELOAD IF FROM BACK/FORWARD CACHE
-window.addEventListener("pageshow", function (event) {
-  if (event.persisted) {
-    window.location.reload();
-  }
-});
-function login(){
-       const email = document.getElementById("email").value.trim();
-       const password = document.getElementById("password").value.trim();
-       if(!email || !password){
-         alert("Enter email and password");
-         return;
-       }
-       fetch("/login", {
-         method:"POST",
-         headers:{ "Content-Type":"application/json" },
-         body: JSON.stringify({ email, password })
-       })
-       .then(res => res.json())
-       .then(data => {
-         if(data.error){
-           alert(data.error);
-           return;
-         }
-         localStorage.setItem("user", JSON.stringify(data.user));
-         localStorage.setItem("token", data.token); 
-         // 🔁 REDIRECT BASED ON ROLE
-       if(data.user.role === "teacher"){
-  window.location.replace("/teacher");
-} else {
-  window.location.replace("/my-tests");
-}
-       });
-     }
-   </script>
- </body>
-`);
-});
-// ---------- STUDENT LOGIN PAGE ----------
-router.get("/student-login", (req, res) => {
-res.send(`
- <body style="
-   margin:0;
-   font-family:Arial;
-   background:#eef2ff;
-   display:flex;
-   justify-content:center;
-   align-items:center;
-   height:100vh;
- ">
-   <div style="
-     background:white;
-     padding:30px;
-     border-radius:12px;
-     box-shadow:0 4px 12px rgba(0,0,0,0.1);
-     width:320px;
-   ">
-     <h2 style="text-align:center;margin-bottom:20px;">
-       Student Login
-     </h2>
-     <input id="class" placeholder="Class (e.g. C1)" style="
-       width:100%;
-       padding:10px;
-       margin-bottom:10px;
-       border-radius:6px;
-       border:1px solid #ccc;
-     "/>
-     <input id="studentId" placeholder="Student ID" style="
-       width:100%;
-       padding:10px;
-       margin-bottom:10px;
-       border-radius:6px;
-       border:1px solid #ccc;
-     "/>
-     <input id="name" placeholder="Name" style="
-       width:100%;
-       padding:10px;
-       margin-bottom:20px;
-       border-radius:6px;
-       border:1px solid #ccc;
-     "/>
-     <button onclick="loginStudent()" style="
-       width:100%;
-       padding:10px;
-       background:#4f46e5;
-       color:white;
-       border:none;
-       border-radius:6px;
-       cursor:pointer;
-       font-weight:600;
-     ">
-       Login
-     </button>
-   </div>
-   <script>
-function loginStudent(){
-localStorage.clear();
-const studentClass = document.getElementById("class").value.trim().toUpperCase();
-const studentId = document.getElementById("studentId").value.trim();
-const name = document.getElementById("name").value.trim();
-if(!studentClass || !studentId || !name){
- alert("Please fill all fields");
- return;
-}
-fetch("/student-login", {
- method:"POST",
- headers:{ "Content-Type":"application/json" },
- body: JSON.stringify({
-   studentId,
-   name,
-   class: studentClass
- })
-})
-.then(res => res.json())
-.then(data => {
- if(data.error){
-   alert(data.error);
-   return;
- }
- // ✅ STORE USER
-localStorage.setItem("student", JSON.stringify(data.user));
- // ✅ STORE CLASS (CRITICAL FOR FILTERING)
- localStorage.setItem("class", data.user.class);
- // 🔁 REDIRECT
- window.location.replace("/my-tests");
-});
-}
-   </script>
- </body>
-`);
-});
-// ---------- STUDENT LOGIN API ----------
-router.post("/student-login", async (req, res) => {
-try {
- const { studentId, name, class: studentClass } = req.body;
- if (!studentId || !name || !studentClass) {
-  return res.status(400).json({ error: "Missing fields" });
-}
- const Student = require("../models/Student");
- const student = await Student.findOne({
-   studentId,
-   name,
-   class: studentClass
- });
- if(!student){
-   return res.json({ error: "Invalid credentials" });
- }
-res.json({
-  status: "ok",
-  user: {
-    studentId: student.studentId,
-    name: student.name,
-    class: student.class,
-    teacherId: student.teacherId,
-    role: "student"
-  }
-});
-} catch (err) {
- console.error(err);
- res.status(500).json({ error: "Login failed" });
-}
-});
-// ---------- STUDENT TEST LIST ----------
-router.get("/my-tests", async (req, res) => {
-res.send(`
-<body style="margin:0;font-family:Arial;">
-<div style="display:flex;height:100vh;">
-   <!-- SIDEBAR -->
-  <div style="
-    width:220px;
-    background:#1e293b;
-    color:white;
-    padding:20px;
-    box-sizing:border-box;
-  ">
-    <h2 style="margin-bottom:30px;">Student</h2>
-    <div onclick="go('/my-tests')" style="margin-bottom:15px;cursor:pointer;font-weight:600;">
-      My Tests
-    </div>
-    <div style="margin-top:20px;">Dashboard</div>
-    <div onclick="logout()" style="margin-top:20px;color:#f87171;cursor:pointer;">
-      Logout
-    </div>
-  </div>
-  <!-- CONTENT -->
-  <div style="
-    flex:1;
-    padding:30px;
-    background:#eef2ff;
-    overflow:auto;
-  ">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-  <button onclick="goBack()" style="
-    padding:8px 12px;
-    background:#f59e0b;
-    color:white;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-weight:600;
-  ">
-    ← Previous Page
-  </button>
-  <h1 style="margin:0;">My Tests</h1>
-</div>
-<select id="subjectSelect" style="padding:10px;margin-bottom:20px;width:100%;">
-  <option value="">Select Subject</option>
-</select>
-<button onclick="deleteSelected()" style="
-  margin-bottom:15px;
-  padding:10px 16px;
-  background:#dc3545;
-  color:white;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-">
-  Delete Selected
-</button>
-<div id="testList"></div>
-  </div>
-</div>
-<script>
-function go(path){
-  window.location.replace(path);
-}
-const student = JSON.parse(localStorage.getItem("student") || "null");
-// AUTH CHECK
-if (
-  !student ||
-  !student.studentId ||
-  !student.class ||
-  !student.teacherId
-) {
-  window.location.replace("/student-entry");
-}
-// GLOBAL FUNCTIONS
-window.logout = function(){
-  localStorage.clear();
-  window.location.replace("/");
-};
-window.startTest = function(id){
-  const student = JSON.parse(localStorage.getItem("student"));
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen();
-  }
-  window.location.href = "/test?id=" + id + "&studentId=" + student.studentId;
-};
-window.goBack = function(){
-  window.location.replace("/student-entry");
-};
-window.onbeforeunload = function () {
-  window.scrollTo(0, 0);
-};
-window.addEventListener("pageshow", function (event) {
-  if (event.persisted) {
-    window.location.reload();
-  }
-});
-// MAIN LOGIC
-window.onload = function(){
-  const subjectSelect = document.getElementById("subjectSelect");
-  const testList = document.getElementById("testList");
-  // LOAD SUBJECTS
-  fetch("/get-subjects?className=" + student.class + "&teacherId=" + student.teacherId)
-    .then(res => res.json())
-    .then(subjects => {
-      subjectSelect.innerHTML = '<option value="">Select Subject</option>';
-      subjects.forEach(sub => {
-        const opt = document.createElement("option");
-        opt.value = sub;
-        opt.textContent = sub;
-        subjectSelect.appendChild(opt);
-      });
-    });
-  // SUBJECT CHANGE → LOAD TESTS
-  subjectSelect.addEventListener("change", function(){
-    const subject = this.value;
-    if (!subject) return;
-    fetch("/get-tests?className=" + student.class +
-      "&subject=" + subject +
-      "&studentId=" + student.studentId +
-      "&teacherId=" + student.teacherId
-    )
-      .then(res => {
-        if (!res.ok) throw new Error("API error");
-        return res.json();
-      })
-      .then(tests => {
-        console.log("TESTS:", tests);
-        testList.innerHTML = "";
-        if (!tests.length) {
-          testList.innerHTML = "<p>No tests available</p>";
-          return;
-        }
-        tests.forEach(t => {
-          const card = document.createElement("div");
-          card.style.background = "white";
-          card.style.padding = "20px";
-          card.style.margin = "10px 0";
-          card.style.borderRadius = "8px";
-          const title = document.createElement("strong");
-          title.innerText = t.name;
-          const br = document.createElement("br");
-          const btn = document.createElement("button");
-          btn.innerText = "Start";
-          btn.onclick = function() {
-            startTest(t._id);
-          };
-          card.appendChild(title);
-          card.appendChild(br);
-          card.appendChild(btn);
-          testList.appendChild(card);
-        });
-      })
-      .catch(err => {
-        console.error("TEST LOAD ERROR:", err);
-        testList.innerHTML =
-          "<p style='color:red;'>Failed to load tests</p>";
-      });
-  });
-};
-</script>
-</body>
-`);
-});
-// ---------- STUDENT ENTRY PAGE ----------
-router.get("/student-entry", (req, res) => {
-  res.send(`
-  <body style="font-family:Arial;background:#eef2ff;padding:40px;">
-    <div style="max-width:400px;margin:auto;background:white;padding:30px;border-radius:12px;">
-<h2 style="margin-bottom:20px;">Select Your Details</h2>
-      <select id="classSelect" style="width:100%;padding:10px;margin-bottom:15px;">
-        <option value="">Select Class</option>
-      </select>
-      <select id="studentSelect" style="width:100%;padding:10px;margin-bottom:15px;">
-        <option value="">Select Student ID</option>
-      </select>
-      <div id="nameDisplay" style="margin-bottom:20px;font-weight:bold;"></div>
-      <button onclick="confirmStudent()" style="
-        width:100%;
-        padding:12px;
-        background:#4f46e5;
-        color:white;
-        border:none;
-        border-radius:8px;
-        cursor:pointer;
-      ">
-        Confirm
-      </button>
-    </div>
-<script>
-// ✅ Reset any previous session when entry page opens
-localStorage.clear();
-window.onbeforeunload = function () {
-  window.scrollTo(0, 0);
-};
-// 🔁 FORCE RELOAD IF COMING FROM BACK/FORWARD CACHE
-window.addEventListener("pageshow", function (event) {
-  if (event.persisted) {
-    window.location.reload();
-  }
-});
-window.onload = function(){
-  let selectedStudent = null;
-  // LOAD CLASSES
-  fetch("/get-classes")
-    .then(res => res.json())
-    .then(classes => {
-      const select = document.getElementById("classSelect");
-      classes.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c;
-        opt.textContent = c;
-        select.appendChild(opt);
-      });
-    });
-  // ON CLASS CHANGE
-  document.getElementById("classSelect").addEventListener("change", function(){
-    const className = this.value;
-    const studentSelect = document.getElementById("studentSelect");
-    studentSelect.innerHTML = '<option value="">Select Student ID</option>';
-    document.getElementById("nameDisplay").innerText = "";
-    if(!className) return;
-    fetch("/get-students?className=" + className)
-      .then(res => res.json())
-      .then(students => {
-students.forEach(s => {
-  const opt = document.createElement("option");
-  opt.value = s.studentId;
-  opt.textContent = s.studentId;
-  opt.dataset.name = s.name;
-  opt.dataset.teacherId = s.teacherId;
-  studentSelect.appendChild(opt);
-});
-      });
-  });
-  // ON STUDENT SELECT
-  document.getElementById("studentSelect").addEventListener("change", function(){
-    if(!this.value) return;
-const selectedOption = this.options[this.selectedIndex];
-selectedStudent = {
-  studentId: selectedOption.value,
-  name: selectedOption.dataset.name,
-  teacherId: selectedOption.dataset.teacherId
-};
-document.getElementById("nameDisplay").innerText =
-  "Name: " + (selectedStudent.name || "Unknown");
-  });
-  // CONFIRM
-  window.confirmStudent = function(){
-    const className = document.getElementById("classSelect").value;
-    if(!className || !selectedStudent){
-      alert("Please select all fields");
-      return;
-    }
-const student = {
-  ...selectedStudent,
-  class: className,
-  teacherId: selectedStudent.teacherId
-};
-    localStorage.setItem("student", JSON.stringify(student));
-    localStorage.setItem("class", className);
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    window.location.replace("/my-tests");
-  };
-};
-</script>
-  </body>
-  `);
-});
-// ---------- GET SUBJECTS FOR CLASS ----------
-router.get("/get-subjects", async (req, res) => {
-  try {
-    const className = String(req.query.className || "").trim().toUpperCase();
-    const teacherId = String(req.query.teacherId || "").trim();
-if (!teacherId) {
-  return res.status(400).json({ error: "Missing teacherId" });
-}
-    if (!className) {
-      return res.status(400).json({ error: "Class required" });
-    }
-    const ClassSubject = require("../models/ClassSubject");
-    const subjects = await ClassSubject.find({ className, teacherId });
-    const uniqueSubjects = [...new Set(subjects.map(s => s.subject))];
-    res.json(uniqueSubjects);
-  } catch (err) {
-    console.error("GET SUBJECTS ERROR:", err);
-    res.status(500).json({ error: "Failed to fetch subjects" });
+    console.error("PUBLISH ERROR:", err);
+    res.status(500).json({ error: "Failed to publish test" });
   }
 });
 // ---------- ADD SUBJECT ----------
@@ -1878,23 +2038,42 @@ if (!teacherId) {
     const tests = await Promise.all(
       assignments.map(a => Test.findById(a.testId))
     );
-const validTests = tests.filter(Boolean);
+const now = new Date();
+
+const validTests = tests.filter(t =>
+  t &&
+  String(t.status || "draft") === "published" &&
+  (
+    !t.scheduledAt ||
+    new Date(t.scheduledAt) <= now
+  )
+);
+
 // 🔒 GET STUDENT ID
 const studentId = String(req.query.studentId || "").trim();
+
 if (!studentId) {
   return res.status(400).json({ error: "Missing studentId" });
 }
+
 const Result = require("../models/Result");
+
 // 🔒 GET ATTEMPTED TESTS
 const attempted = await Result.find({ studentId }).select("testId");
 const attemptedIds = attempted.map(r => String(r.testId));
+
 // 3. Filter by subject + remove attempted
-const filtered = validTests.filter(t =>
-  String(t.subject || "").trim().toLowerCase() ===
-    String(subject || "").trim().toLowerCase()
-  &&
-  !attemptedIds.includes(String(t._id))
-);
+const filtered = validTests.filter(t => {
+  const subjectMatch =
+    String(t.subject || "").trim().toLowerCase() ===
+    String(subject || "").trim().toLowerCase();
+
+  const notAttempted =
+    !attemptedIds.includes(String(t._id));
+
+  return subjectMatch && notAttempted;
+});
+
 res.json(filtered);
   } catch (err) {
     console.error("GET TESTS ERROR:", err);
