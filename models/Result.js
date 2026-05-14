@@ -14,4 +14,8 @@ const resultSchema = new mongoose.Schema({
 });
 // 🔒 PREVENT MULTIPLE ATTEMPTS
 resultSchema.index({ studentId: 1, testId: 1 }, { unique: true });
+resultSchema.index({ teacherId: 1, testId: 1 });
+resultSchema.index({ teacherId: 1, studentId: 1 });
+resultSchema.index({ teacherId: 1, class: 1 });
+resultSchema.index({ date: -1 });
 module.exports = mongoose.model("Result", resultSchema);

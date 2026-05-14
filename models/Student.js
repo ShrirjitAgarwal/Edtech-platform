@@ -13,5 +13,10 @@ userId: String,
     default: Date.now
   }
 });
-
+// PERFORMANCE INDEXES
+studentSchema.index({ studentId: 1 }, { unique: true });
+studentSchema.index({ teacherId: 1 });
+studentSchema.index({ class: 1, teacherId: 1 });
+studentSchema.index({ userId: 1 });
+studentSchema.index({ createdAt: -1 });
 module.exports = mongoose.model("Student", studentSchema);

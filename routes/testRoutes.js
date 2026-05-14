@@ -145,18 +145,14 @@ box-sizing:border-box;
       let myAssignments = [];
       let myStudents = [];
       let myResults = [];
-
       window.onload = function(){
         const user = JSON.parse(localStorage.getItem("user") || "null");
         const token = localStorage.getItem("token");
-
         if(!user || !token){
           return window.location.replace("/");
         }
-
         document.getElementById("testList").innerHTML =
           "<p style='color:#64748b;'>Loading tests...</p>";
-
         fetch("/api/teacher-tests-data", {
           headers:{
             "Authorization": "Bearer " + token
@@ -452,29 +448,23 @@ router.get("/api/teacher-tests-data", authMiddleware, async (req, res) => {
     const Assignment = require("../models/Assignment");
     const Student = require("../models/Student");
     const Result = require("../models/Result");
-
     const teacherId = String(req.user.id);
-
     const tests = await Test.find({ teacherId })
       .select("name subject className status teacherId testType durationMinutes scheduledAt createdAt publishedAt")
       .sort({ createdAt: -1 })
       .limit(1000)
       .lean();
-
     const assignments = await Assignment.find({ teacherId })
       .select("testId testName className teacherId createdAt")
       .lean();
-
     const students = await Student.find({ teacherId })
       .select("studentId name class teacherId")
       .lean();
-
     const results = await Result.find({ teacherId })
       .select("studentId testId testName teacherId score total date")
       .sort({ date: -1 })
       .limit(5000)
       .lean();
-
     res.json({
       tests,
       assignments,
@@ -1634,10 +1624,8 @@ if(!user || user.role !== "teacher"){
 }
 const teacherId = user._id || user.id;
 let questions = [];
-
 document.getElementById("libraryList").innerHTML =
   "<p style='color:#64748b;'>Loading questions...</p>";
-
 fetch("/api/library-data", {
   headers:{
     "Authorization": "Bearer " + localStorage.getItem("token")
@@ -1858,7 +1846,6 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
   try {
     const Question = require("../models/Question");
     const teacherId = String(req.user.id);
-
     const questions = await Question.find({
       $or: [
         { scope: "public" },
@@ -1872,7 +1859,6 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(2000)
       .lean();
-
     res.json({
       questions
     });

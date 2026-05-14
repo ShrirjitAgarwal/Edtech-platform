@@ -87,4 +87,11 @@ questionSchema.index({ subject: 1 });
 questionSchema.index({ board: 1 });
 questionSchema.index({ type: 1 });
 questionSchema.index({ legacyId: 1 });
+
+// PERFORMANCE INDEXES
+questionSchema.index({ scope: 1, teacherId: 1 });
+questionSchema.index({ subject: 1, board: 1 });
+questionSchema.index({ subject: 1, difficulty: 1 });
+questionSchema.index({ scope: 1, subject: 1 });
+questionSchema.index({ createdAt: -1 });
 module.exports = mongoose.model("Question", questionSchema);

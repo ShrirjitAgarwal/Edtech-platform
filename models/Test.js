@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const TestSchema = new mongoose.Schema({
   name: String,
   questionIds: [
@@ -45,5 +44,11 @@ const TestSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now }
 });
-
+// PERFORMANCE INDEXES
+TestSchema.index({ teacherId: 1 });
+TestSchema.index({ teacherId: 1, status: 1 });
+TestSchema.index({ teacherId: 1, className: 1 });
+TestSchema.index({ className: 1, subject: 1 });
+TestSchema.index({ status: 1, scheduledAt: 1 });
+TestSchema.index({ createdAt: -1 });
 module.exports = mongoose.model("Test", TestSchema);
