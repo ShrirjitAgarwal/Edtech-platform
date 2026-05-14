@@ -4,6 +4,7 @@ const { readJSON, writeJSON } = require("../utils/file");
 const authMiddleware = require("../middleware/auth");
 const Test = require("../models/Test");
 const layout = require("../views/layout");
+const backButton = require("../views/backButton");
 // ---------- NAVBAR ----------
 function navbar(){
 return `
@@ -60,7 +61,16 @@ router.get("/teacher-tests", async (req, res) => {
   const students = await Student.find();
   const results = await Result.find();
   const content = `
-    <h1 style="margin-bottom:20px;">Tests</h1>
+    <div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+">
+  <h1 style="margin:0;">Tests</h1>
+  ${backButton("/teacher")}
+</div>
     <div style="margin-bottom:20px;">
       <button onclick="go('/create-test')" style="
         padding:14px 20px;
@@ -75,6 +85,18 @@ router.get("/teacher-tests", async (req, res) => {
       ">
         + Create Test
       </button>
+      <button onclick="openSelectedSettings()" style="
+  margin-left:10px;
+  padding:12px 16px;
+  background:#334155;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:600;
+">
+  Test Settings
+</button>
       <button onclick="deleteSelected()" style="
         margin-left:10px;
         padding:12px 16px;
@@ -209,11 +231,7 @@ box-sizing:border-box;
 </div>
               </div>
             </div>
-            <div style="display:flex;gap:10px;align-items:center;">
-              <button onclick="event.stopPropagation(); go('/test-settings?id=\${t._id}')"
-    style="padding:10px 16px;background:#334155;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
-    Settings
-  </button>
+<div style="display:flex;gap:10px;align-items:center;">
   \${t.status !== "published" ? \`
     <button onclick="event.stopPropagation(); go('/create-test?id=\${t._id}')"
       style="padding:10px 16px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
@@ -223,10 +241,6 @@ box-sizing:border-box;
   <button onclick="event.stopPropagation(); assignTest('\${t._id}')"
     style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
     \${t.status === "published" ? "Published" : "Publish"}
-  </button>
-  <button onclick="event.stopPropagation(); confirmDelete('\${t._id}')"
-    style="padding:10px 16px;background:#dc3545;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
-    Delete
   </button>
 </div>
           </div>
@@ -388,6 +402,9 @@ box-sizing:border-box;
         })
         .catch(() => alert("Delete failed"));
       }
+function openSelectedSettings(){
+  window.location.replace("/test-settings");
+}
       function deleteSelected(){
         const selected = Array.from(
           document.querySelectorAll(".testCheckbox:checked")
@@ -430,7 +447,16 @@ if (req.query.id) {
   editTest = await Test.findById(req.query.id).lean();
 }
 const content = `
-<h1 style="margin-bottom:20px;">Create Test</h1>
+<div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+">
+  <h1 style="margin:0;">Create Test</h1>
+  ${backButton("/teacher-tests")}
+</div>
 <div style="
 background:white;
 padding:20px;
@@ -833,82 +859,31 @@ const mapping = await ClassSubject.findOne({
 // ---------- TEST SETTINGS PAGE ----------
 router.get("/test-settings", async (req, res) => {
   try {
-    const testId = req.query.id;
-    if (!testId) {
-      return res.redirect("/teacher-tests");
-    }
-    const test = await Test.findById(testId).lean();
-    if (!test) {
-      return res.send("Test not found");
-    }
-    const scheduledValue = test.scheduledAt
-      ? new Date(test.scheduledAt).toISOString().slice(0, 16)
-      : "";
+    const selectedTestId = req.query.id || "";
+    const tests = await Test.find().lean();
     const content = `
-<h1 style="margin-bottom:20px;">Test Settings</h1>
+<div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+">
+  <h1 style="margin:0;">Test Settings</h1>
+  ${backButton("/teacher-tests")}
+</div>
 <div style="
   background:white;
   padding:24px;
   border-radius:14px;
   box-shadow:0 4px 12px rgba(0,0,0,0.08);
-  max-width:720px;
+  max-width:760px;
 ">
-  <h2 style="margin-top:0;">${test.name || "Untitled Test"}</h2>
-  <div style="
-    background:#f8fafc;
-    padding:14px;
-    border-radius:10px;
-    margin-bottom:20px;
-    border:1px solid #e5e7eb;
-  ">
-    <p><b>Class:</b> ${test.className || "N/A"}</p>
-    <p><b>Subject:</b> ${test.subject || "N/A"}</p>
-    <p><b>Status:</b> ${test.status === "published" ? "Published" : "Draft"}</p>
-  </div>
-  <div style="margin-bottom:16px;">
-    <label style="font-weight:700;">Schedule Date / Time</label><br>
-    <input
-      id="scheduledAt"
-      type="datetime-local"
-      value="${scheduledValue}"
-      style="
-        width:100%;
-        padding:12px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-        box-sizing:border-box;
-        margin-top:6px;
-      "
-    />
-    <p style="color:#64748b;font-size:13px;margin-top:6px;">
-      Published tests appear to students only after this date and time. Leave blank to make it available immediately after publishing.
-    </p>
-  </div>
-  <div style="margin-bottom:16px;">
-    <label style="font-weight:700;">Timer Duration</label><br>
-    <input
-      id="durationMinutes"
-      type="number"
-      min="1"
-      max="1440"
-      value="${test.durationMinutes || 60}"
-      style="
-        width:100%;
-        padding:12px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-        box-sizing:border-box;
-        margin-top:6px;
-      "
-    />
-    <p style="color:#64748b;font-size:13px;margin-top:6px;">
-      Duration is in minutes. Maximum allowed is 1440 minutes / 24 hours.
-    </p>
-  </div>
-  <div style="margin-bottom:22px;">
-    <label style="font-weight:700;">Test Type</label><br>
+  <div style="margin-bottom:20px;">
+    <label style="font-weight:700;">Select Test</label><br>
     <select
-      id="testType"
+      id="testSelector"
+      onchange="loadSelectedTest()"
       style="
         width:100%;
         padding:12px;
@@ -918,42 +893,180 @@ router.get("/test-settings", async (req, res) => {
         margin-top:6px;
       "
     >
-      <option value="practice" ${test.testType === "practice" ? "selected" : ""}>Practice</option>
-      <option value="unit" ${test.testType === "unit" ? "selected" : ""}>Unit</option>
-      <option value="exam" ${test.testType === "exam" ? "selected" : ""}>Exam</option>
+      <option value="">Choose a test</option>
+      ${tests.map(t => `
+        <option value="${t._id}" ${String(t._id) === String(selectedTestId) ? "selected" : ""}>
+          ${t.name || "Untitled Test"} - ${t.className || "No Class"} - ${t.status === "published" ? "Published" : "Draft"}
+        </option>
+      `).join("")}
     </select>
   </div>
-  <div style="display:flex;gap:12px;">
-    <button onclick="saveSettings()" style="
-      padding:12px 18px;
-      background:#4f46e5;
-      color:white;
-      border:none;
-      border-radius:8px;
-      font-weight:700;
-      cursor:pointer;
-    ">
-      Save Settings
-    </button>
-    <button onclick="go('/teacher-tests')" style="
-      padding:12px 18px;
-      background:#64748b;
-      color:white;
-      border:none;
-      border-radius:8px;
-      font-weight:700;
-      cursor:pointer;
-    ">
-      Back
-    </button>
-  </div>
+  <div id="settingsPanel"></div>
 </div>
 <script>
-const testId = "${test._id}";
+const pageUser = JSON.parse(localStorage.getItem("user") || "null");
+if(!pageUser || pageUser.role !== "teacher"){
+  window.location.replace("/");
+}
+const teacherId = pageUser._id || pageUser.id;
+const allTests = ${JSON.stringify(tests)};
+const tests = allTests.filter(t =>
+  String(t.teacherId) === String(teacherId)
+);
+let selectedTestId = "${selectedTestId}";
+function formatDateForInput(value){
+  if(!value) return "";
+  const date = new Date(value);
+  if(isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 16);
+}
+function loadSelectedTest(){
+  selectedTestId = document.getElementById("testSelector").value;
+  if(!selectedTestId){
+    document.getElementById("settingsPanel").innerHTML =
+      "<p style='color:#64748b;'>Select a test to edit settings.</p>";
+    return;
+  }
+  const test = tests.find(t =>
+    String(t._id) === String(selectedTestId)
+  );
+  if(!test){
+    document.getElementById("settingsPanel").innerHTML =
+      "<p style='color:#dc2626;'>Test not found.</p>";
+    return;
+  }
+  document.getElementById("settingsPanel").innerHTML = \`
+    <h2 style="margin-top:0;">\${test.name || "Untitled Test"}</h2>
+    <div style="
+      background:#f8fafc;
+      padding:14px;
+      border-radius:10px;
+      margin-bottom:20px;
+      border:1px solid #e5e7eb;
+    ">
+      <p><b>Class:</b> \${test.className || "N/A"}</p>
+      <p><b>Subject:</b> \${test.subject || "N/A"}</p>
+      <p><b>Status:</b> \${test.status === "published" ? "Published" : "Draft"}</p>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-weight:700;">Schedule Date / Time</label><br>
+      <input
+        id="scheduledAt"
+        type="datetime-local"
+        value="\${formatDateForInput(test.scheduledAt)}"
+        style="
+          width:100%;
+          padding:12px;
+          border-radius:8px;
+          border:1px solid #cbd5e1;
+          box-sizing:border-box;
+          margin-top:6px;
+        "
+      />
+      <p style="color:#64748b;font-size:13px;margin-top:6px;">
+        Published tests appear to students only after this date and time. Leave blank to make it available immediately after publishing.
+      </p>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-weight:700;">Timer Duration</label><br>
+      <input
+        id="durationMinutes"
+        type="number"
+        min="1"
+        max="1440"
+        value="\${test.durationMinutes || 60}"
+        style="
+          width:100%;
+          padding:12px;
+          border-radius:8px;
+          border:1px solid #cbd5e1;
+          box-sizing:border-box;
+          margin-top:6px;
+        "
+      />
+      <p style="color:#64748b;font-size:13px;margin-top:6px;">
+        Duration is in minutes. Maximum allowed is 1440 minutes / 24 hours.
+      </p>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-weight:700;">Test Type</label><br>
+      <select
+        id="testType"
+        style="
+          width:100%;
+          padding:12px;
+          border-radius:8px;
+          border:1px solid #cbd5e1;
+          box-sizing:border-box;
+          margin-top:6px;
+        "
+      >
+        <option value="practice" \${test.testType === "practice" ? "selected" : ""}>Practice</option>
+        <option value="unit" \${test.testType === "unit" ? "selected" : ""}>Unit</option>
+        <option value="exam" \${test.testType === "exam" ? "selected" : ""}>Exam</option>
+      </select>
+    </div>
+    <div style="
+      margin-bottom:22px;
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      padding:14px;
+    ">
+      <label style="
+        display:flex;
+        align-items:center;
+        gap:10px;
+        font-weight:700;
+        cursor:pointer;
+      ">
+        <input
+          id="questionTimersEnabled"
+          type="checkbox"
+          \${test.questionTimersEnabled ? "checked" : ""}
+          style="width:18px;height:18px;"
+        />
+        Enable question timers
+      </label>
+      <p style="color:#64748b;font-size:13px;margin:8px 0 0 28px;">
+        When enabled, students will answer one question at a time. Easy questions get 2 minutes, medium questions get 5 minutes, and hard questions get 10 minutes.
+      </p>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button onclick="saveSettings()" style="
+        padding:12px 18px;
+        background:#4f46e5;
+        color:white;
+        border:none;
+        border-radius:8px;
+        font-weight:700;
+        cursor:pointer;
+      ">
+        Save Settings
+      </button>
+      <button onclick="go('/teacher-tests')" style="
+        padding:12px 18px;
+        background:#64748b;
+        color:white;
+        border:none;
+        border-radius:8px;
+        font-weight:700;
+        cursor:pointer;
+      ">
+        Back
+      </button>
+    </div>
+  \`;
+}
 function saveSettings(){
+  if(!selectedTestId){
+    return alert("Select a test first");
+  }
   const scheduledAt = document.getElementById("scheduledAt").value;
   const durationMinutes = Number(document.getElementById("durationMinutes").value);
-  const testType = document.getElementById("testType").value;
+    const testType = document.getElementById("testType").value;
+  const questionTimersEnabled =
+    document.getElementById("questionTimersEnabled")?.checked || false;
   if(!durationMinutes || durationMinutes < 1){
     return alert("Duration must be at least 1 minute");
   }
@@ -967,23 +1080,31 @@ function saveSettings(){
       "Authorization":"Bearer " + localStorage.getItem("token")
     },
     body: JSON.stringify({
-      testId,
+      testId: selectedTestId,
       scheduledAt,
       durationMinutes,
-      testType
+    testType,
+      questionTimersEnabled
     })
   })
   .then(res => res.json())
-  .then(data => {
-    if(data.error){
-      alert(data.error);
-      return;
-    }
-    alert("Settings saved");
-    window.location.replace("/teacher-tests");
-  })
+.then(data => {
+  if(data.error){
+    alert(data.error);
+    return;
+  }
+  const index = tests.findIndex(t =>
+    String(t._id) === String(selectedTestId)
+  );
+  if(index !== -1){
+    tests[index] = data.test;
+  }
+  alert("Settings saved");
+  loadSelectedTest();
+})
   .catch(() => alert("Failed to save settings"));
 }
+loadSelectedTest();
 </script>
 `;
     res.send(layout(content, "tests"));
@@ -999,7 +1120,8 @@ router.post("/save-test-settings", authMiddleware, async (req, res) => {
       testId,
       scheduledAt,
       durationMinutes,
-      testType
+      testType,
+      questionTimersEnabled
     } = req.body;
     if (!testId) {
       return res.status(400).json({ error: "Missing test id" });
@@ -1027,6 +1149,7 @@ router.post("/save-test-settings", authMiddleware, async (req, res) => {
     test.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
     test.durationMinutes = duration;
     test.testType = testType;
+    test.questionTimersEnabled = !!questionTimersEnabled;
     await test.save();
     res.json({
       status: "settings_saved",
@@ -1089,196 +1212,8 @@ router.post("/delete-multiple-tests", authMiddleware, async (req, res) => {
   }
 });
 // ---------- TEST PAGE ----------
-router.get("/test", async (req, res) => {
-  try {
-    const id = req.query.id;
-    const studentId = req.query.studentId;
-    if (!id || !studentId) {
-      return res.redirect("/student-entry");
-    }
-    const Result = require("../models/Result");
-    const alreadyAttempted = await Result.findOne({
-      studentId,
-      testId: id
-    });
-    if (alreadyAttempted) {
-      return res.redirect("/my-tests");
-    }
-    const test = await Test.findById(id);
-    if (!test) return res.send("<h1>Test not found</h1>");
-const Question = require("../models/Question");
-const questionIds = test.questionIds.map(id => String(id));
-const mongoQuestions = await Question.find({
- _id: { $in: questionIds }
-}).lean();
-const questionMap = {};
-mongoQuestions.forEach(q => {
- questionMap[String(q._id)] = q;
-});
-const testQuestions = questionIds
- .map(id => questionMap[String(id)])
- .filter(Boolean);
-const html = testQuestions.map((q, i) => {
- const qid = String(q._id);
- if (q.options && q.options.length) {
- return `
- <div style="background:white;padding:20px;margin:15px 0;border-radius:12px;">
- <p><b>Q${i + 1}: ${q.question}</b></p>
- ${q.options.map(o => `
- <label>
- <input type="radio" name="q${qid}" value="${o}"> ${o}
- </label><br>
- `).join("")}
- </div>
- `;
- }
- return `
- <div style="background:white;padding:20px;margin:15px 0;border-radius:12px;">
- <p><b>Q${i + 1}: ${q.question}</b></p>
- <textarea id="code-${qid}" style="width:100%;height:150px;"></textarea>
- </div>
- `;
-}).join("");
-    res.send(`
-<body style="margin:0;font-family:Arial;">
-<div id="examGate" style="
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#000;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-">
-  <h2 style="color:white;margin-bottom:20px;">Start Test</h2>
-  <button id="startExamBtn" style="
-    padding:14px 22px;
-    font-size:16px;
-    background:#4f46e5;
-    color:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-  ">
-    Click to Start
-  </button>
-</div>
-<div style="display:flex;height:100vh;">
-  <div style="width:220px;background:#1e293b;color:white;padding:20px;">
-    <h2>Student</h2>
-  </div>
-  <div style="flex:1;padding:30px;background:#eef2ff;overflow:auto;">
-    <h1>${test.name}</h1>
-<p style="color:#64748b;">
-  Type: ${test.testType || "practice"}
-</p>
-    ${html}
-    <button id="submitBtn" onclick="submitTest()">Submit</button>
-  </div>
-</div>
-<script>
-const qs = ${JSON.stringify(testQuestions)};
-const testId = "${test._id}";
-const testName = "${test.name}";
-const studentId = "${studentId}";
-document.getElementById("startExamBtn").onclick = function(){
-  const startTime = Date.now();
-  localStorage.setItem("testStartTime_" + testId, startTime);
-
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen();
-  }
-
-  startExamMode();
-  document.getElementById("examGate").remove();
-};
-function startExamMode(){
-  window.__examTriggered = false;
-  // ONE history entry only
-  history.pushState(null, null, location.href);
-  // BACK BUTTON → submit once
-  window.onpopstate = function () {
-    if (!window.__examTriggered) {
-      window.__examTriggered = true;
-      autoSubmit("Back button");
-    }
-  };
-  // TAB SWITCH
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && !window.__examTriggered) {
-      window.__examTriggered = true;
-      autoSubmit("Tab switch");
-    }
-  });
-  // EXIT FULLSCREEN
-  document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement && !window.__examTriggered) {
-      window.__examTriggered = true;
-      autoSubmit("Exited fullscreen");
-    }
-  });
-  // WINDOW BLUR (delay to avoid false trigger)
-  setTimeout(() => {
-    window.addEventListener("blur", () => {
-      if (!window.__examTriggered) {
-        window.__examTriggered = true;
-        autoSubmit("Focus lost");
-      }
-    });
-  }, 1500);
-}
-function autoSubmit(reason){
- console.log("Auto submitted:", reason);
-  submitTest();
-}
-function submitTest(){
-  const btn = document.getElementById("submitBtn");
-  if (btn.disabled) return;
-  btn.disabled = true;
-  let score = 0;
-  let answers = [];
-qs.forEach(q => {
- const qid = String(q._id);
- const s = document.querySelector('input[name="q'+qid+'"]:checked');
- const selected = s ? s.value : null;
- const isCorrect = selected === q.correct;
- if(isCorrect) score++;
- answers.push({
- questionId: qid,
- selected,
- correctAnswer: q.correct,
- isCorrect
- });
-});
-  fetch("/submit", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      studentId,
-      testId,
-      testName,
-      score,
-      total: qs.length,
-      answers
-    })
-  })
-  .then(res => res.json())
-  .then(() => {
-    alert("Submitted");
-    window.location.replace("/my-tests");
-  });
-}
-</script>
-</body>
-`);
-  } catch (err) {
-    console.error(err);
-    res.send("Error loading test");
-  }
+router.get("/test", async (req, res, next) => {
+  return next();
 });
 // ---------- SUBMIT TEST ----------
 router.post("/submit", async (req, res) => {
@@ -1294,9 +1229,10 @@ try {
  if (!studentId || !testId || !Array.isArray(answers)) {
    return res.status(400).json({ error: "Invalid submission data" });
  }
- const Result = require("../models/Result");
+  const Result = require("../models/Result");
  const Test = require("../models/Test");
  const Question = require("../models/Question");
+ const vm = require("vm");
  const test = await Test.findById(testId);
  if (!test) {
    return res.status(404).json({ error: "Test not found" });
@@ -1310,6 +1246,127 @@ try {
     return res.status(409).json({ error: "Test already submitted" });
   }
 }
+  let finalScore = Number(score) || 0;
+ const gradedAnswers = [];
+ for(const answer of answers){
+   if(answer.type !== "coding"){
+     gradedAnswers.push(answer);
+     continue;
+   }
+   const question = await Question.findById(answer.questionId).lean();
+   if(!question || !question.codingMeta?.functionName){
+     gradedAnswers.push({
+       ...answer,
+       isCorrect: false,
+       codingScore: 0,
+       codingTotal: 0
+     });
+     continue;
+   }
+   const code = String(answer.selected || "");
+   const functionName = String(question.codingMeta.functionName || "").trim();
+   const testCases = Array.isArray(question.testCases)
+     ? question.testCases
+     : [];
+   let passedCount = 0;
+   try {
+     const sandbox = {
+       console: {
+         log: function(){},
+         error: function(){},
+         warn: function(){}
+       }
+     };
+     vm.createContext(sandbox);
+     vm.runInContext(code, sandbox, {
+       timeout: 1000
+     });
+     let executableFunction = sandbox[functionName];
+     if(typeof executableFunction !== "function"){
+       const matchedKey = Object.keys(sandbox).find(key =>
+         String(key).toLowerCase() ===
+         String(functionName).toLowerCase()
+       );
+       if(matchedKey){
+         executableFunction = sandbox[matchedKey];
+       }
+     }
+     function parseInputValue(value){
+       const trimmed = String(value || "").trim();
+       if(trimmed === ""){
+         return "";
+       }
+       try {
+         return JSON.parse(trimmed);
+       } catch (err) {
+         if(!isNaN(trimmed)){
+           return Number(trimmed);
+         }
+         return trimmed;
+       }
+     }
+     function parseArgs(rawInput){
+       const input = String(rawInput || "").trim();
+       if(input === ""){
+         return [];
+       }
+       if(input.startsWith("[") && input.endsWith("]")){
+         try {
+           const parsed = JSON.parse(input);
+           return Array.isArray(parsed) ? [parsed] : [parsed];
+         } catch (err) {
+           return [input];
+         }
+       }
+       return input.split(",").map(value => parseInputValue(value));
+     }
+     function normalizeOutput(value){
+       if(value === undefined){
+         return "undefined";
+       }
+       if(value === null){
+         return "null";
+       }
+       if(typeof value === "object"){
+         return JSON.stringify(value);
+       }
+       return String(value).trim();
+     }
+     if(typeof executableFunction === "function"){
+       for(const tc of testCases){
+         sandbox.__studentArgs = parseArgs(tc.input);
+         sandbox.__studentResult = undefined;
+         sandbox.__studentFunction = executableFunction;
+         try {
+           vm.runInContext(
+             "__studentResult = __studentFunction(...__studentArgs)",
+             sandbox,
+             { timeout: 1000 }
+           );
+           const actual = normalizeOutput(sandbox.__studentResult);
+           const expected = String(tc.expectedOutput || "").trim();
+           if(actual === expected){
+             passedCount++;
+           }
+         } catch (err) {}
+         delete sandbox.__studentArgs;
+         delete sandbox.__studentResult;
+         delete sandbox.__studentFunction;
+       }
+     }
+   } catch (err) {}
+   const codingTotal = testCases.length;
+   const codingPassed = codingTotal > 0 && passedCount === codingTotal;
+   if(codingPassed){
+     finalScore++;
+   }
+   gradedAnswers.push({
+     ...answer,
+     isCorrect: codingPassed,
+     codingScore: passedCount,
+     codingTotal
+   });
+ }
  const result = await Result.create({
    studentId,
    name: "",
@@ -1317,12 +1374,12 @@ try {
    testId,
    testName: testName || test.name,
    teacherId: test.teacherId,
-   score,
+   score: finalScore,
    total,
-   answers,
+   answers: gradedAnswers,
    date: new Date()
  });
- for (const answer of answers) {
+  for (const answer of gradedAnswers) {
    if (!answer.questionId) continue;
    await Question.updateOne(
      { _id: answer.questionId },
@@ -1361,17 +1418,31 @@ router.get("/library", async (req, res) => {
   margin-bottom:20px;
 ">
   <h1 style="margin:0;">Questions Library</h1>
-  <button onclick="go('/bulk-upload')" style="
-    padding:10px 14px;
-    background:#16a34a;
-    color:white;
-    border:none;
-    border-radius:8px;
-    font-weight:600;
-    cursor:pointer;
-  ">
-    Bulk Question Upload
-  </button>
+  <div style="display:flex;gap:10px;align-items:center;">
+    ${backButton("/teacher")}
+    <button onclick="go('/create-question')" style="
+      padding:10px 14px;
+      background:#4f46e5;
+      color:white;
+      border:none;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+    ">
+      + Create Question
+    </button>
+    <button onclick="go('/my-questions')" style="
+      padding:10px 14px;
+      background:#0f172a;
+      color:white;
+      border:none;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+    ">
+      Manage Questions
+    </button>
+  </div>
 </div>
 <div style="
   background:white;
@@ -1379,67 +1450,95 @@ router.get("/library", async (req, res) => {
   border-radius:14px;
   box-shadow:0 4px 12px rgba(0,0,0,0.08);
   margin-bottom:14px;
-  width:70%;
+  width:100%;
+max-width:1120px;
   box-sizing:border-box;
 ">
 <div style="
     display:grid;
-    grid-template-columns:240px 180px 180px 180px;
+    grid-template-columns:220px 140px 140px 140px 140px 160px;
     gap:12px;
     justify-content:flex-start;
   ">
   <div>
-      <label style="font-size:13px;">Search</label><br>
-      <input
-        id="questionSearch"
-        placeholder="Search questions"
-        oninput="renderLibrary()"
-        style="
-          width:100%;
-          padding:6px 8px;
-          border-radius:8px;
-          border:1px solid #cbd5e1;
-          font-size:13px;
-          box-sizing:border-box;
-        "
-      />
-    </div>
-    <div>
-      <label style="font-size:13px;">Subject</label><br>
-      <select id="subjectFilter" onchange="renderLibrary()" style="
+    <label style="font-size:13px;">Search</label><br>
+    <input
+      id="questionSearch"
+      placeholder="Search questions"
+      oninput="renderLibrary()"
+      style="
         width:100%;
         padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-      ">
-        <option value="all">All</option>
-      </select>
-    </div>
-    <div>
-      <label style="font-size:13px;">Board</label><br>
-      <select id="boardFilter" onchange="renderLibrary()" style="
-        width:100%;
-        padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-      ">
-        <option value="all">All</option>
-      </select>
-    </div>
-    <div>
-      <label style="font-size:13px;">Library Type</label><br>
-      <select id="scopeFilter" onchange="renderLibrary()" style="
-        width:100%;
-       padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-      ">
-        <option value="all">All</option>
-        <option value="public">Platform Questions</option>
-        <option value="teacher">My Questions</option>
-      </select>
-    </div>
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        font-size:13px;
+        box-sizing:border-box;
+      "
+    />
   </div>
+  <div>
+    <label style="font-size:13px;">Subject</label><br>
+    <select id="subjectFilter" onchange="renderLibrary()" style="
+      width:100%;
+      padding:6px 8px;
+      border:1px solid #cbd5e1;
+      font-size:13px;
+    ">
+      <option value="all">All</option>
+    </select>
+  </div>
+  <div>
+    <label style="font-size:13px;">Board</label><br>
+    <select id="boardFilter" onchange="renderLibrary()" style="
+      width:100%;
+      padding:6px 8px;
+      border:1px solid #cbd5e1;
+      font-size:13px;
+    ">
+      <option value="all">All</option>
+    </select>
+  </div>
+  <div>
+    <label style="font-size:13px;">Difficulty</label><br>
+    <select id="difficultyFilter" onchange="renderLibrary()" style="
+      width:100%;
+      padding:6px 8px;
+      border:1px solid #cbd5e1;
+      font-size:13px;
+    ">
+      <option value="all">All</option>
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+  <div>
+    <label style="font-size:13px;">Attempt</label><br>
+    <select id="attemptFilter" onchange="renderLibrary()" style="
+      width:100%;
+      padding:6px 8px;
+      border:1px solid #cbd5e1;
+      font-size:13px;
+    ">
+      <option value="all">All</option>
+      <option value="attempted">Attempted</option>
+      <option value="not_attempted">Not Attempted</option>
+    </select>
+  </div>
+  <div>
+    <label style="font-size:13px;">Library Type</label><br>
+    <select id="scopeFilter" onchange="renderLibrary()" style="
+      width:100%;
+      padding:6px 8px;
+      border:1px solid #cbd5e1;
+      font-size:13px;
+    ">
+      <option value="all">All</option>
+      <option value="public">Platform Questions</option>
+      <option value="teacher">My Questions</option>
+    </select>
+  </div>
+</div>
 </div>
 <div style="
   display:grid;
@@ -1549,13 +1648,13 @@ function buildQuestionCard(q){
    <p style="margin:0;color:#666;font-size:14px;">
      \${q.subject || q.category || "No Subject"} |
      \${q.board || "Other"} |
-     \${q.difficulty || "No Difficulty"} |
+     \${q.difficulty ? q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1) : "No Difficulty"} |
      \${sourceLabel}
    </p>
    <p style="margin:6px 0 0 0;color:#64748b;font-size:13px;">
      Attempted: \${q.analytics?.attempted || 0} |
-     Correct: \${q.analytics?.correct || 0} |
-     Incorrect: \${q.analytics?.incorrect || 0}
+Completed: \${q.analytics?.correct || 0} |
+Incomplete: \${q.analytics?.incorrect || 0}
    </p>
  </div>
  <button onclick="event.stopPropagation(); addToTest('\${q._id}')" style="
@@ -1605,14 +1704,14 @@ function previewQuestion(id){
     "</div>" +
     "<p><b>Subject:</b> " + (q.subject || q.category || "N/A") + "</p>" +
     "<p><b>Board:</b> " + (q.board || "N/A") + "</p>" +
-    "<p><b>Difficulty:</b> " + (q.difficulty || "N/A") + "</p>" +
+    "<p><b>Difficulty:</b> " + (q.difficulty ? q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1) : "N/A") + "</p>" +
     "<p><b>Library Type:</b> " + sourceLabel + "</p>" +
     "<div style='background:#eef2ff;padding:12px;border-radius:10px;margin-top:12px;'>" +
       "<b>Analytics</b><br>" +
       "Attempted: " + (q.analytics?.attempted || 0) + "<br>" +
-      "Correct: " + (q.analytics?.correct || 0) + "<br>" +
-      "Incorrect: " + (q.analytics?.incorrect || 0) +
-    "</div>" +
+"Completed: " + (q.analytics?.correct || 0) + "<br>" +
+"Incomplete: " + (q.analytics?.incorrect || 0) +
+"</div>" +
     "<button onclick=\\"addToTest('" + q._id + "')\\" style=\\"" +
       "margin-top:18px;" +
       "padding:10px 14px;" +
@@ -1628,6 +1727,8 @@ function renderLibrary(){
   const subject = document.getElementById("subjectFilter").value;
   const board = document.getElementById("boardFilter").value;
   const scope = document.getElementById("scopeFilter").value;
+  const difficulty = document.getElementById("difficultyFilter").value;
+const attempt = document.getElementById("attemptFilter").value;
   const searchValue =
   (document.getElementById("questionSearch").value || "")
     .trim()
@@ -1645,7 +1746,15 @@ function renderLibrary(){
       scope === "all" || q.scope === scope;
       const searchMatch =
   !searchValue || questionText.includes(searchValue);
-    return subjectMatch && boardMatch && scopeMatch && searchMatch;
+    const difficultyMatch =
+  difficulty === "all" ||
+  String(q.difficulty || "").toLowerCase() === difficulty;
+const attemptedCount = q.analytics?.attempted || 0;
+const attemptMatch =
+  attempt === "all" ||
+  (attempt === "attempted" && attemptedCount > 0) ||
+  (attempt === "not_attempted" && attemptedCount === 0);
+return subjectMatch && boardMatch && scopeMatch && searchMatch && difficultyMatch && attemptMatch;
   });
   document.getElementById("libraryList").innerHTML =
     visibleQuestions.length
@@ -1672,121 +1781,343 @@ renderLibrary();
     res.send("Error loading library");
   }
 });
-// ---------- BULK QUESTION UPLOAD ----------
-router.get("/bulk-upload", (req, res) => {
-  const content = `
-<h1 style="margin-bottom:20px;">Bulk Question Upload</h1>
+// ---------- CREATE QUESTION PAGE ----------
+router.get("/create-question", async (req, res) => {
+  try {
+    const Question = require("../models/Question");
+let editQuestion = null;
+if(req.query.id){
+  editQuestion = await Question.findOne({
+    _id: req.query.id,
+    scope: "teacher"
+  }).lean();
+}
+const allQuestionsForDropdowns = await Question.find().lean();
+const subjectOptionsForQuestionBuilder = [...new Set(
+  allQuestionsForDropdowns
+    .map(q => q.subject || q.category)
+    .filter(Boolean)
+)];
+const boardOptionsForQuestionBuilder = [...new Set(
+  allQuestionsForDropdowns
+    .map(q => q.board || "General")
+    .filter(Boolean)
+)];
+if(!boardOptionsForQuestionBuilder.includes("General")){
+  boardOptionsForQuestionBuilder.unshift("General");
+}
+    const content = `
+<script>
+const pageUser = JSON.parse(localStorage.getItem("user") || "null");
+if(!pageUser || pageUser.role !== "teacher"){
+  window.location.replace("/");
+}
+</script>
 <div style="
-  max-width:900px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+">
+  <h1 style="margin:0;">${editQuestion ? "Edit Question" : "Create Question"}</h1>
+  ${backButton("/library")}
+</div>
+<div style="
   background:white;
   padding:24px;
   border-radius:14px;
-  box-shadow:0 4px 14px rgba(0,0,0,0.06);
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  max-width:1100px;
 ">
-  <h2 style="margin-top:0;">Upload Questions</h2>
-  <p style="color:#64748b;margin-bottom:18px;">
-    Upload a CSV file and map the columns to question fields.
-  </p>
-  <input type="file" id="questionFile" accept=".csv" />
-  <br><br>
-  <button onclick="loadQuestionCSV()" style="
-    padding:10px 16px;
+  <div style="
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-bottom:20px;
+  ">
+    <div>
+      <label style="font-weight:600;">Question Type</label><br>
+      <select id="questionType" onchange="toggleQuestionType()" style="
+        width:100%;
+        padding:12px;
+        margin-top:6px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+      ">
+                <option value="mcq" ${editQuestion?.type === "mcq" ? "selected" : ""}>MCQ</option>
+        <option value="coding" ${editQuestion?.type === "coding" ? "selected" : ""}>Coding</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-weight:600;">Difficulty</label><br>
+      <select id="difficulty" style="
+        width:100%;
+        padding:12px;
+        margin-top:6px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+      ">
+                <option value="easy" ${editQuestion?.difficulty === "easy" ? "selected" : ""}>Easy</option>
+        <option value="medium" ${editQuestion?.difficulty === "medium" ? "selected" : ""}>Medium</option>
+        <option value="hard" ${editQuestion?.difficulty === "hard" ? "selected" : ""}>Hard</option>
+      </select>
+    </div>
+  </div>
+  <div style="margin-bottom:20px;">
+    <label style="font-weight:600;">Question</label><br>
+    <textarea
+      id="question"
+      rows="5"
+      placeholder="Enter question"
+      style="
+        width:100%;
+        padding:14px;
+        margin-top:6px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        resize:vertical;
+      "
+        >${editQuestion?.question || ""}</textarea>
+  </div>
+  <div style="
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-bottom:20px;
+  ">
+    <div>
+      <label style="font-weight:600;">Subject</label><br>
+      <select id="subject" style="
+        width:100%;
+        padding:12px;
+        margin-top:6px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+      ">
+        <option value="">Select Subject</option>
+        ${subjectOptionsForQuestionBuilder.map(subject => `
+          <option value="${subject}" ${editQuestion?.subject === subject ? "selected" : ""}>${subject}</option>
+        `).join("")}
+      </select>
+    </div>
+    <div>
+      <label style="font-weight:600;">Board</label><br>
+      <select id="board" style="
+        width:100%;
+        padding:12px;
+        margin-top:6px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+      ">
+        <option value="">Select Board</option>
+        ${boardOptionsForQuestionBuilder.map(board => `
+          <option value="${board}" ${editQuestion?.board === board ? "selected" : ""}>${board}</option>
+        `).join("")}
+      </select>
+    </div>
+  </div>
+  <div id="mcqSection">
+    <h3>Options</h3>
+    <div style="
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+      margin-bottom:18px;
+    ">
+            <input id="option1" value="${editQuestion?.options?.[0] || ""}" placeholder="Option 1" style="
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+      ">
+            <input id="option2" value="${editQuestion?.options?.[1] || ""}" placeholder="Option 2" style="
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+      ">
+            <input id="option3" value="${editQuestion?.options?.[2] || ""}" placeholder="Option 3" style="
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+      ">
+            <input id="option4" value="${editQuestion?.options?.[3] || ""}" placeholder="Option 4" style="
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+      ">
+    </div>
+    <label style="font-weight:600;">Correct Answer</label><br>
+    <input
+            id="correctAnswer"
+      value="${editQuestion?.correct || ""}"
+      placeholder="Enter exact correct option"
+      style="
+        width:100%;
+        padding:12px;
+        margin-top:6px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+      "
+    />
+  </div>
+  <div id="codingSection" style="display:none;">
+    <h3>Coding Settings</h3>
+    <div style="
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      margin-bottom:18px;
+    ">
+      <input
+                id="functionName"
+        value="${editQuestion?.codingMeta?.functionName || ""}"
+        placeholder="Function Name"
+        style="
+          padding:12px;
+          border-radius:8px;
+          border:1px solid #cbd5e1;
+        "
+      >
+      <select id="language" style="
+        padding:12px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+      ">
+        <option value="javascript">JavaScript</option>
+      </select>
+    </div>
+    <textarea
+      id="starterCode"
+      rows="10"
+      placeholder="Starter code"
+      style="
+        width:100%;
+        padding:14px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        resize:vertical;
+        font-family:monospace;
+      "
+        >${editQuestion?.codingMeta?.starterCode || ""}</textarea>
+            <h3 style="margin-top:20px;">Test Cases</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <input id="testInput1" value="${editQuestion?.testCases?.[0]?.input || ""}" placeholder="Test Case 1 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput1" value="${editQuestion?.testCases?.[0]?.expectedOutput || ""}" placeholder="Test Case 1 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testInput2" value="${editQuestion?.testCases?.[1]?.input || ""}" placeholder="Test Case 2 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput2" value="${editQuestion?.testCases?.[1]?.expectedOutput || ""}" placeholder="Test Case 2 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testInput3" value="${editQuestion?.testCases?.[2]?.input || ""}" placeholder="Test Case 3 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput3" value="${editQuestion?.testCases?.[2]?.expectedOutput || ""}" placeholder="Test Case 3 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testInput4" value="${editQuestion?.testCases?.[3]?.input || ""}" placeholder="Test Case 4 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput4" value="${editQuestion?.testCases?.[3]?.expectedOutput || ""}" placeholder="Test Case 4 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+    </div>
+  </div>
+  <button onclick="saveQuestion()" style="
+    margin-top:24px;
+    padding:14px 20px;
     background:#4f46e5;
     color:white;
     border:none;
-    border-radius:8px;
-    font-weight:600;
+    border-radius:10px;
+    font-weight:700;
     cursor:pointer;
+    font-size:15px;
   ">
-    Load CSV
-  </button>
-  <div id="questionMapping" style="margin-top:24px;"></div>
-  <button onclick="processQuestionUpload()" style="
-    margin-top:20px;
-    padding:10px 16px;
-    background:#16a34a;
-    color:white;
-    border:none;
-    border-radius:8px;
-    font-weight:600;
-    cursor:pointer;
-  ">
-    Upload Questions
+    Save Question
   </button>
 </div>
 <script>
-let questionCSV = [];
-let questionHeaders = [];
-function loadQuestionCSV(){
-  const file = document.getElementById("questionFile").files[0];
-  if(!file) return alert("Select a CSV file");
-  const reader = new FileReader();
-  reader.onload = function(e){
-    const rows = e.target.result.split("\\n")
-      .map(r => r.replace("\\r", "").trim())
-      .filter(r => r);
-    questionHeaders = rows[0].split(",").map(h => h.trim());
-    questionCSV = rows.slice(1).map(row =>
-      row.split(",").map(v => v.trim())
-    );
-    showQuestionMapping();
+function toggleQuestionType(){
+  const type = document.getElementById("questionType").value;
+  document.getElementById("mcqSection").style.display =
+    type === "mcq" ? "block" : "none";
+  document.getElementById("codingSection").style.display =
+    type === "coding" ? "block" : "none";
+}
+function saveQuestion(){
+  const type =
+    document.getElementById("questionType").value;
+    const payload = {
+    questionId: "${editQuestion?._id || ""}",
+    type,
+    question:
+      document.getElementById("question").value.trim(),
+    subject:
+      document.getElementById("subject").value,
+    board:
+      document.getElementById("board").value,
+    difficulty:
+      document.getElementById("difficulty").value,
+    options: [],
+    correct: "",
+    correctAnswers: [],
+    codingMeta: {
+      language:
+        document.getElementById("language")?.value || "javascript",
+      starterCode:
+        document.getElementById("starterCode")?.value || "",
+      functionName:
+        document.getElementById("functionName")?.value || ""
+     },
+    testCases: []
   };
-  reader.readAsText(file);
-}
-function showQuestionMapping(){
-  const fields = [
-    "question",
-    "option1",
-    "option2",
-    "option3",
-    "option4",
-    "correct",
-    "subject",
-    "board",
-    "difficulty",
-    "category"
-  ];
-  let html = "<h3>Map CSV Fields</h3>";
-  questionHeaders.forEach((h, i) => {
-    html += "<div style='margin:10px 0;'><b>" + h + "</b> → <select id='question-map-" + i + "'>" +
-      "<option value=''>Ignore</option>" +
-      fields.map(f => "<option value='" + f + "'>" + f + "</option>").join("") +
-      "</select></div>";
-  });
-  document.getElementById("questionMapping").innerHTML = html;
-}
-function processQuestionUpload(){
-  if(!questionCSV.length) return alert("Load CSV first");
-  let mapping = {};
-  questionHeaders.forEach((h, i) => {
-    const el = document.getElementById("question-map-" + i);
-    if(!el) return;
-    const val = el.value;
-    if(val) mapping[i] = val;
-  });
-  if(Object.keys(mapping).length === 0){
-    return alert("Map at least one field");
+  if(!payload.question){
+    return alert("Question is required");
   }
-  const data = questionCSV.map(row => {
-    let obj = {};
-    row.forEach((val, i) => {
-      if(mapping[i]) obj[mapping[i]] = val;
-    });
-    return {
-      type: "mcq",
-      question: obj.question,
-      options: [obj.option1, obj.option2, obj.option3, obj.option4],
-      correct: obj.correct,
-      subject: obj.subject,
-      board: obj.board,
-      difficulty: obj.difficulty,
-      category: obj.category
-    };
-  });
-  fetch("/upload-questions", {
+  if(!payload.subject){
+    return alert("Select subject");
+  }
+  if(!payload.board){
+    return alert("Select board");
+  }
+      if(type === "coding"){
+    payload.testCases = [1, 2, 3, 4].map(i => ({
+      input: document.getElementById("testInput" + i).value.trim(),
+      expectedOutput: document.getElementById("testOutput" + i).value.trim(),
+      isHidden: i > 2
+    })).filter(tc => tc.input || tc.expectedOutput);
+    if(!payload.codingMeta.functionName){
+      return alert("Function name required");
+    }
+    if(payload.testCases.length < 4){
+      return alert("Add all 4 test cases");
+    }
+    const incomplete = payload.testCases.some(tc =>
+      !tc.input || !tc.expectedOutput
+    );
+    if(incomplete){
+      return alert("Each test case needs input and expected output");
+    }
+  }
+  if(type === "mcq"){
+    payload.options = [
+      document.getElementById("option1").value.trim(),
+      document.getElementById("option2").value.trim(),
+      document.getElementById("option3").value.trim(),
+      document.getElementById("option4").value.trim()
+    ].filter(Boolean);
+    payload.correct =
+      document.getElementById("correctAnswer").value.trim();
+    payload.correctAnswers =
+      payload.correct ? [payload.correct] : [];
+    if(payload.options.length < 2){
+      return alert("Add at least 2 options");
+    }
+    if(!payload.correct){
+      return alert("Correct answer required");
+    }
+  }
+  fetch("/save-question", {
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(data)
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(payload)
   })
   .then(res => res.json())
   .then(data => {
@@ -1794,62 +2125,355 @@ function processQuestionUpload(){
       alert(data.error);
       return;
     }
-    alert("Questions uploaded: " + (data.added || 0));
+    alert("Question saved");
     window.location.replace("/library");
   })
-  .catch(() => alert("Question upload failed"));
+  .catch(() => {
+    alert("Failed to save question");
+  });
 }
+toggleQuestionType();
 </script>
 `;
-  res.send(layout(content, "bulk-upload"));
+    res.send(layout(content, "create-question"));
+  } catch (err) {
+    console.error("CREATE QUESTION PAGE ERROR:", err);
+    res.send("Error loading create question page");
+  }
 });
-// ---------- UPLOAD QUESTIONS ----------
-router.post("/upload-questions", async (req, res) => {
+// ---------- SAVE QUESTION ----------
+router.post("/save-question", authMiddleware, async (req, res) => {
   try {
     const Question = require("../models/Question");
-    const newQuestions = req.body;
-    if (!Array.isArray(newQuestions) || !newQuestions.length) {
+    const {
+      questionId,
+      type,
+      question,
+      options,
+      correct,
+      correctAnswers,
+      subject,
+      board,
+      difficulty,
+      codingMeta,
+      testCases
+    } = req.body;
+    if(!question){
       return res.status(400).json({
-        error: "Invalid data"
+        error: "Question required"
       });
     }
-    const processed = newQuestions
-      .filter(q => q.question)
-      .map(q => ({
-        type: q.type || "mcq",
-        scope: "public",
-        teacherId: null,
-        schoolId: null,
-        question: q.question,
-        options: Array.isArray(q.options)
-          ? q.options.filter(Boolean)
-          : [],
-        correct: q.correct || "",
-        subject: q.subject || "",
-        board: q.board || "General",
-        difficulty: q.difficulty || "",
-        category: q.category || "",
-        testCases: Array.isArray(q.testCases) ? q.testCases : [],
-        analytics: {
-          attempted: 0,
-          correct: 0,
-          incorrect: 0
-        }
-      }));
-    if (!processed.length) {
-      return res.status(400).json({
-        error: "No valid questions found"
+    const questionData = {
+      type: type || "mcq",
+      scope: "teacher",
+      teacherId: String(req.user.id),
+      schoolId: null,
+      question,
+      options: Array.isArray(options)
+        ? options
+        : [],
+      correct: correct || "",
+      correctAnswers: Array.isArray(correctAnswers)
+        ? correctAnswers
+        : [],
+      subject: subject || "",
+      board: board || "General",
+      difficulty: difficulty || "easy",
+      category: subject || "",
+            codingMeta: codingMeta || {
+        language: "javascript",
+        starterCode: "",
+        functionName: ""
+      },
+      testCases: Array.isArray(testCases)
+        ? testCases
+        : []
+    };
+    if(questionId){
+      const existingQuestion = await Question.findOne({
+        _id: questionId,
+        teacherId: String(req.user.id),
+        scope: "teacher"
+      });
+      if(!existingQuestion){
+        return res.status(404).json({
+          error: "Question not found or unauthorized"
+        });
+      }
+      Object.assign(existingQuestion, questionData);
+      await existingQuestion.save();
+      return res.json({
+        status: "updated",
+        question: existingQuestion
       });
     }
-    const created = await Question.insertMany(processed);
+    const newQuestion = await Question.create({
+      ...questionData,
+      analytics: {
+        attempted: 0,
+        correct: 0,
+        incorrect: 0
+      }
+    });
     res.json({
-      status: "ok",
-      added: created.length
+      status: "created",
+      question: newQuestion
     });
   } catch (err) {
-    console.error("UPLOAD QUESTIONS ERROR:", err);
+    console.error("SAVE QUESTION ERROR:", err);
     res.status(500).json({
-      error: "Failed to upload questions"
+      error: "Failed to save question"
+    });
+  }
+});
+// ---------- MY QUESTIONS ----------
+router.get("/my-questions", async (req, res) => {
+  try {
+    const Question = require("../models/Question");
+    const questions = await Question.find({
+      scope: "teacher"
+    }).sort({ createdAt: -1 }).lean();
+    const content = `
+<script>
+const pageUser = JSON.parse(localStorage.getItem("user") || "null");
+if(!pageUser || pageUser.role !== "teacher"){
+  window.location.replace("/");
+}
+</script>
+<div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+">
+  <h1 style="margin:0;">Manage Questions</h1>
+  ${backButton("/library")}
+</div>
+<div style="
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
+  align-items:stretch;
+  height:calc(100vh - 180px);
+  min-height:620px;
+">
+  <div style="
+    background:white;
+    padding:20px;
+    border-radius:14px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    overflow-y:auto;
+  ">
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:18px;
+    ">
+      <h2 style="margin:0;">My Questions</h2>
+      <button onclick="go('/create-question')" style="
+        padding:10px 14px;
+        background:#4f46e5;
+        color:white;
+        border:none;
+        border-radius:8px;
+        font-weight:600;
+        cursor:pointer;
+      ">
+        + Create
+      </button>
+    </div>
+    <div id="questionList"></div>
+  </div>
+  <div
+    id="questionPreview"
+    style="
+      background:white;
+      padding:22px;
+      border-radius:14px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.08);
+      overflow-y:auto;
+    "
+  >
+    <h2 style="margin-top:0;">Question Preview</h2>
+    <p style="color:#64748b;">
+      Select a question to preview it here.
+    </p>
+  </div>
+</div>
+<script>
+const allQuestions = ${JSON.stringify(questions)};
+const user = JSON.parse(localStorage.getItem("user") || "null");
+const teacherId = user?._id || user?.id;
+const questions = allQuestions.filter(q =>
+  String(q.teacherId) === String(teacherId)
+);
+function toTitleCase(value){
+  return String(value || "")
+    .replace(/[_-]/g, " ")
+    .replace(/\\b\\w/g, letter => letter.toUpperCase());
+}
+function renderMyQuestions(){
+  const list = document.getElementById("questionList");
+  if(!list){
+    return;
+  }
+  if(!questions.length){
+    list.innerHTML = "<p style='color:#64748b;'>No questions created yet.</p>";
+    return;
+  }
+  list.innerHTML = questions.map(q => {
+    return "" +
+      "<div onclick=\\"previewQuestion('" + q._id + "')\\" style=\\"" +
+        "background:#f8fafc;" +
+        "padding:16px;" +
+        "border-radius:12px;" +
+        "border:1px solid #e5e7eb;" +
+        "margin-bottom:14px;" +
+        "cursor:pointer;" +
+        "display:flex;" +
+        "justify-content:space-between;" +
+        "align-items:flex-start;" +
+        "gap:16px;" +
+      "\\">" +
+        "<div style=\\"min-width:0;flex:1;\\">" +
+          "<div style=\\"font-weight:700;margin-bottom:8px;line-height:1.4;\\">" +
+            (q.question || "Untitled Question") +
+          "</div>" +
+          "<div style=\\"display:flex;gap:8px;flex-wrap:wrap;\\">" +
+            "<span style=\\"background:#4f46e5;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
+              toTitleCase(q.subject || "No Subject") +
+            "</span>" +
+            "<span style=\\"background:#0f172a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
+              String(q.type || "mcq").toUpperCase() +
+            "</span>" +
+            "<span style=\\"background:#16a34a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
+              toTitleCase(q.difficulty || "easy") +
+            "</span>" +
+          "</div>" +
+        "</div>" +
+        "<div style=\\"display:flex;gap:10px;flex-shrink:0;align-items:center;\\">" +
+          "<button onclick=\\"event.stopPropagation(); editQuestion('" + q._id + "')\\" style=\\"padding:8px 12px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Edit</button>" +
+          "<button onclick=\\"event.stopPropagation(); deleteQuestion('" + q._id + "')\\" style=\\"padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Delete</button>" +
+        "</div>" +
+      "</div>";
+  }).join("");
+}
+function previewQuestion(id){
+  const q = questions.find(item =>
+    String(item._id) === String(id)
+  );
+  if(!q){
+    return;
+  }
+  const optionsHtml =
+    q.options && q.options.length
+      ? q.options.map((opt, index) =>
+          "<div style='background:#f8fafc;padding:10px;border-radius:8px;margin:8px 0;'>" +
+          "<b>Option " + (index + 1) + ":</b> " + opt +
+          "</div>"
+        ).join("")
+      : "<p style='color:#64748b;'>No options found.</p>";
+  document.getElementById("questionPreview").innerHTML =
+    "<h2 style='margin-top:0;'>Question Preview</h2>" +
+    "<div style='background:#f8fafc;padding:16px;border-radius:12px;margin-bottom:18px;'>" +
+      "<b>Question</b>" +
+      "<div style='margin-top:10px;line-height:1.6;'>" +
+        (q.question || "No question") +
+      "</div>" +
+    "</div>" +
+    "<div style='margin-bottom:18px;'>" +
+      optionsHtml +
+    "</div>" +
+    "<div style='background:#ecfdf5;padding:14px;border-radius:10px;margin-bottom:14px;'>" +
+      "<b>Correct Answer:</b> " +
+      (q.correct || "N/A") +
+    "</div>" +
+    "<p><b>Subject:</b> " + toTitleCase(q.subject || "N/A") + "</p>" +
+    "<p><b>Board:</b> " + toTitleCase(q.board || "N/A") + "</p>" +
+    "<p><b>Difficulty:</b> " + toTitleCase(q.difficulty || "N/A") + "</p>" +
+    "<p><b>Type:</b> " + String(q.type || "mcq").toUpperCase() + "</p>" +
+    "<div style='background:#eef2ff;padding:14px;border-radius:10px;margin-top:18px;'>" +
+      "<b>Analytics</b><br><br>" +
+      "Attempted: " + (q.analytics?.attempted || 0) + "<br>" +
+      "Correct: " + (q.analytics?.correct || 0) + "<br>" +
+      "Incorrect: " + (q.analytics?.incorrect || 0) +
+    "</div>";
+}
+function editQuestion(id){
+  window.location.replace("/create-question?id=" + id);
+}
+function deleteQuestion(id){
+  if(!confirm("Delete this question?")){
+    return;
+  }
+  fetch("/delete-question", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({ id })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("Question deleted");
+    location.reload();
+  })
+  .catch(() => {
+    alert("Delete failed");
+  });
+}
+renderMyQuestions();
+</script>
+`;
+    res.send(layout(content, "my-questions"));
+  } catch (err) {
+    console.error("MY QUESTIONS ERROR:", err);
+    res.send("Error loading questions");
+  }
+});
+// ---------- UPDATE QUESTION ----------
+router.post("/update-question", authMiddleware, async (req, res) => {
+  res.json({
+    status: "placeholder"
+  });
+});
+// ---------- DELETE QUESTION ----------
+router.post("/delete-question", authMiddleware, async (req, res) => {
+  try {
+    const Question = require("../models/Question");
+    const { id } = req.body;
+    if(!id){
+      return res.status(400).json({
+        error: "Missing question id"
+      });
+    }
+    const question = await Question.findOne({
+      _id: id,
+      teacherId: String(req.user.id),
+      scope: "teacher"
+    });
+    if(!question){
+      return res.status(404).json({
+        error: "Question not found or unauthorized"
+      });
+    }
+    await Question.deleteOne({
+      _id: id
+    });
+    res.json({
+      status: "deleted"
+    });
+  } catch (err) {
+    console.error("DELETE QUESTION ERROR:", err);
+    res.status(500).json({
+      error: "Failed to delete question"
     });
   }
 });
@@ -2039,7 +2663,6 @@ if (!teacherId) {
       assignments.map(a => Test.findById(a.testId))
     );
 const now = new Date();
-
 const validTests = tests.filter(t =>
   t &&
   String(t.status || "draft") === "published" &&
@@ -2048,36 +2671,250 @@ const validTests = tests.filter(t =>
     new Date(t.scheduledAt) <= now
   )
 );
-
 // 🔒 GET STUDENT ID
 const studentId = String(req.query.studentId || "").trim();
-
 if (!studentId) {
   return res.status(400).json({ error: "Missing studentId" });
 }
-
 const Result = require("../models/Result");
-
 // 🔒 GET ATTEMPTED TESTS
 const attempted = await Result.find({ studentId }).select("testId");
 const attemptedIds = attempted.map(r => String(r.testId));
-
 // 3. Filter by subject + remove attempted
 const filtered = validTests.filter(t => {
   const subjectMatch =
     String(t.subject || "").trim().toLowerCase() ===
     String(subject || "").trim().toLowerCase();
-
   const notAttempted =
     !attemptedIds.includes(String(t._id));
-
   return subjectMatch && notAttempted;
 });
-
 res.json(filtered);
   } catch (err) {
     console.error("GET TESTS ERROR:", err);
     res.status(500).json({ error: "Failed to fetch tests" });
+  }
+});
+const runCodeRateLimit = {};
+function getRunCodeClientKey(req){
+  return (
+    req.ip ||
+    req.headers["x-forwarded-for"] ||
+    req.connection?.remoteAddress ||
+    "unknown"
+  );
+}
+function checkRunCodeRateLimit(req){
+  const key = getRunCodeClientKey(req);
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 20;
+  if(!runCodeRateLimit[key]){
+    runCodeRateLimit[key] = [];
+  }
+  runCodeRateLimit[key] = runCodeRateLimit[key].filter(timestamp =>
+    now - timestamp < windowMs
+  );
+  if(runCodeRateLimit[key].length >= maxRequests){
+    return false;
+  }
+  runCodeRateLimit[key].push(now);
+  return true;
+}
+// ---------- RUN CODE ----------
+router.post("/run-code", async (req, res) => {
+  try {
+        if(!checkRunCodeRateLimit(req)){
+      return res.status(429).json({
+        error: "Too many code runs. Please wait a minute and try again."
+      });
+    }
+    const {
+      code,
+      language,
+      functionName,
+      testCases
+    } = req.body;
+        if(!code || !String(code).trim()){
+      return res.status(400).json({
+        error: "Code required"
+      });
+    }
+    if(String(code).length > 10000){
+      return res.status(400).json({
+        error: "Code is too long. Please keep your answer under 10,000 characters."
+      });
+    }
+    if(language && language !== "javascript"){
+      return res.status(400).json({
+        error: "Only JavaScript execution is currently supported"
+      });
+    }
+    if(!functionName || !String(functionName).trim()){
+      return res.status(400).json({
+        error: "Function name required"
+      });
+    }
+        if(!Array.isArray(testCases) || !testCases.length){
+      return res.status(400).json({
+        error: "No test cases found"
+      });
+    }
+    if(testCases.length > 4){
+      return res.status(400).json({
+        error: "Too many test cases"
+      });
+    }
+    const cleanTestCases = testCases
+      .filter(tc => tc && typeof tc === "object")
+      .map(tc => ({
+        input: String(tc.input || ""),
+        expectedOutput: String(tc.expectedOutput || ""),
+        isHidden: !!tc.isHidden
+      }))
+      .filter(tc =>
+        tc.input.trim() !== "" ||
+        tc.expectedOutput.trim() !== ""
+      );
+    if(!cleanTestCases.length){
+      return res.status(400).json({
+        error: "No valid test cases found"
+      });
+    }
+    const vm = require("vm");
+    const cleanFunctionName = String(functionName).trim();
+    const sandbox = {
+      console: {
+        log: function(){},
+        error: function(){},
+        warn: function(){}
+      }
+    };
+    vm.createContext(sandbox);
+    try {
+      vm.runInContext(String(code), sandbox, {
+        timeout: 1000
+      });
+    } catch (err) {
+      return res.status(400).json({
+        error: "Code error: " + err.message
+      });
+    }
+    let executableFunction = sandbox[cleanFunctionName];
+    if(typeof executableFunction !== "function"){
+      const matchedKey = Object.keys(sandbox).find(key =>
+        String(key).toLowerCase() ===
+        String(cleanFunctionName).toLowerCase()
+      );
+      if(matchedKey){
+        executableFunction = sandbox[matchedKey];
+      }
+    }
+    if(typeof executableFunction !== "function"){
+      return res.status(400).json({
+        error: "Function not found: " + cleanFunctionName
+      });
+    }
+    function parseInputValue(value){
+      const trimmed = String(value || "").trim();
+      if(trimmed === ""){
+        return "";
+      }
+      try {
+        return JSON.parse(trimmed);
+      } catch (err) {
+        if(!isNaN(trimmed)){
+          return Number(trimmed);
+        }
+        return trimmed;
+      }
+    }
+    function parseArgs(rawInput){
+      const input = String(rawInput || "").trim();
+      if(input === ""){
+        return [];
+      }
+      if(input.startsWith("[") && input.endsWith("]")){
+        try {
+          const parsed = JSON.parse(input);
+          return Array.isArray(parsed) ? [parsed] : [parsed];
+        } catch (err) {
+          return [input];
+        }
+      }
+      return input.split(",").map(value => parseInputValue(value));
+    }
+    function normalizeOutput(value){
+      if(value === undefined){
+        return "undefined";
+      }
+      if(value === null){
+        return "null";
+      }
+      if(typeof value === "object"){
+        return JSON.stringify(value);
+      }
+      return String(value).trim();
+    }
+    let output = "";
+    let passedCount = 0;
+        for(let i = 0; i < cleanTestCases.length; i++){
+      const tc = cleanTestCases[i];
+      const rawInput = String(tc.input || "");
+      const expected = String(tc.expectedOutput || "").trim();
+      const isHidden = !!tc.isHidden;
+      const args = parseArgs(rawInput);
+      let actual = "";
+      let passed = false;
+      let runtimeError = "";
+      sandbox.__studentArgs = args;
+      sandbox.__studentResult = undefined;
+      try {
+        sandbox.__studentFunction = executableFunction;
+        vm.runInContext(
+          "__studentResult = __studentFunction(...__studentArgs)",
+          sandbox,
+          { timeout: 1000 }
+        );
+        actual = normalizeOutput(sandbox.__studentResult);
+        passed = actual === expected;
+      } catch (err) {
+        runtimeError = err.message;
+      }
+      delete sandbox.__studentFunction;
+      delete sandbox.__studentArgs;
+      delete sandbox.__studentResult;
+      if(passed){
+        passedCount++;
+      }
+      if(isHidden){
+        output +=
+          "Test Case " + (i + 1) + " (Hidden): " +
+          (passed ? "PASS" : "FAIL") +
+          "\n\n";
+      } else {
+        output +=
+          "Test Case " + (i + 1) + ": " +
+          (passed ? "PASS" : "FAIL") +
+          "\nInput: " + rawInput +
+          "\nExpected: " + expected +
+          "\nReceived: " + (runtimeError ? "Runtime Error: " + runtimeError : actual) +
+          "\n\n";
+      }
+    }
+    output +=
+    "Result: " + passedCount + " / " + cleanTestCases.length + " test cases passed.";
+    res.json({
+      output,
+      passedCount,
+      total: cleanTestCases.length,
+      passed: passedCount === cleanTestCases.length
+    });
+  } catch (err) {
+    console.error("RUN CODE ERROR:", err);
+    res.status(500).json({
+      error: "Execution failed"
+    });
   }
 });
 module.exports = router;

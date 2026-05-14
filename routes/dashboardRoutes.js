@@ -20,7 +20,7 @@ function navbar(){
      <button onclick="go('/tests')" class="nav-btn">Tests</button>
      <button onclick="go('/library')" class="nav-btn">Library</button>
      <button onclick="go('/teacher')" class="nav-btn">Teacher</button>
-     <button onclick="go('/bulk-upload')" class="nav-btn">Bulk Upload</button>
+     <button onclick="go('/question-builder')" class="nav-btn">Create Question</button>
      <button onclick="go('/dashboard')" class="nav-btn">Dashboard</button>
      <button onclick="logout()" class="nav-btn logout">Logout</button>
    </div>

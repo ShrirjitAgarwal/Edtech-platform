@@ -20,8 +20,18 @@ function layout(content, active = "") {
     window.location.replace("/");
     return;
   }
+      const currentPath = window.location.pathname + window.location.search;
+  const lastInternalPath = sessionStorage.getItem("lastInternalPath");
   window.go = function(path){
+    sessionStorage.setItem("lastInternalPath", currentPath);
     window.location.replace(path);
+  };
+  window.goBack = function(fallbackPath = "/"){
+    if(lastInternalPath && lastInternalPath !== currentPath){
+      window.location.replace(lastInternalPath);
+      return;
+    }
+    window.location.replace(fallbackPath);
   };
   window.logout = function(){
     localStorage.clear();

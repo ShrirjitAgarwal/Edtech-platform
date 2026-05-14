@@ -35,6 +35,10 @@ const TestSchema = new mongoose.Schema({
     enum: ["practice", "unit", "exam"],
     default: "practice"
   },
+  questionTimersEnabled: {
+    type: Boolean,
+    default: false
+  },
   assignedStudents: {
     type: [String],
     default: []

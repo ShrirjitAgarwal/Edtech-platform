@@ -4,8 +4,10 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "NODE_ENV=local node server.js",
+    "staging": "NODE_ENV=staging node server.js",
+    "production": "NODE_ENV=production node server.js"
   },
   "keywords": [],
   "author": "",

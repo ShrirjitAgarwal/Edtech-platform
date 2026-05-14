@@ -1,15 +1,15 @@
 const mongoose = require("mongoose");
-
 const connectDB = async () => {
-  console.log("Connecting to MongoDB...");   // 👈 ADD THIS
-
+  console.log("Connecting to MongoDB...");
   try {
-    await mongoose.connect("mongodb+srv://admin:Jordan%401996@shrirjitcluster.bhvvps6.mongodb.net/?retryWrites=true&w=majority");
-
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI missing from environment");
+    }
+    await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB Connected");
   } catch (err) {
     console.error("DB Error:", err.message);
+    process.exit(1);
   }
 };
-
 module.exports = connectDB;

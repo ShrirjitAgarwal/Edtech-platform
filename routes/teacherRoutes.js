@@ -6,6 +6,7 @@ const ClassModel = require("../models/Class");
 const User = require("../models/User");
 const Result = require("../models/Result");
 const layout = require("../views/layout");
+const backButton = require("../views/backButton");
 // ---------- SHARED HELPERS ----------
 function teacherGuardScript() {
   return `
@@ -29,10 +30,12 @@ window.addEventListener("pageshow", function(event){
 // ---------- TEACHER DASHBOARD ----------
 router.get("/teacher", async (req, res) => {
   try {
+    const ClassSubject = require("../models/ClassSubject");
     const allTests = await Test.find();
     const allStudents = await Student.find();
     const allClasses = await ClassModel.find();
     const allResults = await Result.find();
+    const allClassSubjects = await ClassSubject.find();
     const content = `
 ${teacherGuardScript()}
 <div id="dashboard"></div>
@@ -47,6 +50,7 @@ window.onload = function(){
   const students = ${JSON.stringify(allStudents)};
   const classes = ${JSON.stringify(allClasses)};
   const results = ${JSON.stringify(allResults)};
+  const classSubjects = ${JSON.stringify(allClassSubjects)};
   const myTests = tests.filter(t =>
     String(t.teacherId) === String(teacherId)
   );
@@ -59,6 +63,9 @@ window.onload = function(){
   const myResults = results.filter(r =>
     String(r.teacherId) === String(teacherId)
   );
+  const myClassSubjects = classSubjects.filter(cs =>
+    String(cs.teacherId) === String(teacherId)
+  );
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const recentTests = myTests
@@ -67,10 +74,15 @@ window.onload = function(){
       return new Date(t.createdAt) >= thirtyDaysAgo;
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const totalClassesAssigned = myClasses.length;
+  const totalStudentsMapped = myStudents.length;
+  const totalTestsCreated = myTests.length;
+  const totalTestsCompleted = myResults.length;
+  const totalSubjectsMapped = myClassSubjects.length;
   const recentTestsHtml = recentTests.length
     ? recentTests.map(t => \`
       <div style="
-        padding:14px;
+        padding:12px 0;
         border-bottom:1px solid #e5e7eb;
         cursor:pointer;
       "
@@ -145,14 +157,14 @@ window.onload = function(){
           <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Test</th>
           <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Class</th>
           <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Subject</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Avg Score</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Attempts</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Total Students</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Passed</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Failed</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Not Attempted</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Completion</th>
-<th style="padding:12px;border-bottom:1px solid #e5e7eb;">Created</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Avg Score</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Attempts</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Total Students</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Passed</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Failed</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Not Attempted</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Completion</th>
+          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Created</th>
         </tr>
         \${filteredTests.map(t => {
           const stats = getTestStats(t._id);
@@ -170,27 +182,27 @@ window.onload = function(){
               <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
                 \${stats.avgScore}%
               </td>
-<td style="padding:12px;border-bottom:1px solid #e5e7eb;">
-  \${stats.attempted}
-</td>
-<td style="padding:12px;border-bottom:1px solid #e5e7eb;">
-  \${stats.totalStudents}
-</td>
-<td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#16a34a;font-weight:700;">
-  \${stats.passed}
-</td>
-<td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#dc2626;font-weight:700;">
-  \${stats.failed}
-</td>
-<td style="padding:12px;border-bottom:1px solid #e5e7eb;">
-  \${stats.notAttempted}
-</td>
-<td style="padding:12px;border-bottom:1px solid #e5e7eb;">
-  \${stats.totalStudents ? Math.round((stats.attempted / stats.totalStudents) * 100) : 0}%
-</td>
-<td style="padding:12px;border-bottom:1px solid #e5e7eb;">
-  \${stats.test.createdAt ? new Date(stats.test.createdAt).toLocaleDateString() : "N/A"}
-</td>
+              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+                \${stats.attempted}
+              </td>
+              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+                \${stats.totalStudents}
+              </td>
+              <td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#16a34a;font-weight:700;">
+                \${stats.passed}
+              </td>
+              <td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#dc2626;font-weight:700;">
+                \${stats.failed}
+              </td>
+              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+                \${stats.notAttempted}
+              </td>
+              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+                \${stats.totalStudents ? Math.round((stats.attempted / stats.totalStudents) * 100) : 0}%
+              </td>
+              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+                \${stats.test.createdAt ? new Date(stats.test.createdAt).toLocaleDateString() : "N/A"}
+              </td>
             </tr>
           \`;
         }).join("")}
@@ -205,40 +217,88 @@ window.onload = function(){
     \`).join("")
     : "";
   document.getElementById("dashboard").innerHTML = \`
-    <div style="margin-bottom:24px;">
-      <h1 style="margin:0 0 8px 0;font-size:32px;">
-        Welcome, \${user.name || "Teacher"}
-      </h1>
-      <p style="margin:0;color:#64748b;font-size:16px;">
-        Here is your teaching overview.
-      </p>
-    </div>
-    <div style="
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-      gap:24px;
-      margin-bottom:28px;
+<div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:20px;
+      margin-bottom:24px;
     ">
-      <div onclick="go('/create-test')" style="
-        background:white;
-        min-height:220px;
-        border-radius:18px;
-        box-shadow:0 4px 14px rgba(0,0,0,0.06);
-        display:flex;
-        align-items:center;
-        justify-content:center;
+      <div>
+        <h1 style="margin:0 0 8px 0;font-size:32px;">
+          Welcome, \${user.name || "Teacher"}
+        </h1>
+        <p style="margin:0;color:#64748b;font-size:16px;">
+          Here is your teaching overview.
+        </p>
+      </div>
+      <button onclick="go('/create-test')" style="
+        background:linear-gradient(135deg,#4f46e5,#6366f1);
+        color:white;
+        border:none;
+        border-radius:12px;
+        padding:14px 22px;
         cursor:pointer;
-        font-size:42px;
+        font-size:15px;
         font-weight:800;
+        box-shadow:0 4px 14px rgba(0,0,0,0.08);
       ">
         + New Test
-      </div>
+      </button>
+    </div>
+<div style="
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      margin-bottom:28px;
+      align-items:stretch;
+    ">
       <div style="
         background:white;
-        min-height:220px;
+        height:260px;
+        border-radius:18px;
+        box-shadow:0 4px 14px rgba(0,0,0,0.06);
+        padding:22px;
+        box-sizing:border-box;
+        overflow-y:auto;
+      ">
+        <h2 style="margin:0 0 18px 0;font-size:22px;">Teacher Overview</h2>
+        <div style="
+          display:grid;
+          grid-template-columns:repeat(2, minmax(0, 1fr));
+          gap:14px;
+        ">
+          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
+            <b style="font-size:26px;">\${totalClassesAssigned}</b><br>
+            <span style="color:#64748b;font-size:14px;">Classes Assigned</span>
+          </div>
+          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
+            <b style="font-size:26px;">\${totalStudentsMapped}</b><br>
+            <span style="color:#64748b;font-size:14px;">Students Mapped</span>
+          </div>
+          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
+            <b style="font-size:26px;">\${totalTestsCreated}</b><br>
+            <span style="color:#64748b;font-size:14px;">Tests Created</span>
+          </div>
+          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
+            <b style="font-size:26px;">\${totalTestsCompleted}</b><br>
+            <span style="color:#64748b;font-size:14px;">Tests Completed</span>
+          </div>
+          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
+            <b style="font-size:26px;">\${totalSubjectsMapped}</b><br>
+            <span style="color:#64748b;font-size:14px;">Subjects Mapped</span>
+          </div>
+        </div>
+      </div>
+            <div style="
+        background:white;
+        height:260px;
+        max-height:260px;
         border-radius:18px;
         box-shadow:0 4px 14px rgba(0,0,0,0.06);
         overflow:hidden;
+        display:flex;
+        flex-direction:column;
       ">
         <div style="
           padding:18px 20px;
@@ -246,8 +306,9 @@ window.onload = function(){
           display:flex;
           justify-content:space-between;
           align-items:center;
+          flex-shrink:0;
         ">
-          <h2 style="margin:0;font-size:20px;">Previous Tests</h2>
+          <h2 style="margin:0;font-size:22px;">Previous Tests</h2>
           <button onclick="go('/teacher-tests')" style="
             border:none;
             background:#4f46e5;
@@ -259,7 +320,13 @@ window.onload = function(){
             View All
           </button>
         </div>
-        <div style="padding:10px 20px 20px 20px;">
+                <div style="
+          padding:10px 20px 18px 20px;
+          overflow-y:auto;
+          overflow-x:hidden;
+          flex:1;
+          max-height:180px;
+        ">
           \${recentTestsHtml}
         </div>
       </div>
@@ -270,6 +337,11 @@ window.onload = function(){
       padding:20px;
       box-shadow:0 4px 14px rgba(0,0,0,0.06);
       margin-bottom:28px;
+      height:360px;
+      max-height:360px;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
     ">
       <div style="
         display:flex;
@@ -295,7 +367,12 @@ window.onload = function(){
           \${testOptions}
         </select>
       </div>
-      <div id="analyticsTable">
+      <div id="analyticsTable" style="
+        flex:1;
+        min-height:0;
+        overflow-y:auto;
+        overflow-x:auto;
+      ">
         \${buildAnalyticsTable("all")}
       </div>
     </div>
@@ -399,7 +476,16 @@ router.get("/classes", async (req, res) => {
     const results = await Result.find();
     const content = `
 ${teacherGuardScript()}
-<h1 style="margin-bottom:20px;">Classes</h1>
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:14px;
+margin-bottom:20px;
+">
+  <h1 style="margin:0;">Classes</h1>
+  ${backButton("/teacher")}
+</div>
 <div style="
 display:flex;
 gap:12px;
