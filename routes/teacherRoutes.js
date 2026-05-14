@@ -7,6 +7,7 @@ const User = require("../models/User");
 const Result = require("../models/Result");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
+const authMiddleware = require("../middleware/auth");
 // ---------- SHARED HELPERS ----------
 function teacherGuardScript() {
   return `
@@ -30,12 +31,6 @@ window.addEventListener("pageshow", function(event){
 // ---------- TEACHER DASHBOARD ----------
 router.get("/teacher", async (req, res) => {
   try {
-    const ClassSubject = require("../models/ClassSubject");
-    const allTests = await Test.find();
-    const allStudents = await Student.find();
-    const allClasses = await ClassModel.find();
-    const allResults = await Result.find();
-    const allClassSubjects = await ClassSubject.find();
     const content = `
 ${teacherGuardScript()}
 <div id="dashboard"></div>
@@ -46,26 +41,29 @@ window.onload = function(){
     return window.location.replace("/");
   }
   const teacherId = user._id || user.id;
-  const tests = ${JSON.stringify(allTests)};
-  const students = ${JSON.stringify(allStudents)};
-  const classes = ${JSON.stringify(allClasses)};
-  const results = ${JSON.stringify(allResults)};
-  const classSubjects = ${JSON.stringify(allClassSubjects)};
-  const myTests = tests.filter(t =>
-    String(t.teacherId) === String(teacherId)
-  );
-  const myStudents = students.filter(s =>
-    String(s.teacherId) === String(teacherId)
-  );
-  const myClasses = classes.filter(c =>
-    String(c.teacherId) === String(teacherId)
-  );
-  const myResults = results.filter(r =>
-    String(r.teacherId) === String(teacherId)
-  );
-  const myClassSubjects = classSubjects.filter(cs =>
-    String(cs.teacherId) === String(teacherId)
-  );
+  const token = localStorage.getItem("token");
+  if(!token){
+    return window.location.replace("/");
+  }
+  document.getElementById("dashboard").innerHTML =
+    "<p style='color:#64748b;'>Loading dashboard...</p>";
+  fetch("/api/teacher-dashboard-data", {
+    headers:{
+      "Authorization":"Bearer " + token
+    }
+  })
+  .then(res => {
+    if(!res.ok){
+      throw new Error("Failed to load dashboard");
+    }
+    return res.json();
+  })
+  .then(data => {
+    const myTests = data.tests || [];
+    const myStudents = data.students || [];
+    const myClasses = data.classes || [];
+    const myResults = data.results || [];
+    const myClassSubjects = data.classSubjects || [];
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const recentTests = myTests
@@ -385,6 +383,12 @@ window.onload = function(){
       filter.value = testId;
     }
   };
+  })
+  .catch(err => {
+    console.error("DASHBOARD LOAD ERROR:", err);
+    document.getElementById("dashboard").innerHTML =
+      "<p style='color:#dc2626;'>Failed to load dashboard. Please refresh.</p>";
+  });
 };
 </script>
 `;
@@ -392,6 +396,44 @@ window.onload = function(){
   } catch (err) {
     console.error(err);
     res.send("Error loading dashboard");
+  }
+});
+// ---------- TEACHER DASHBOARD DATA API ----------
+router.get("/api/teacher-dashboard-data", authMiddleware, async (req, res) => {
+  try {
+    const ClassSubject = require("../models/ClassSubject");
+    const teacherId = String(req.user.id);
+    const tests = await Test.find({ teacherId })
+      .select("name subject className teacherId createdAt")
+      .sort({ createdAt: -1 })
+      .limit(1000)
+      .lean();
+    const students = await Student.find({ teacherId })
+      .select("studentId name class teacherId")
+      .lean();
+    const classes = await ClassModel.find({ teacherId })
+      .select("name teacherId studentIds createdAt")
+      .lean();
+    const results = await Result.find({ teacherId })
+      .select("studentId testId testName teacherId score total date")
+      .sort({ date: -1 })
+      .limit(5000)
+      .lean();
+    const classSubjects = await ClassSubject.find({ teacherId })
+      .select("className subject teacherId")
+      .lean();
+    res.json({
+      tests,
+      students,
+      classes,
+      results,
+      classSubjects
+    });
+  } catch (err) {
+    console.error("TEACHER DASHBOARD DATA API ERROR:", err);
+    res.status(500).json({
+      error: "Failed to load dashboard data"
+    });
   }
 });
 // ---------- VIEW STUDENTS ----------
@@ -470,10 +512,6 @@ function viewStudent(studentId){
 // ---------- VIEW CLASSES ----------
 router.get("/classes", async (req, res) => {
   try {
-    const classes = await ClassModel.find();
-    const students = await Student.find();
-    const teachers = await User.find({ role: "teacher" });
-    const results = await Result.find();
     const content = `
 ${teacherGuardScript()}
 <div style="
@@ -522,10 +560,28 @@ window.onload = function(){
     return window.location.replace("/");
   }
   const teacherId = user._id || user.id;
-  const classesData = ${JSON.stringify(classes)};
-  const studentsData = ${JSON.stringify(students)};
-  const teachersData = ${JSON.stringify(teachers)};
-  const resultsData = ${JSON.stringify(results)};
+  let classesData = [];
+  let studentsData = [];
+  let teachersData = [];
+  let resultsData = [];
+  document.getElementById("classContainer").innerHTML =
+    "<p style='color:#64748b;'>Loading classes...</p>";
+  fetch("/api/classes-data", {
+    headers:{
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    }
+  })
+  .then(res => {
+    if(!res.ok){
+      throw new Error("Failed to load classes");
+    }
+    return res.json();
+  })
+  .then(data => {
+    classesData = data.classes || [];
+    studentsData = data.students || [];
+    teachersData = data.teachers || [];
+    resultsData = data.results || [];
   const teacherMap = {};
   teachersData.forEach(t => {
     teacherMap[t._id] = t.name;
@@ -827,6 +883,12 @@ margin-bottom:15px;
     })
     .catch(() => alert("Failed to load result"));
   };
+  })
+  .catch(err => {
+    console.error("CLASSES LOAD ERROR:", err);
+    document.getElementById("classContainer").innerHTML =
+      "<p style='color:#dc2626;'>Failed to load classes. Please refresh.</p>";
+  });
 };
 </script>
 `;
@@ -834,6 +896,42 @@ margin-bottom:15px;
   } catch (err) {
     console.error(err);
     res.send("Error loading classes");
+  }
+});
+// ---------- CLASSES DATA API ----------
+router.get("/api/classes-data", authMiddleware, async (req, res) => {
+  try {
+    const teacherId = String(req.user.id);
+    const classes = await ClassModel.find({ teacherId })
+      .select("name teacherId studentIds createdAt")
+      .sort({ name: 1 })
+      .lean();
+    const students = await Student.find({ teacherId })
+      .select("studentId name class teacherId")
+      .sort({ class: 1, name: 1 })
+      .lean();
+    const teachers = await User.find({
+      _id: teacherId,
+      role: "teacher"
+    })
+      .select("name role")
+      .lean();
+    const results = await Result.find({ teacherId })
+      .select("studentId testId testName teacherId score total date")
+      .sort({ date: -1 })
+      .limit(5000)
+      .lean();
+    res.json({
+      classes,
+      students,
+      teachers,
+      results
+    });
+  } catch (err) {
+    console.error("CLASSES DATA API ERROR:", err);
+    res.status(500).json({
+      error: "Failed to load classes data"
+    });
   }
 });
 module.exports = router;
