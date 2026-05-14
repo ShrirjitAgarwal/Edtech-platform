@@ -52,29 +52,6 @@ function logout(){
 }
 // ---------- TEACHER TEST LIST ----------
 router.get("/teacher-tests", async (req, res) => {
-  const Test = require("../models/Test");
-  const Assignment = require("../models/Assignment");
-  const Student = require("../models/Student");
-  const Result = require("../models/Result");
-  const tests = await Test.find()
-    .select("name subject className status teacherId testType durationMinutes scheduledAt createdAt publishedAt")
-    .sort({ createdAt: -1 })
-    .limit(1000)
-    .lean();
-
-  const assignments = await Assignment.find()
-    .select("testId testName className teacherId createdAt")
-    .lean();
-
-  const students = await Student.find()
-    .select("studentId name class teacherId")
-    .lean();
-
-  const results = await Result.find()
-    .select("studentId testId testName teacherId score total date")
-    .sort({ date: -1 })
-    .limit(5000)
-    .lean();
   const content = `
     <div style="
   display:flex;
@@ -164,28 +141,38 @@ box-sizing:border-box;
       </div>
     </div>
     <script>
+      let myTests = [];
+      let myAssignments = [];
+      let myStudents = [];
+      let myResults = [];
+
       window.onload = function(){
         const user = JSON.parse(localStorage.getItem("user") || "null");
-        if(!user){
+        const token = localStorage.getItem("token");
+
+        if(!user || !token){
           return window.location.replace("/");
         }
-        const teacherId = user._id || user.id;
-        const allTests = ${JSON.stringify(tests)};
-        const allAssignments = ${JSON.stringify(assignments)};
-        const allStudents = ${JSON.stringify(students)};
-        const allResults = ${JSON.stringify(results)};
-        const myTests = allTests.filter(t =>
-          String(t.teacherId) === String(teacherId)
-        );
-        const myAssignments = allAssignments.filter(a =>
-          String(a.teacherId) === String(teacherId)
-        );
-        const myStudents = allStudents.filter(s =>
-          String(s.teacherId) === String(teacherId)
-        );
-        const myResults = allResults.filter(r =>
-          String(r.teacherId) === String(teacherId)
-        );
+
+        document.getElementById("testList").innerHTML =
+          "<p style='color:#64748b;'>Loading tests...</p>";
+
+        fetch("/api/teacher-tests-data", {
+          headers:{
+            "Authorization": "Bearer " + token
+          }
+        })
+        .then(res => {
+          if(!res.ok){
+            throw new Error("Failed to load tests data");
+          }
+          return res.json();
+        })
+        .then(data => {
+          myTests = data.tests || [];
+          myAssignments = data.assignments || [];
+          myStudents = data.students || [];
+          myResults = data.results || [];
         const html = myTests.map(t => \`
           <div
             onclick="previewTest('\${t._id}')"
@@ -262,7 +249,7 @@ box-sizing:border-box;
         \`).join("");
         document.getElementById("testList").innerHTML =
           html || "<p>No tests found</p>";
-        window.previewTest = function(testId){
+          window.previewTest = function(testId){
           const test = myTests.find(t =>
             String(t._id) === String(testId)
           );
@@ -375,6 +362,12 @@ box-sizing:border-box;
             </p>
           \`;
         };
+        })
+        .catch(err => {
+          console.error("TEACHER TESTS LOAD ERROR:", err);
+          document.getElementById("testList").innerHTML =
+            "<p style='color:#dc2626;'>Failed to load tests. Please refresh.</p>";
+        });
       };
       function assignTest(testId){
         fetch("/assign-test", {
@@ -1465,12 +1458,6 @@ try {
 router.get("/library", async (req, res) => {
   try {
     console.log("LIBRARY ROUTE HIT");
-    const Question = require("../models/Question");
-    const questions = await Question.find()
-      .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
-      .sort({ createdAt: -1 })
-      .limit(2000)
-      .lean();
     const content = `
 <div style="
   display:flex;
@@ -1646,7 +1633,32 @@ if(!user || user.role !== "teacher"){
   window.location.replace("/");
 }
 const teacherId = user._id || user.id;
-const questions = ${JSON.stringify(questions)};
+let questions = [];
+
+document.getElementById("libraryList").innerHTML =
+  "<p style='color:#64748b;'>Loading questions...</p>";
+
+fetch("/api/library-data", {
+  headers:{
+    "Authorization": "Bearer " + localStorage.getItem("token")
+  }
+})
+.then(res => {
+  if(!res.ok){
+    throw new Error("Failed to load library");
+  }
+  return res.json();
+})
+.then(data => {
+  questions = data.questions || [];
+  populateFilters();
+  renderLibrary();
+})
+.catch(err => {
+  console.error("LIBRARY LOAD ERROR:", err);
+  document.getElementById("libraryList").innerHTML =
+    "<p style='color:#dc2626;'>Failed to load questions. Please refresh.</p>";
+});
 function getVisibleQuestions(){
   return questions.filter(q =>
     q.scope === "public" ||
@@ -1833,14 +1845,42 @@ function addToTest(id){
     alert("Question already added");
   }
 }
-populateFilters();
-renderLibrary();
 </script>
 `;
     res.send(layout(content, "library"));
   } catch (err) {
     console.error(err);
     res.send("Error loading library");
+  }
+});
+// ---------- LIBRARY DATA API ----------
+router.get("/api/library-data", authMiddleware, async (req, res) => {
+  try {
+    const Question = require("../models/Question");
+    const teacherId = String(req.user.id);
+
+    const questions = await Question.find({
+      $or: [
+        { scope: "public" },
+        {
+          scope: "teacher",
+          teacherId
+        }
+      ]
+    })
+      .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
+      .sort({ createdAt: -1 })
+      .limit(2000)
+      .lean();
+
+    res.json({
+      questions
+    });
+  } catch (err) {
+    console.error("LIBRARY DATA API ERROR:", err);
+    res.status(500).json({
+      error: "Failed to load library data"
+    });
   }
 });
 // ---------- CREATE QUESTION PAGE ----------
