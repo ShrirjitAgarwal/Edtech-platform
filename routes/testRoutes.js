@@ -56,10 +56,25 @@ router.get("/teacher-tests", async (req, res) => {
   const Assignment = require("../models/Assignment");
   const Student = require("../models/Student");
   const Result = require("../models/Result");
-  const tests = await Test.find();
-  const assignments = await Assignment.find();
-  const students = await Student.find();
-  const results = await Result.find();
+  const tests = await Test.find()
+    .select("name subject className status teacherId testType durationMinutes scheduledAt createdAt publishedAt")
+    .sort({ createdAt: -1 })
+    .limit(1000)
+    .lean();
+
+  const assignments = await Assignment.find()
+    .select("testId testName className teacherId createdAt")
+    .lean();
+
+  const students = await Student.find()
+    .select("studentId name class teacherId")
+    .lean();
+
+  const results = await Result.find()
+    .select("studentId testId testName teacherId score total date")
+    .sort({ date: -1 })
+    .limit(5000)
+    .lean();
   const content = `
     <div style="
   display:flex;
@@ -436,6 +451,49 @@ function openSelectedSettings(){
     </script>
   `;
   res.send(layout(content, "tests"));
+});
+// ---------- TEACHER TESTS DATA API ----------
+router.get("/api/teacher-tests-data", authMiddleware, async (req, res) => {
+  try {
+    const Test = require("../models/Test");
+    const Assignment = require("../models/Assignment");
+    const Student = require("../models/Student");
+    const Result = require("../models/Result");
+
+    const teacherId = String(req.user.id);
+
+    const tests = await Test.find({ teacherId })
+      .select("name subject className status teacherId testType durationMinutes scheduledAt createdAt publishedAt")
+      .sort({ createdAt: -1 })
+      .limit(1000)
+      .lean();
+
+    const assignments = await Assignment.find({ teacherId })
+      .select("testId testName className teacherId createdAt")
+      .lean();
+
+    const students = await Student.find({ teacherId })
+      .select("studentId name class teacherId")
+      .lean();
+
+    const results = await Result.find({ teacherId })
+      .select("studentId testId testName teacherId score total date")
+      .sort({ date: -1 })
+      .limit(5000)
+      .lean();
+
+    res.json({
+      tests,
+      assignments,
+      students,
+      results
+    });
+  } catch (err) {
+    console.error("TEACHER TESTS DATA API ERROR:", err);
+    res.status(500).json({
+      error: "Failed to load teacher tests data"
+    });
+  }
 });
 // ---------- CREATE TEST ----------
 router.get("/create-test", async (req, res) => {
@@ -1408,7 +1466,11 @@ router.get("/library", async (req, res) => {
   try {
     console.log("LIBRARY ROUTE HIT");
     const Question = require("../models/Question");
-    const questions = await Question.find();
+    const questions = await Question.find()
+      .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
+      .sort({ createdAt: -1 })
+      .limit(2000)
+      .lean();
     const content = `
 <div style="
   display:flex;
@@ -2721,9 +2783,17 @@ function checkRunCodeRateLimit(req){
   runCodeRateLimit[key].push(now);
   return true;
 }
+let activeCodeRuns = 0;
+const maxActiveCodeRuns = 25;
 // ---------- RUN CODE ----------
 router.post("/run-code", async (req, res) => {
   try {
+        if(activeCodeRuns >= maxActiveCodeRuns){
+      return res.status(503).json({
+        error: "Code runner is busy. Please try again in a few seconds."
+      });
+    }
+    activeCodeRuns++;
         if(!checkRunCodeRateLimit(req)){
       return res.status(429).json({
         error: "Too many code runs. Please wait a minute and try again."
@@ -2915,6 +2985,8 @@ router.post("/run-code", async (req, res) => {
     res.status(500).json({
       error: "Execution failed"
     });
+  } finally {
+    activeCodeRuns = Math.max(activeCodeRuns - 1, 0);
   }
 });
 module.exports = router;
