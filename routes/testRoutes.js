@@ -482,7 +482,11 @@ router.get("/api/teacher-tests-data", authMiddleware, async (req, res) => {
 router.get("/create-test", async (req, res) => {
 try {
 const Question = require("../models/Question");
-const questions = await Question.find().lean();
+const questions = await Question.find()
+  .select("question options correct correctAnswers subject category board difficulty scope teacherId type codingMeta testCases createdAt")
+  .sort({ createdAt: -1 })
+  .limit(2000)
+  .lean();
 let editTest = null;
 if (req.query.id) {
   editTest = await Test.findById(req.query.id).lean();
@@ -901,7 +905,11 @@ const mapping = await ClassSubject.findOne({
 router.get("/test-settings", async (req, res) => {
   try {
     const selectedTestId = req.query.id || "";
-    const tests = await Test.find().lean();
+    const tests = await Test.find()
+  .select("name className subject status teacherId scheduledAt durationMinutes testType questionTimersEnabled createdAt")
+  .sort({ createdAt: -1 })
+  .limit(1000)
+  .lean();
     const content = `
 <div style="
   display:flex;
@@ -1846,22 +1854,41 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
   try {
     const Question = require("../models/Question");
     const teacherId = String(req.user.id);
-    const questions = await Question.find({
-      $or: [
-        { scope: "public" },
-        {
-          scope: "teacher",
-          teacherId
-        }
-      ]
-    })
-      .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
-      .sort({ createdAt: -1 })
-      .limit(2000)
-      .lean();
-    res.json({
-      questions
-    });
+const page = Math.max(parseInt(req.query.page || "1"), 1);
+const limit = Math.min(
+  Math.max(parseInt(req.query.limit || "50"), 1),
+  100
+);
+const skip = (page - 1) * limit;
+const query = {
+  $or: [
+    { scope: "public" },
+    {
+      scope: "teacher",
+      teacherId
+    }
+  ]
+};
+const [questions, total] = await Promise.all([
+  Question.find(query)
+    .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean(),
+  Question.countDocuments(query)
+]);
+res.json({
+  questions,
+  pagination: {
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+    hasNextPage: page * limit < total,
+    hasPrevPage: page > 1
+  }
+});
   } catch (err) {
     console.error("LIBRARY DATA API ERROR:", err);
     res.status(500).json({
@@ -2318,9 +2345,13 @@ router.post("/save-question", authMiddleware, async (req, res) => {
 router.get("/my-questions", async (req, res) => {
   try {
     const Question = require("../models/Question");
-    const questions = await Question.find({
-      scope: "teacher"
-    }).sort({ createdAt: -1 }).lean();
+const questions = await Question.find({
+  scope: "teacher"
+})
+  .select("question options correct subject board difficulty type teacherId scope analytics createdAt")
+  .sort({ createdAt: -1 })
+  .limit(1000)
+  .lean();
     const content = `
 <script>
 const pageUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -2824,7 +2855,6 @@ router.post("/run-code", async (req, res) => {
         error: "Too many code runs. Please wait a minute and try again."
       });
     }
-
     activeCodeRuns++;
     const {
       code,
