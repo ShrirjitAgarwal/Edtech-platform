@@ -3,6 +3,17 @@ const router = express.Router();
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const authController = require("../controllers/authController");
+const rateLimit = require("express-rate-limit");
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many login attempts. Please try again after 15 minutes."
+  }
+});
 // ---------- REGISTER ----------
 router.post("/register", async (req, res) => {
   const { name, email, password, role, class: studentClass, teacherId } = req.body;
@@ -28,7 +39,7 @@ const user = await User.create({
 });
 // ---------- LOGIN ----------
 console.log("AUTH LOGIN HIT");
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   const emailInput = (req.body.email || "").trim().toLowerCase();
 const passwordInput = (req.body.password || "").trim();
   try {

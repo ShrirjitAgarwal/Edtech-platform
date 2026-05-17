@@ -7,9 +7,22 @@ const envFile =
 require("dotenv").config({ path: envFile });
 console.log("ENV:", process.env.NODE_ENV || "local");
 const express = require("express");
+const compression = require("compression");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
 const connectDB = require("./data/config/db");
 const app = express();
+app.set("trust proxy", 1);
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests. Please try again later."
+  }
+});
 // REGISTER MODELS
 require("./models/User");
 require("./models/Student");
@@ -28,7 +41,11 @@ const teacherRoutes = require("./routes/teacherRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const reportRoutes = require("./routes/reportRoutes");
-app.use(express.json());
+app.use(compression());
+app.use(express.json({
+  limit: "2mb"
+}));
+app.use(globalLimiter);
 app.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
@@ -64,9 +81,25 @@ app.use("/", adminRoutes);
 app.use("/", studentRoutes);
 app.use("/", reportRoutes);
 app.use((err, req, res, next) => {
-  console.error("SERVER ERROR:", err);
-  res.status(500).json({
-    error: "Internal server error"
+  console.error("SERVER ERROR:", {
+    message: err.message,
+    stack:
+      process.env.NODE_ENV !== "production"
+        ? err.stack
+        : undefined,
+    path: req.originalUrl,
+    method: req.method
+  });
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(err.status || 500).json({
+    error:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message || "Internal server error"
   });
 });
 const startServer = async () => {

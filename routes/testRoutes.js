@@ -2819,12 +2819,13 @@ router.post("/run-code", async (req, res) => {
         error: "Code runner is busy. Please try again in a few seconds."
       });
     }
-    activeCodeRuns++;
-        if(!checkRunCodeRateLimit(req)){
+    if(!checkRunCodeRateLimit(req)){
       return res.status(429).json({
         error: "Too many code runs. Please wait a minute and try again."
       });
     }
+
+    activeCodeRuns++;
     const {
       code,
       language,
