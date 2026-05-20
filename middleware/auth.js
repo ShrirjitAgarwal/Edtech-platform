@@ -1,16 +1,25 @@
 const jwt = require("jsonwebtoken");
+
 function authMiddleware(req, res, next) {
   let token = null;
+
+  if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
+  }
+
   const header = req.headers.authorization;
-  if (header && header.startsWith("Bearer ")) {
+  if (!token && header && header.startsWith("Bearer ")) {
     token = header.split(" ")[1];
   }
+
   if (!token && req.query.token) {
     token = req.query.token;
   }
+
   if (!token) {
     return res.status(401).send("No token");
   }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
@@ -20,4 +29,5 @@ function authMiddleware(req, res, next) {
     return res.status(401).send("Invalid token");
   }
 }
+
 module.exports = authMiddleware;

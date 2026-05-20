@@ -8,6 +8,8 @@ const TestSchema = new mongoose.Schema({
     }
   ],
   teacherId: String,
+schoolId: String,
+schoolCode: String,
   className: String,
   subject: String,
   status: {
@@ -51,4 +53,8 @@ TestSchema.index({ teacherId: 1, className: 1 });
 TestSchema.index({ className: 1, subject: 1 });
 TestSchema.index({ status: 1, scheduledAt: 1 });
 TestSchema.index({ createdAt: -1 });
+TestSchema.index({ teacherId: 1, createdAt: -1 });
+TestSchema.index({ schoolId: 1 });
+TestSchema.index({ schoolId: 1, teacherId: 1 });
+TestSchema.index({ schoolId: 1, className: 1 });
 module.exports = mongoose.model("Test", TestSchema);

@@ -5,12 +5,13 @@ function sidebar(active = "", role = "teacher") {
         { key: "my-tests", label: "My Tests", path: "/my-tests" },
         { key: "dashboard", label: "Dashboard", path: "/my-tests" }
       ]
-    : [
-        { key: "dashboard", label: "Dashboard", path: "/teacher" },
-        { key: "library", label: "Library", path: "/library" },
-        { key: "tests", label: "Tests", path: "/teacher-tests" },
-        { key: "classes", label: "Classes", path: "/classes" }
-      ];
+: [
+  { key: "dashboard", label: "Dashboard", path: "/teacher" },
+  { key: "library", label: "Library", path: "/library" },
+  { key: "tests", label: "Tests", path: "/teacher-tests" },
+  { key: "classes", label: "Classes", path: "/classes" },
+  { key: "settings", label: "Settings", path: "/teacher-settings" }
+];
   return `
 <div style="
   width:150px;

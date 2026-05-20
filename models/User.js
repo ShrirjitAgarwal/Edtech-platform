@@ -6,8 +6,14 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: String,
   class: String,
-  teacherId: String
-  
+  teacherId: String,
+
+  schoolId: String,
+  schoolCode: String,
+
+  createdBy: String,
+  createdByName: String
+
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

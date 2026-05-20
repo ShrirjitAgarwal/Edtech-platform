@@ -4,6 +4,8 @@ const assignmentSchema = new mongoose.Schema({
   testName: String,
   className: String,
   teacherId: String,
+  schoolId: String,
+schoolCode: String,
   createdAt: {
     type: Date,
     default: Date.now
@@ -11,7 +13,10 @@ const assignmentSchema = new mongoose.Schema({
 });
 // PERFORMANCE INDEXES
 assignmentSchema.index({ teacherId: 1 });
+assignmentSchema.index({ teacherId: 1, createdAt: -1 });
 assignmentSchema.index({ testId: 1 });
 assignmentSchema.index({ className: 1, teacherId: 1 });
 assignmentSchema.index({ createdAt: -1 });
+assignmentSchema.index({ schoolId: 1 });
+assignmentSchema.index({ schoolId: 1, teacherId: 1 });
 module.exports = mongoose.model("Assignment", assignmentSchema);

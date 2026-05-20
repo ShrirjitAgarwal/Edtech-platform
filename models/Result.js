@@ -1,4 +1,3 @@
-console.log("Result model file loaded");
 const mongoose = require("mongoose");
 const resultSchema = new mongoose.Schema({
   studentId: String,
@@ -7,6 +6,8 @@ const resultSchema = new mongoose.Schema({
   testId: String,
   testName: String,
   teacherId: String,
+schoolId: String,
+schoolCode: String,
   score: Number,
   total: Number,
   answers: Array,
@@ -18,4 +19,7 @@ resultSchema.index({ teacherId: 1, testId: 1 });
 resultSchema.index({ teacherId: 1, studentId: 1 });
 resultSchema.index({ teacherId: 1, class: 1 });
 resultSchema.index({ date: -1 });
+resultSchema.index({ schoolId: 1 });
+resultSchema.index({ schoolId: 1, teacherId: 1 });
+resultSchema.index({ schoolId: 1, studentId: 1 });
 module.exports = mongoose.model("Result", resultSchema);

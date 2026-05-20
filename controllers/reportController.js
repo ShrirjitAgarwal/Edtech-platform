@@ -8,10 +8,13 @@ exports.downloadReport = async (req, res) => {
       });
     }
     const teacherId = req.user.id;
-    const results = await Result.find({
-      studentId: String(studentId),
-      teacherId: String(teacherId)
-    });
+const results = await Result.find({
+  studentId: String(studentId),
+  teacherId: String(teacherId),
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+})
+  .sort({ date: -1 })
+  .lean();
     if (!results || results.length === 0) {
       return res.status(404).json({
         error: "No results found"
@@ -59,9 +62,15 @@ exports.downloadClassReport = async (req, res) => {
         error: "Missing className"
       });
     }
-    const results = await Result.find({
-      class: className
-    });
+const teacherId = req.user.id;
+
+const results = await Result.find({
+  class: className,
+  teacherId: String(teacherId),
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+})
+  .sort({ date: -1 })
+  .lean();
     if (!results.length) {
       return res.status(404).json({
         error: "No data found"
@@ -115,13 +124,25 @@ exports.downloadClassReport = async (req, res) => {
 };
 exports.resultPage = async (req, res) => {
   const { testId, studentId } = req.query;
-  const Result = require("../models/Result");
-  let result;
-  try {
-    result = await Result.findOne({
-      testId: String(testId),
-      studentId: String(studentId)
-    });
+const Result = require("../models/Result");
+const Student = require("../models/Student");
+let result;
+try {
+  const student = await Student.findOne({
+    studentId: String(studentId)
+  })
+    .select("studentId schoolId")
+    .lean();
+
+  if (!student) {
+    return res.send("<h2>No result found</h2>");
+  }
+
+  result = await Result.findOne({
+    testId: String(testId),
+    studentId: String(studentId),
+    ...(student.schoolId ? { schoolId: student.schoolId } : {})
+  }).lean();
   } catch (err) {
     console.error(err);
   }

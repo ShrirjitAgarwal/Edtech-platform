@@ -87,8 +87,17 @@ function layout(content, active = "") {
 // ---------- DASHBOARD ----------
 router.get("/dashboard", async (req, res) => {
   const Test = require("../models/Test");
-  const allResults = await Result.find();
-  const tests = await Test.find();
+const allResults = await Result.find()
+  .select("studentId name class testId testName teacherId score total date")
+  .sort({ date: -1 })
+  .limit(5000)
+  .lean();
+
+const tests = await Test.find()
+  .select("name teacherId")
+  .sort({ createdAt: -1 })
+  .limit(1000)
+  .lean();
   const selectedTest = req.query.test || "all";
   res.send(`
   <body style="background:linear-gradient(to bottom, #eef2ff, #f8fafc);font-family:Arial;margin:0;">
@@ -151,15 +160,6 @@ const user = JSON.parse(localStorage.getItem("user") || "null");
 if(!user){
   window.location.replace("/");
 } else if(user.role !== "teacher"){
-  window.location.replace("/");
-}
-// 🚫 block back button
-window.history.pushState(null, null, window.location.href);
-window.onpopstate = function () {
-  window.location.replace("/");
-};
-const user = JSON.parse(localStorage.getItem("user") || "null");
-if(!user){
   window.location.replace("/");
 }
 // 🚫 block back button
@@ -248,8 +248,8 @@ function sortScores(){
   const table = document.querySelector("table");
   const rows = Array.from(table.rows).slice(1);
   rows.sort((a,b) => {
-    const aScore = parseInt(a.cells[2].innerText);
-    const bScore = parseInt(b.cells[2].innerText);
+    const aScore = parseInt(a.cells[3].innerText);
+const bScore = parseInt(b.cells[3].innerText);
     return bScore - aScore;
   });
   rows.forEach(row => table.appendChild(row));

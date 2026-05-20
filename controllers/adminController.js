@@ -5,9 +5,12 @@ exports.adminStudentPage = async (req, res) => {
     }
     const studentId = req.query.studentId;
     const Result = require("../models/Result");
-    const results = await Result.find({
-      studentId
-    });
+const results = await Result.find({
+  studentId,
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+})
+  .sort({ date: -1 })
+  .lean();
     if (!results.length) {
       return res.send("<h2>No data found</h2>");
     }
@@ -141,17 +144,22 @@ exports.adminClassPage = async (req, res) => {
     const Result = require("../models/Result");
     const Assignment = require("../models/Assignment");
     const Student = require("../models/Student");
-    const results = await Result.find({
-      class: className
-    });
-    const assignments =
-      await Assignment.find({
-        class: className
-      });
-    const students =
-      await Student.find({
-        class: className
-      });
+const results = await Result.find({
+  class: className,
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+})
+  .sort({ date: -1 })
+  .lean();
+const assignments =
+  await Assignment.find({
+    className,
+    ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+  }).lean();
+const students =
+  await Student.find({
+    class: className,
+    ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+  }).lean();
     const attemptedSet =
       new Set(
         results.map((r) =>
@@ -159,11 +167,12 @@ exports.adminClassPage = async (req, res) => {
         )
       );
     const assignedSet =
-      new Set(
-        assignments.map((a) =>
-          String(a.studentId)
-        )
-      );
+      new Set();
+    if (assignments.length > 0) {
+      students.forEach((s) => {
+        assignedSet.add(String(s.studentId));
+      });
+    }
     let missingStudents = [];
     if (assignedSet.size > 0) {
       students.forEach((s) => {
@@ -379,7 +388,10 @@ fetch(
 method:"POST",
 headers:{
 "Content-Type":
-"application/json"
+"application/json",
+"Authorization":
+"Bearer " +
+localStorage.getItem("token")
 },
 body:JSON.stringify({
 className:
@@ -411,29 +423,12 @@ alert(
 });
 }
 function goBack(){
-const token =
-new URLSearchParams(
-window.location.search
-).get("token");
-window.location.replace(
-"/school-dashboard?token=" +
-encodeURIComponent(
-token
-)
-);
+window.location.replace("/school-dashboard");
 }
 function goToStudent(id){
-const token =
-new URLSearchParams(
-window.location.search
-).get("token");
 window.location.replace(
 "/admin-student?studentId=" +
-encodeURIComponent(id) +
-"&token=" +
-encodeURIComponent(
-token
-)
+encodeURIComponent(id)
 );
 }
 </script>
@@ -446,25 +441,13 @@ token
 };
 exports.schoolDashboardPage = async (req, res) => {
   try {
-    const token = req.query.token;
-    if (!token) {
-      return res.status(401).send("No token");
-    }
-    const jwt = require("jsonwebtoken");
-    let decoded;
-    try {
-      decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET
-      );
-    } catch (err) {
-      return res
-        .status(401)
-        .send("Invalid token");
-    }
-    if (decoded.role !== "admin") {
-      return res.send("Access denied");
-    }
+if (req.user.role !== "admin") {
+  return res.send("Access denied");
+}
+const schoolId = req.user.schoolId || null;
+const schoolScopedFilter = schoolId
+  ? { schoolId }
+  : {};
     const Student =
       require("../models/Student");
     const ClassModel =
@@ -475,23 +458,33 @@ exports.schoolDashboardPage = async (req, res) => {
       require("../models/Assignment");
     const Result =
       require("../models/Result");
-    const students =
-      await Student.find();
-    const classes =
-      await ClassModel.find();
-    const tests =
-      await Test.find();
-    const assignments =
-      await Assignment.find();
-    const results =
-      await Result.find();
+const students =
+  await Student.find(schoolScopedFilter).lean();
+const classes =
+  await ClassModel.find(schoolScopedFilter).lean();
+const tests =
+  await Test.find(schoolScopedFilter).lean();
+const assignments =
+  await Assignment.find(schoolScopedFilter).lean();
+const results =
+  await Result.find(schoolScopedFilter).lean();
     let assignmentMap = {};
     assignments.forEach((a) => {
       const cls =
-        a.class || "Unknown";
+        a.className || a.class || "Unknown";
       if (!assignmentMap[cls]) {
         assignmentMap[cls] =
           new Set();
+      }
+      students
+        .filter((s) => String(s.class || "") === String(cls || ""))
+        .forEach((s) => {
+          assignmentMap[cls].add(String(s.studentId));
+        });
+      if (Array.isArray(a.studentIds)) {
+        a.studentIds.forEach((studentId) => {
+          assignmentMap[cls].add(String(studentId));
+        });
       }
       if (a.studentId) {
         assignmentMap[cls].add(
@@ -639,6 +632,18 @@ ${c.completion}%
       new Set();
     assignments.forEach(
       (a) => {
+        const cls =
+          a.className || a.class || "Unknown";
+        students
+          .filter((s) => String(s.class || "") === String(cls || ""))
+          .forEach((s) => {
+            assignedStudents.add(String(s.studentId));
+          });
+        if (Array.isArray(a.studentIds)) {
+          a.studentIds.forEach((studentId) => {
+            assignedStudents.add(String(studentId));
+          });
+        }
         if (a.studentId) {
           assignedStudents.add(
             String(
@@ -720,15 +725,28 @@ Admin
 </h2>
 <div
 onclick="
-go('/school-dashboard?token=${token}')
+go('/school-dashboard')
 "
 style="
 padding:12px 14px;
 border-radius:8px;
 cursor:pointer;
 background:#334155;
+margin-bottom:10px;
 ">
 Dashboard
+</div>
+<div
+onclick="
+go('/admin-settings')
+"
+style="
+padding:12px 14px;
+border-radius:8px;
+cursor:pointer;
+margin-bottom:10px;
+">
+Settings
 </div>
 </div>
 <div>
@@ -896,11 +914,7 @@ window.location.replace("/");
 function goToClass(cls){
 window.location.replace(
 "/admin-class?class=" +
-encodeURIComponent(cls) +
-"&token=" +
-encodeURIComponent(
-"${token}"
-)
+encodeURIComponent(cls)
 );
 }
 </script>
@@ -913,6 +927,713 @@ encodeURIComponent(
     );
   }
 };
+exports.adminSettingsPage = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.send("Access denied");
+    }
+    const School = require("../models/School");
+    const User = require("../models/User");
+    const Student = require("../models/Student");
+    const ClassModel = require("../models/Class");
+    const Test = require("../models/Test");
+    const Result = require("../models/Result");
+    const ClassSubject = require("../models/ClassSubject");
+    const schoolId = req.user.schoolId || null;
+    const schoolScopedFilter = schoolId
+      ? { schoolId }
+      : {};
+    const [
+      school,
+      admins,
+      teachers,
+      students,
+      classes,
+      tests,
+      results,
+      mappings
+    ] = await Promise.all([
+      schoolId
+        ? School.findById(schoolId).lean()
+        : null,
+      User.find({
+        role: "admin",
+        ...schoolScopedFilter
+      })
+        .select("name email role schoolId schoolCode createdBy createdByName createdAt")
+        .lean(),
+      User.find({
+        role: "teacher",
+        ...schoolScopedFilter
+      })
+        .select("name email role schoolId schoolCode createdBy createdByName createdAt")
+        .lean(),
+      Student.find(schoolScopedFilter)
+        .select("studentId name class teacherId schoolId schoolCode")
+        .lean(),
+      ClassModel.find(schoolScopedFilter)
+        .select("name teacherId studentIds schoolId schoolCode")
+        .lean(),
+      Test.find(schoolScopedFilter)
+        .select("name subject className teacherId status schoolId schoolCode")
+        .lean(),
+      Result.find(schoolScopedFilter)
+        .select("studentId testId score total schoolId schoolCode")
+        .lean(),
+      ClassSubject.find(schoolScopedFilter)
+        .select("className subject teacherId schoolId schoolCode")
+        .lean()
+    ]);
+    const teacherOptions = teachers.map(t => `
+      <option value="${t._id}">
+        ${t.name || t.email || "Unnamed Teacher"} - ${t.email || ""}
+      </option>
+    `).join("");
+    const mappingRows = mappings.map(m => {
+  const teacher = teachers.find(t =>
+    String(t._id) === String(m.teacherId)
+  );
+  return `
+<tr>
+  <td>${m.className || "-"}</td>
+  <td>${m.subject || "-"}</td>
+  <td>${teacher ? teacher.name || teacher.email : "Unknown"}</td>
+  <td>
+    <button
+      onclick="deleteMapping('${m._id}')"
+      style="
+        background:#dc2626;
+        color:white;
+        border:none;
+        padding:8px 12px;
+        border-radius:8px;
+        cursor:pointer;
+      "
+    >
+      Delete
+    </button>
+  </td>
+</tr>
+`;
+}).join("");
+const teacherRows = teachers.map(t => `
+<tr>
+  <td>${t.name || "-"}</td>
+  <td>${t.email || "-"}</td>
+  <td>${t.role || "-"}</td>
+  <td>${t.createdByName || "-"}</td>
+  <td>${
+    t.createdAt
+      ? new Date(t.createdAt).toLocaleString()
+      : "-"
+  }</td>
+  <td>
+    ${
+      String(t._id) === String(req.user.id)
+        ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
+        : `
+          <button
+            onclick="deleteUser('${t._id}')"
+            style="
+              background:#dc2626;
+              color:white;
+              border:none;
+              padding:8px 12px;
+              border-radius:8px;
+              cursor:pointer;
+            "
+          >
+            Delete
+          </button>
+        `
+    }
+  </td>
+</tr>
+`).join("");
+const adminRows = admins.map(a => `
+<tr>
+  <td>${a.name || "-"}</td>
+  <td>${a.email || "-"}</td>
+  <td>${a.role || "-"}</td>
+  <td>${a.createdByName || "-"}</td>
+  <td>${
+    a.createdAt
+      ? new Date(a.createdAt).toLocaleString()
+      : "-"
+  }</td>
+  <td>
+    ${
+      String(a._id) === String(req.user.id)
+        ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
+        : `
+          <button
+            onclick="deleteUser('${a._id}')"
+            style="
+              background:#dc2626;
+              color:white;
+              border:none;
+              padding:8px 12px;
+              border-radius:8px;
+              cursor:pointer;
+            "
+          >
+            Delete
+          </button>
+        `
+    }
+  </td>
+</tr>
+`).join("");
+    const classOptions = [...new Set(
+      students.map(s => s.class).filter(Boolean)
+    )].map(className => `
+      <option value="${className}">${className}</option>
+    `).join("");
+    res.send(`
+<body style="margin:0;font-family:Arial;background:#eef2ff;">
+<div style="display:flex;min-height:100vh;">
+  <div style="
+    width:240px;
+    background:#1e293b;
+    color:white;
+    padding:20px 16px;
+    box-sizing:border-box;
+  ">
+    <h2>Admin</h2>
+<div onclick="go('/school-dashboard')" style="padding:12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">
+  Dashboard
+</div>
+<div onclick="go('/admin-settings')" style="padding:12px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">
+  Settings
+</div>
+    <div onclick="logout()" style="padding:12px;border-radius:8px;cursor:pointer;color:#f87171;margin-top:30px;">
+      Logout
+    </div>
+  </div>
+  <div style="flex:1;padding:30px;overflow:auto;">
+    <h1>Admin Settings</h1>
+    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+      <h2>School Overview</h2>
+      <p><b>School Name:</b> ${school?.name || "N/A"}</p>
+      <p><b>School Code:</b> ${school?.code || req.user.schoolCode || "N/A"}</p>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px;">
+        <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${admins.length}</b><br>Admins</div>
+        <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${teachers.length}</b><br>Teachers</div>
+        <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${students.length}</b><br>Students</div>
+        <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${classes.length}</b><br>Classes</div>
+        <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${tests.length}</b><br>Tests</div>
+        <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${results.length}</b><br>Results</div>
+        <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${mappings.length}</b><br>Mappings</div>
+      </div>
+    </div>
+    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+      <h2>Map Teacher to Class and Subject</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;">
+        <select id="mapClassName" style="padding:10px;">
+          <option value="">Select Class</option>
+          ${classOptions}
+        </select>
+        <select id="mapSubject" style="padding:10px;">
+  <option value="">Select Subject</option>
+  <option value="Maths">Maths</option>
+  <option value="Computer Science">Computer Science</option>
+  <option value="Physics">Physics</option>
+</select>
+        <select id="mapTeacherId" style="padding:10px;">
+          <option value="">Select Teacher</option>
+          ${teacherOptions}
+        </select>
+        <button onclick="saveMapping()" style="
+          padding:10px 16px;
+          background:#4f46e5;
+          color:white;
+          border:none;
+          border-radius:8px;
+          cursor:pointer;
+          font-weight:700;
+        ">
+          Save
+        </button>
+      </div>
+      <h3 style="margin-top:24px;">Current Mappings</h3>
+      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;">
+<tr>
+  <th>Class</th>
+  <th>Subject</th>
+  <th>Teacher</th>
+  <th>Action</th>
+</tr>
+        ${mappingRows || "<tr><td colspan='4'>No mappings found</td></tr>"}
+      </table>
+    </div>
+    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+      <h2>Add Teacher / Admin</h2>
+      <p style="color:#64748b;">This section will be connected in the next pass.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;">
+        <input id="newUserName" placeholder="Name" style="padding:10px;" />
+        <input id="newUserEmail" placeholder="Email" style="padding:10px;" />
+        <input id="newUserPassword" placeholder="Temporary Password" type="password" style="padding:10px;" />
+        <select id="newUserRole" style="padding:10px;">
+          <option value="teacher">Teacher</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button onclick="addUser()" style="
+          padding:10px 16px;
+          background:#16a34a;
+          color:white;
+          border:none;
+          border-radius:8px;
+          cursor:pointer;
+          font-weight:700;
+        ">
+          Add
+        </button>
+      </div>
+    </div>
+    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+      <h2>Teachers</h2>
+      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;">
+<tr>
+  <th>Name</th>
+  <th>Email</th>
+  <th>Role</th>
+  <th>Created By</th>
+  <th>Created Date</th>
+  <th>Action</th>
+</tr>
+        ${teacherRows || "<tr><td colspan='6'>No teachers found</td></tr>"}
+      </table>
+    </div>
+    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+      <h2>Admins</h2>
+      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;">
+<tr>
+  <th>Name</th>
+  <th>Email</th>
+  <th>Role</th>
+  <th>Created By</th>
+  <th>Created Date</th>
+  <th>Action</th>
+</tr>
+        ${adminRows || "<tr><td colspan='6'>No admins found</td></tr>"}
+      </table>
+    </div>
+    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+      <h2>Payments and Invoices</h2>
+      <p style="color:#64748b;">Coming later.</p>
+    </div>
+  </div>
+</div>
+<script>
+function go(path){
+  window.location.replace(path);
+}
+function logout(){
+  localStorage.clear();
+  window.location.replace("/");
+}
+function saveMapping(){
+  const className = document.getElementById("mapClassName").value;
+  const subject = document.getElementById("mapSubject").value;
+  const teacherId = document.getElementById("mapTeacherId").value;
+  if(!className || !subject || !teacherId){
+    alert("Class, subject, and teacher are required");
+    return;
+  }
+  fetch("/admin/map-class-subject", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      className,
+      subject,
+      teacherId
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("Mapping saved");
+    location.reload();
+  })
+  .catch(() => alert("Mapping failed"));
+}
+function deleteMapping(mappingId){
+  if(
+    !confirm(
+      "Delete this mapping?"
+    )
+  ){
+    return;
+  }
+  fetch(
+    "/admin/delete-class-subject-mapping",
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":
+          "application/json",
+        "Authorization":
+          "Bearer " +
+          localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        mappingId
+      })
+    }
+  )
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("Mapping deleted");
+    location.reload();
+  })
+  .catch(() => {
+    alert(
+      "Failed to delete mapping"
+    );
+  });
+}
+  function deleteUser(userId){
+  if(
+    !confirm(
+      "Delete this user?"
+    )
+  ){
+    return;
+  }
+  fetch(
+    "/admin/delete-user",
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":
+          "application/json",
+        "Authorization":
+          "Bearer " +
+          localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        userId
+      })
+    }
+  )
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("User deleted");
+    location.reload();
+  })
+  .catch(() => {
+    alert(
+      "Failed to delete user"
+    );
+  });
+}
+function addUser(){
+  const name =
+    document
+      .getElementById("newUserName")
+      .value
+      .trim();
+  const email =
+    document
+      .getElementById("newUserEmail")
+      .value
+      .trim();
+  const password =
+    document
+      .getElementById("newUserPassword")
+      .value
+      .trim();
+  const role =
+    document
+      .getElementById("newUserRole")
+      .value;
+  if(
+    !name ||
+    !email ||
+    !password
+  ){
+    alert("All fields are required");
+    return;
+  }
+  fetch("/admin/add-user", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":
+        "Bearer " +
+        localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      role
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert(
+      role.charAt(0).toUpperCase() +
+      role.slice(1) +
+      " created successfully"
+    );
+    location.reload();
+  })
+  .catch(() => {
+    alert("Failed to create user");
+  });
+}
+</script>
+</body>
+`);
+  } catch (err) {
+    console.error("ADMIN SETTINGS ERROR:", err);
+    res.send("Error loading admin settings");
+  }
+};
+exports.addUserFromAdmin = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        error: "Access denied"
+      });
+    }
+    const bcrypt = require("bcrypt");
+    const User = require("../models/User");
+    const {
+      name,
+      email,
+      password,
+      role
+    } = req.body;
+    const normalizedName =
+      String(name || "").trim();
+    const normalizedEmail =
+      String(email || "")
+        .trim()
+        .toLowerCase();
+    const normalizedPassword =
+      String(password || "").trim();
+    const normalizedRole =
+      String(role || "teacher")
+        .trim()
+        .toLowerCase();
+    if (
+      !normalizedName ||
+      !normalizedEmail ||
+      !normalizedPassword
+    ) {
+      return res.status(400).json({
+        error: "All fields are required"
+      });
+    }
+    if (
+      normalizedRole !== "teacher" &&
+      normalizedRole !== "admin"
+    ) {
+      return res.status(400).json({
+        error: "Invalid role"
+      });
+    }
+    const existing =
+      await User.findOne({
+        email: normalizedEmail
+      }).lean();
+    if (existing) {
+      return res.status(400).json({
+        error: "User already exists"
+      });
+    }
+    const hashedPassword =
+      await bcrypt.hash(
+        normalizedPassword,
+        10
+      );
+const user =
+  await User.create({
+    name: normalizedName,
+    email: normalizedEmail,
+    password: hashedPassword,
+    role: normalizedRole,
+    schoolId:
+      req.user.schoolId || null,
+    schoolCode:
+      req.user.schoolCode || null,
+    createdBy:
+      String(req.user.id || ""),
+    createdByName:
+      String(req.user.name || "Admin")
+  });
+    res.json({
+      status: "created",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        schoolId: user.schoolId,
+        schoolCode: user.schoolCode
+      }
+    });
+  } catch (err) {
+    console.error(
+      "ADMIN ADD USER ERROR:",
+      err
+    );
+    res.status(500).json({
+      error: "Failed to create user"
+    });
+  }
+};
+exports.deleteClassSubjectMapping =
+  async (req, res) => {
+    try {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({
+          error: "Not allowed"
+        });
+      }
+      const ClassSubject =
+        require("../models/ClassSubject");
+      const { mappingId } =
+        req.body;
+      if (!mappingId) {
+        return res.status(400).json({
+          error: "Missing mappingId"
+        });
+      }
+      const deleted =
+        await ClassSubject.findOneAndDelete({
+          _id: mappingId,
+          ...(req.user.schoolId
+            ? {
+                schoolId:
+                  req.user.schoolId
+              }
+            : {})
+        });
+      if (!deleted) {
+        return res.status(404).json({
+          error: "Mapping not found"
+        });
+      }
+      res.json({
+        status: "deleted"
+      });
+    } catch (err) {
+      console.error(
+        "DELETE MAPPING ERROR:",
+        err
+      );
+      res.status(500).json({
+        error: "Failed to delete mapping"
+      });
+    }
+  };
+  exports.deleteUserFromAdmin =
+  async (req, res) => {
+    try {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({
+          error: "Not allowed"
+        });
+      }
+      const User =
+        require("../models/User");
+      const { userId } =
+        req.body;
+      if (!userId) {
+        return res.status(400).json({
+          error: "Missing userId"
+        });
+      }
+      if (
+        String(userId) ===
+        String(req.user.id)
+      ) {
+        return res.status(400).json({
+          error:
+            "You cannot delete your own account"
+        });
+      }
+      const targetUser =
+        await User.findOne({
+          _id: userId,
+          ...(req.user.schoolId
+            ? {
+                schoolId:
+                  req.user.schoolId
+              }
+            : {})
+        });
+      if (!targetUser) {
+        return res.status(404).json({
+          error: "User not found"
+        });
+      }
+      if (
+        targetUser.role !== "teacher" &&
+        targetUser.role !== "admin"
+      ) {
+        return res.status(400).json({
+          error:
+            "Only teachers and admins can be deleted"
+        });
+      }
+      if (
+        targetUser.role === "admin"
+      ) {
+        const adminCount =
+          await User.countDocuments({
+            role: "admin",
+            ...(req.user.schoolId
+              ? {
+                  schoolId:
+                    req.user.schoolId
+                }
+              : {})
+          });
+        if (adminCount <= 1) {
+          return res.status(400).json({
+            error:
+              "Cannot delete the last admin"
+          });
+        }
+      }
+      await User.deleteOne({
+        _id: userId
+      });
+      res.json({
+        status: "deleted"
+      });
+    } catch (err) {
+      console.error(
+        "DELETE USER ERROR:",
+        err
+      );
+      res.status(500).json({
+        error: "Failed to delete user"
+      });
+    }
+  };
 exports.mapClassSubject = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -925,15 +1646,44 @@ exports.mapClassSubject = async (req, res) => {
     if (!normalizedClass || !normalizedSubject || !teacherId) {
       return res.status(400).json({ error: "Missing fields" });
     }
-    await ClassSubject.deleteMany({
-      className: normalizedClass,
-      subject: normalizedSubject
-    });
-    const newMapping = await ClassSubject.create({
-      className: normalizedClass,
-      subject: normalizedSubject,
-      teacherId: String(teacherId)
-    });
+const existingMapping =
+  await ClassSubject.findOne({
+    className: normalizedClass,
+    subject: normalizedSubject,
+    ...(req.user.schoolId
+      ? { schoolId: req.user.schoolId }
+      : {})
+  }).lean();
+if (existingMapping) {
+  const User =
+    require("../models/User");
+  const existingTeacher =
+    await User.findById(
+      existingMapping.teacherId
+    )
+      .select("name email")
+      .lean();
+  return res.status(400).json({
+    error:
+      "This class and subject is already mapped to " +
+      (
+        existingTeacher?.name ||
+        existingTeacher?.email ||
+        "another teacher"
+      ) +
+      ". Delete the existing mapping before assigning a new teacher."
+  });
+}
+const newMapping =
+  await ClassSubject.create({
+    className: normalizedClass,
+    subject: normalizedSubject,
+    teacherId: String(teacherId),
+    schoolId:
+      req.user.schoolId || null,
+    schoolCode:
+      req.user.schoolCode || null
+  });
     res.json({ status: "mapped", data: newMapping });
   } catch (err) {
     console.error(err);

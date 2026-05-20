@@ -27,6 +27,10 @@ type: {
     type: String,
     default: null
   },
+  schoolCode: {
+  type: String,
+  default: null
+},
   question: String,
   options: {
     type: [String],
@@ -94,4 +98,10 @@ questionSchema.index({ subject: 1, board: 1 });
 questionSchema.index({ subject: 1, difficulty: 1 });
 questionSchema.index({ scope: 1, subject: 1 });
 questionSchema.index({ createdAt: -1 });
+questionSchema.index({ scope: 1, createdAt: -1 });
+questionSchema.index({ scope: 1, teacherId: 1, createdAt: -1 });
+questionSchema.index({ teacherId: 1, createdAt: -1 });
+questionSchema.index({ schoolId: 1 });
+questionSchema.index({ schoolId: 1, teacherId: 1 });
+questionSchema.index({ schoolId: 1, subject: 1 });
 module.exports = mongoose.model("Question", questionSchema);

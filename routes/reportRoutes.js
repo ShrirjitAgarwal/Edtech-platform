@@ -9,6 +9,7 @@ router.post(
 );
 router.post(
   "/download-class-report",
+  authMiddleware,
   reportController.downloadClassReport
 );
 router.get(

@@ -51,7 +51,7 @@ function logout(){
 `;
 }
 // ---------- TEACHER TEST LIST ----------
-router.get("/teacher-tests", async (req, res) => {
+router.get("/teacher-tests", authMiddleware, async (req, res) => {
   const content = `
     <div style="
   display:flex;
@@ -448,28 +448,59 @@ router.get("/api/teacher-tests-data", authMiddleware, async (req, res) => {
     const Assignment = require("../models/Assignment");
     const Student = require("../models/Student");
     const Result = require("../models/Result");
+
     const teacherId = String(req.user.id);
-    const tests = await Test.find({ teacherId })
-      .select("name subject className status teacherId testType durationMinutes scheduledAt createdAt publishedAt")
-      .sort({ createdAt: -1 })
-      .limit(1000)
-      .lean();
-    const assignments = await Assignment.find({ teacherId })
-      .select("testId testName className teacherId createdAt")
-      .lean();
-    const students = await Student.find({ teacherId })
-      .select("studentId name class teacherId")
-      .lean();
-    const results = await Result.find({ teacherId })
-      .select("studentId testId testName teacherId score total date")
-      .sort({ date: -1 })
-      .limit(5000)
-      .lean();
+const schoolId = req.user.schoolId || null;
+const schoolScopedFilter = schoolId
+  ? { teacherId, schoolId }
+  : { teacherId };
+    const page = Math.max(parseInt(req.query.page || "1"), 1);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit || "50"), 1),
+      100
+    );
+    const skip = (page - 1) * limit;
+
+    const [tests, totalTests, assignments, students, results] =
+      await Promise.all([
+        Test.find(schoolScopedFilter)
+          .select("name subject className status teacherId testType durationMinutes scheduledAt createdAt publishedAt")
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+
+        Test.countDocuments(schoolScopedFilter),
+
+        Assignment.find(schoolScopedFilter)
+          .select("testId testName className teacherId createdAt")
+          .lean(),
+
+        Student.find(schoolScopedFilter)
+          .select("studentId name class teacherId")
+          .limit(5000)
+          .lean(),
+
+Result.find(schoolScopedFilter)
+  .select("studentId testId testName teacherId score total date")
+  .sort({ date: -1 })
+  .limit(500)
+  .lean()
+      ]);
+
     res.json({
       tests,
       assignments,
       students,
-      results
+      results,
+      pagination: {
+        page,
+        limit,
+        total: totalTests,
+        totalPages: Math.ceil(totalTests / limit),
+        hasNextPage: page * limit < totalTests,
+        hasPrevPage: page > 1
+      }
     });
   } catch (err) {
     console.error("TEACHER TESTS DATA API ERROR:", err);
@@ -479,17 +510,38 @@ router.get("/api/teacher-tests-data", authMiddleware, async (req, res) => {
   }
 });
 // ---------- CREATE TEST ----------
-router.get("/create-test", async (req, res) => {
+router.get("/create-test", authMiddleware, async (req, res) => {
 try {
 const Question = require("../models/Question");
-const questions = await Question.find()
+const teacherId = String(req.user.id);
+const schoolId = req.user.schoolId || null;
+
+const questions = await Question.find({
+  $or: [
+    { scope: "public" },
+    schoolId
+      ? {
+          scope: "teacher",
+          teacherId,
+          schoolId
+        }
+      : {
+          scope: "teacher",
+          teacherId
+        }
+  ]
+})
   .select("question options correct correctAnswers subject category board difficulty scope teacherId type codingMeta testCases createdAt")
   .sort({ createdAt: -1 })
-  .limit(2000)
+  .limit(500)
   .lean();
 let editTest = null;
 if (req.query.id) {
-  editTest = await Test.findById(req.query.id).lean();
+  editTest = await Test.findOne({
+  _id: req.query.id,
+  teacherId,
+  ...(schoolId ? { schoolId } : {})
+}).lean();
 }
 const content = `
 <div style="
@@ -858,7 +910,8 @@ const normalizedSubject =
 const mapping = await ClassSubject.findOne({
   className: normalizedClass,
   subject: normalizedSubject,
-  teacherId: String(req.user.id)
+  teacherId: String(req.user.id),
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
 });
     if (!mapping) {
       return res.status(403).json({
@@ -866,11 +919,12 @@ const mapping = await ClassSubject.findOne({
       });
     }
         if (testId) {
-      const existingTest = await Test.findOne({
-        _id: testId,
-        teacherId: String(req.user.id),
-        status: "draft"
-      });
+const existingTest = await Test.findOne({
+  _id: testId,
+  teacherId: String(req.user.id),
+  status: "draft",
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+});
       if (!existingTest) {
         return res.status(404).json({
           error: "Draft test not found or cannot be edited"
@@ -880,21 +934,25 @@ const mapping = await ClassSubject.findOne({
       existingTest.questionIds = questionIds;
       existingTest.className = normalizedClass;
       existingTest.subject = normalizedSubject;
+      existingTest.schoolId = existingTest.schoolId || req.user.schoolId || null;
+existingTest.schoolCode = existingTest.schoolCode || req.user.schoolCode || null;
       await existingTest.save();
       return res.json({
         status: "draft_updated",
         test: existingTest
       });
     }
-    const newTest = await Test.create({
-      name,
-      questionIds,
-      teacherId: req.user.id,
-      className: normalizedClass,
-      subject: normalizedSubject,
-      status: "draft",
-      publishedAt: null
-    });
+const newTest = await Test.create({
+  name,
+  questionIds,
+  teacherId: req.user.id,
+  schoolId: req.user.schoolId || null,
+  schoolCode: req.user.schoolCode || null,
+  className: normalizedClass,
+  subject: normalizedSubject,
+  status: "draft",
+  publishedAt: null
+});
     res.json({ status: "draft_saved", test: newTest });
   } catch (err) {
     console.error(err);
@@ -902,10 +960,16 @@ const mapping = await ClassSubject.findOne({
   }
 });
 // ---------- TEST SETTINGS PAGE ----------
-router.get("/test-settings", async (req, res) => {
+router.get("/test-settings", authMiddleware, async (req, res) => {
   try {
     const selectedTestId = req.query.id || "";
-    const tests = await Test.find()
+const teacherId = String(req.user.id);
+const schoolId = req.user.schoolId || null;
+
+const tests = await Test.find({
+  teacherId,
+  ...(schoolId ? { schoolId } : {})
+})
   .select("name className subject status teacherId scheduledAt durationMinutes testType questionTimersEnabled createdAt")
   .sort({ createdAt: -1 })
   .limit(1000)
@@ -1186,10 +1250,11 @@ router.post("/save-test-settings", authMiddleware, async (req, res) => {
         error: "Invalid test type"
       });
     }
-    const test = await Test.findOne({
-      _id: testId,
-      teacherId: String(req.user.id)
-    });
+const test = await Test.findOne({
+  _id: testId,
+  teacherId: String(req.user.id),
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+});
     if (!test) {
       return res.status(404).json({
         error: "Test not found or unauthorized"
@@ -1221,17 +1286,26 @@ router.post("/delete-test", authMiddleware, async (req, res) => {
     const Test = require("../models/Test");
     const Assignment = require("../models/Assignment");
     // 🔒 Only allow deleting own tests
-    const test = await Test.findOne({
-      _id: id,
-      teacherId: req.user.id
-    });
+const test = await Test.findOne({
+  _id: id,
+  teacherId: req.user.id,
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+});
     if (!test) {
       return res.status(404).json({ error: "Test not found or unauthorized" });
     }
     // 🗑 Delete test
-    await Test.deleteOne({ _id: id });
+    await Test.deleteOne({
+  _id: id,
+  teacherId: req.user.id,
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+});
     // 🧹 Remove assignments linked to this test
-    await Assignment.deleteMany({ testId: id });
+    await Assignment.deleteMany({
+  testId: id,
+  teacherId: req.user.id,
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+});
     res.json({ status: "deleted" });
   } catch (err) {
     console.error("DELETE TEST ERROR:", err);
@@ -1247,13 +1321,16 @@ router.post("/delete-multiple-tests", authMiddleware, async (req, res) => {
     const Test = require("../models/Test");
     const Assignment = require("../models/Assignment");
     // 🔒 Only delete teacher's own tests
-    await Test.deleteMany({
-      _id: { $in: ids },
-      teacherId: req.user.id
-    });
-    await Assignment.deleteMany({
-      testId: { $in: ids }
-    });
+await Test.deleteMany({
+  _id: { $in: ids },
+  teacherId: req.user.id,
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+});
+await Assignment.deleteMany({
+  testId: { $in: ids },
+  teacherId: req.user.id,
+  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+});
     res.json({ status: "deleted" });
   } catch (err) {
     console.error("BULK DELETE ERROR:", err);
@@ -1278,6 +1355,11 @@ try {
  if (!studentId || !testId || !Array.isArray(answers)) {
    return res.status(400).json({ error: "Invalid submission data" });
  }
+ if (answers.length > 200) {
+  return res.status(400).json({
+    error: "Too many answers submitted"
+  });
+}
   const Result = require("../models/Result");
  const Test = require("../models/Test");
  const Question = require("../models/Question");
@@ -1286,6 +1368,20 @@ try {
  if (!test) {
    return res.status(404).json({ error: "Test not found" });
  }
+ const questionIds = answers
+  .filter(answer => answer.questionId)
+  .map(answer => answer.questionId);
+
+const questions = await Question.find({
+  _id: { $in: questionIds }
+})
+  .select("codingMeta testCases")
+  .lean();
+
+const questionMap = {};
+questions.forEach(question => {
+  questionMap[String(question._id)] = question;
+});
  const existing = await Result.findOne({
    studentId,
    testId
@@ -1302,7 +1398,8 @@ try {
      gradedAnswers.push(answer);
      continue;
    }
-   const question = await Question.findById(answer.questionId).lean();
+   const question =
+  questionMap[String(answer.questionId)];
    if(!question || !question.codingMeta?.functionName){
      gradedAnswers.push({
        ...answer,
@@ -1313,6 +1410,15 @@ try {
      continue;
    }
    const code = String(answer.selected || "");
+   if (code.length > 10000) {
+  gradedAnswers.push({
+    ...answer,
+    isCorrect: false,
+    codingScore: 0,
+    codingTotal: 0
+  });
+  continue;
+}
    const functionName = String(question.codingMeta.functionName || "").trim();
    const testCases = Array.isArray(question.testCases)
      ? question.testCases
@@ -1416,30 +1522,41 @@ try {
      codingTotal
    });
  }
- const result = await Result.create({
-   studentId,
-   name: "",
-   class: test.className || "",
-   testId,
-   testName: testName || test.name,
-   teacherId: test.teacherId,
-   score: finalScore,
-   total,
-   answers: gradedAnswers,
-   date: new Date()
- });
-  for (const answer of gradedAnswers) {
-   if (!answer.questionId) continue;
-   await Question.updateOne(
-     { _id: answer.questionId },
-     {
-       $inc: {
-         "analytics.attempted": 1,
-         [answer.isCorrect ? "analytics.correct" : "analytics.incorrect"]: 1
-       }
-     }
-   );
- }
+const result = await Result.create({
+  studentId,
+  name: "",
+  class: test.className || "",
+  testId,
+  testName: testName || test.name,
+  teacherId: test.teacherId,
+  schoolId: test.schoolId || null,
+  schoolCode: test.schoolCode || null,
+  score: finalScore,
+  total,
+  answers: gradedAnswers,
+  date: new Date()
+});
+const bulkAnalyticsUpdates = gradedAnswers
+  .filter(answer => answer.questionId)
+  .map(answer => ({
+    updateOne: {
+      filter: {
+        _id: answer.questionId
+      },
+      update: {
+        $inc: {
+          "analytics.attempted": 1,
+          [answer.isCorrect
+            ? "analytics.correct"
+            : "analytics.incorrect"]: 1
+        }
+      }
+    }
+  }));
+
+if(bulkAnalyticsUpdates.length){
+  await Question.bulkWrite(bulkAnalyticsUpdates);
+}
  res.json({
    status: "submitted",
    result
@@ -1453,7 +1570,7 @@ try {
 }
 });
 // ---------- LIBRARY ----------
-router.get("/library", async (req, res) => {
+router.get("/library", authMiddleware, async (req, res) => {
   try {
     console.log("LIBRARY ROUTE HIT");
     const content = `
@@ -1854,6 +1971,7 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
   try {
     const Question = require("../models/Question");
     const teacherId = String(req.user.id);
+    const schoolId = req.user.schoolId || null;
 const page = Math.max(parseInt(req.query.page || "1"), 1);
 const limit = Math.min(
   Math.max(parseInt(req.query.limit || "50"), 1),
@@ -1863,10 +1981,16 @@ const skip = (page - 1) * limit;
 const query = {
   $or: [
     { scope: "public" },
-    {
-      scope: "teacher",
-      teacherId
-    }
+    schoolId
+      ? {
+          scope: "teacher",
+          teacherId,
+          schoolId
+        }
+      : {
+          scope: "teacher",
+          teacherId
+        }
   ]
 };
 const [questions, total] = await Promise.all([
@@ -1897,24 +2021,44 @@ res.json({
   }
 });
 // ---------- CREATE QUESTION PAGE ----------
-router.get("/create-question", async (req, res) => {
+router.get("/create-question", authMiddleware, async (req, res) => {
   try {
     const Question = require("../models/Question");
 let editQuestion = null;
 if(req.query.id){
-  editQuestion = await Question.findOne({
+editQuestion = await Question.findOne({
     _id: req.query.id,
-    scope: "teacher"
+    scope: "teacher",
+    teacherId: String(req.user.id),
+    ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
   }).lean();
 }
-const allQuestionsForDropdowns = await Question.find().lean();
+const dropdownQuestions = await Question.find({
+  $or: [
+    { scope: "public" },
+    req.user.schoolId
+      ? {
+          scope: "teacher",
+          schoolId: req.user.schoolId
+        }
+      : {
+          scope: "teacher",
+          teacherId: String(req.user.id)
+        }
+  ]
+})
+  .select("subject category board")
+  .limit(5000)
+  .lean();
+
 const subjectOptionsForQuestionBuilder = [...new Set(
-  allQuestionsForDropdowns
+  dropdownQuestions
     .map(q => q.subject || q.category)
     .filter(Boolean)
 )];
+
 const boardOptionsForQuestionBuilder = [...new Set(
-  allQuestionsForDropdowns
+  dropdownQuestions
     .map(q => q.board || "General")
     .filter(Boolean)
 )];
@@ -2278,11 +2422,12 @@ router.post("/save-question", authMiddleware, async (req, res) => {
         error: "Question required"
       });
     }
-    const questionData = {
-      type: type || "mcq",
-      scope: "teacher",
-      teacherId: String(req.user.id),
-      schoolId: null,
+const questionData = {
+  type: type || "mcq",
+  scope: "teacher",
+  teacherId: String(req.user.id),
+  schoolId: req.user.schoolId || null,
+  schoolCode: req.user.schoolCode || null,
       question,
       options: Array.isArray(options)
         ? options
@@ -2305,10 +2450,11 @@ router.post("/save-question", authMiddleware, async (req, res) => {
         : []
     };
     if(questionId){
-      const existingQuestion = await Question.findOne({
+const existingQuestion = await Question.findOne({
         _id: questionId,
         teacherId: String(req.user.id),
-        scope: "teacher"
+        scope: "teacher",
+        ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
       });
       if(!existingQuestion){
         return res.status(404).json({
@@ -2342,11 +2488,16 @@ router.post("/save-question", authMiddleware, async (req, res) => {
   }
 });
 // ---------- MY QUESTIONS ----------
-router.get("/my-questions", async (req, res) => {
+router.get("/my-questions", authMiddleware, async (req, res) => {
   try {
     const Question = require("../models/Question");
+const teacherId = String(req.user.id);
+const schoolId = req.user.schoolId || null;
+
 const questions = await Question.find({
-  scope: "teacher"
+  scope: "teacher",
+  teacherId,
+  ...(schoolId ? { schoolId } : {})
 })
   .select("question options correct subject board difficulty type teacherId scope analytics createdAt")
   .sort({ createdAt: -1 })
@@ -2573,18 +2724,22 @@ router.post("/delete-question", authMiddleware, async (req, res) => {
         error: "Missing question id"
       });
     }
-    const question = await Question.findOne({
+const question = await Question.findOne({
       _id: id,
       teacherId: String(req.user.id),
-      scope: "teacher"
+      scope: "teacher",
+      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     });
     if(!question){
       return res.status(404).json({
         error: "Question not found or unauthorized"
       });
     }
-    await Question.deleteOne({
-      _id: id
+await Question.deleteOne({
+      _id: id,
+      teacherId: String(req.user.id),
+      scope: "teacher",
+      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     });
     res.json({
       status: "deleted"
@@ -2632,7 +2787,9 @@ student = await Student.create({
   studentId: row.studentId,
   name: row.name,
   class: row.class,
-  teacherId: teacher._id
+  teacherId: teacher._id,
+  schoolId: req.user.schoolId || teacher.schoolId || null,
+  schoolCode: req.user.schoolCode || teacher.schoolCode || null
 });
 created++;
 } else {
@@ -2643,6 +2800,8 @@ if (String(student.teacherId) !== String(req.user.id)) {
 }
 student.name = row.name;
 student.class = row.class;
+student.schoolId = student.schoolId || req.user.schoolId || teacher.schoolId || null;
+student.schoolCode = student.schoolCode || req.user.schoolCode || teacher.schoolCode || null;
 await student.save();
 updated++; // ✅ ADD THIS LINE
 }
@@ -2654,11 +2813,13 @@ updated++; // ✅ ADD THIS LINE
      teacherId: req.user.id
    });
    if(!classDoc){
-     classDoc = await ClassModel.create({
-       name: row.class,
-       teacherId: req.user.id,
-       studentIds: [row.studentId]
-     });
+classDoc = await ClassModel.create({
+  name: row.class,
+  teacherId: req.user.id,
+  schoolId: req.user.schoolId || teacher.schoolId || null,
+  schoolCode: req.user.schoolCode || teacher.schoolCode || null,
+  studentIds: [row.studentId]
+});
    } else {
      if(!classDoc.studentIds.includes(row.studentId)){
        classDoc.studentIds.push(row.studentId);
@@ -2709,12 +2870,14 @@ router.post("/assign-test", authMiddleware, async (req, res) => {
       teacherId: String(req.user.id)
     });
     if (!exists) {
-      await Assignment.create({
-        testId: String(testId),
-        testName: test.name,
-        className,
-        teacherId: String(req.user.id)
-      });
+await Assignment.create({
+  testId: String(testId),
+  testName: test.name,
+  className,
+  teacherId: String(req.user.id),
+  schoolId: test.schoolId || req.user.schoolId || null,
+  schoolCode: test.schoolCode || req.user.schoolCode || null
+});
     }
     test.status = "published";
     test.publishedAt = test.publishedAt || new Date();
