@@ -9,6 +9,10 @@ const testCaseSchema = new mongoose.Schema({
 });
 const questionSchema = new mongoose.Schema({
   legacyId: Number,
+  importKey: {
+  type: String,
+  default: null
+},
 type: {
   type: String,
   enum: ["mcq", "coding", "written"],
@@ -91,6 +95,7 @@ questionSchema.index({ subject: 1 });
 questionSchema.index({ board: 1 });
 questionSchema.index({ type: 1 });
 questionSchema.index({ legacyId: 1 });
+questionSchema.index({ importKey: 1 });
 
 // PERFORMANCE INDEXES
 questionSchema.index({ scope: 1, teacherId: 1 });

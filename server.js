@@ -42,6 +42,7 @@ const teacherRoutes = require("./routes/teacherRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const platformRoutes = require("./routes/platformRoutes");
 app.use(compression());
 app.use(cookieParser());
 app.use(express.json({
@@ -82,6 +83,7 @@ app.use("/", teacherRoutes);
 app.use("/", adminRoutes);
 app.use("/", studentRoutes);
 app.use("/", reportRoutes);
+app.use("/", platformRoutes);
 app.use((err, req, res, next) => {
   console.error("SERVER ERROR:", {
     message: err.message,

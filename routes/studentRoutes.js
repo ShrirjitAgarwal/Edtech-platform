@@ -1,4 +1,5 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 const Student = require("../models/Student");
 const Result = require("../models/Result");
@@ -387,6 +388,27 @@ router.post("/student-lookup", async (req, res) => {
           .select("name")
           .lean()
       : null;
+    const studentSessionToken = jwt.sign(
+      {
+        role: "student",
+        studentRecordId: String(student._id),
+        studentId: student.studentId,
+        studentKey: student.studentKey,
+        class: student.class,
+        teacherId: student.teacherId,
+        schoolId: student.schoolId || null,
+        schoolCode: student.schoolCode || null
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    res.cookie("studentSessionToken", studentSessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 2 * 60 * 60 * 1000
+    });
 
     res.json({
       status: "matched",
@@ -466,17 +488,12 @@ window.logout = function(){
   window.location.replace("/");
 };
 window.startTest = function(id){
-  const student = JSON.parse(localStorage.getItem("student"));
   if (document.documentElement.requestFullscreen) {
     document.documentElement.requestFullscreen();
   }
   window.location.href =
     "/test?id=" +
-    encodeURIComponent(id) +
-    "&studentId=" +
-    encodeURIComponent(student.studentId) +
-    "&studentRecordId=" +
-    encodeURIComponent(student.studentRecordId);
+    encodeURIComponent(id);
 };
 window.onbeforeunload = function () {
   window.scrollTo(0, 0);
@@ -672,19 +689,45 @@ router.post("/student-login", async (req, res) => {
 router.get("/test", async (req, res) => {
   try {
     const id = req.query.id;
-    const studentId = req.query.studentId;
-    const studentRecordId = req.query.studentRecordId;
-    if (!id || !studentId || !studentRecordId) {
+    const studentToken = req.cookies && req.cookies.studentSessionToken;
+
+    if (!id || !studentToken) {
       return res.redirect("/student-entry");
     }
+
+    let decodedStudent;
+
+    try {
+      decodedStudent = jwt.verify(
+        studentToken,
+        process.env.JWT_SECRET
+      );
+    } catch (tokenErr) {
+      return res.redirect("/student-entry");
+    }
+
+    if (!decodedStudent || decodedStudent.role !== "student") {
+      return res.redirect("/student-entry");
+    }
+
+    const studentId = decodedStudent.studentId;
+    const studentRecordId = decodedStudent.studentRecordId;
+
     const student = await Student.findOne({
       _id: studentRecordId,
       studentId,
       status: "active"
     })
-      .select("studentId studentKey schoolId schoolCode status")
+      .select("studentId studentKey schoolId schoolCode teacherId class status")
       .lean();
     if (!student) {
+      return res.redirect("/student-entry");
+    }
+    if (
+      decodedStudent.schoolId &&
+      student.schoolId &&
+      String(decodedStudent.schoolId) !== String(student.schoolId)
+    ) {
       return res.redirect("/student-entry");
     }
 const alreadyAttempted = await Result.findOne({
@@ -998,7 +1041,6 @@ const testId = "${test._id}";
 window.__testId = testId;
 const testName = "${test.name}";
 const studentId = "${studentId}";
-const studentRecordId = "${studentRecordId}";
 window.codeMirrorEditors = window.codeMirrorEditors || {};
 window.getCodeAnswer = function(qid){
   const editor = window.codeMirrorEditors?.[qid];

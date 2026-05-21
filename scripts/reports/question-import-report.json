@@ -1,0 +1,21 @@
+{
+  "startedAt": "2026-05-21T05:12:33.007Z",
+  "finishedAt": "2026-05-21T05:12:33.779Z",
+  "importFile": "/Users/shrirjitagarwal/edtech-platform/scripts/imports/question-import.xlsx",
+  "parsed": {
+    "mcq": 1,
+    "coding": 1,
+    "written": 1,
+    "total": 3
+  },
+  "inserted": 0,
+  "skippedDuplicates": 0,
+  "failedRows": [
+    {
+      "sheet": "MCQ",
+      "rowNumber": 3,
+      "message": "Missing or invalid correctAnswers"
+    }
+  ],
+  "status": "failed_validation"
+}

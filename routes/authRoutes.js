@@ -120,6 +120,7 @@ if (!isMatch) {
 const token = jwt.sign(
 {
   id: user._id,
+  email: user.email,
   role: user.role,
   schoolId: user.schoolId || null,
   schoolCode: user.schoolCode || null
