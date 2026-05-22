@@ -6,6 +6,9 @@ const authMiddleware = require("../middleware/auth");
 const Test = require("../models/Test");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
+const {
+  runJavaScriptSubmission
+} = require("../services/codeJudge");
 // ---------- NAVBAR ----------
 function navbar(){
 return `
@@ -1402,7 +1405,6 @@ router.post("/submit", async (req, res) => {
     const Test = require("../models/Test");
     const Question = require("../models/Question");
     const Student = require("../models/Student");
-    const vm = require("vm");
 
     const student = await Student.findOne({
       _id: studentRecordId,
@@ -1485,108 +1487,44 @@ router.post("/submit", async (req, res) => {
         });
         continue;
       }
-      const functionName = String(question.codingMeta.functionName || "").trim();
-      const testCases = Array.isArray(question.testCases)
-        ? question.testCases
-        : [];
-      let passedCount = 0;
-      try {
-        const sandbox = {
-          console: {
-            log: function () { },
-            error: function () { },
-            warn: function () { }
-          }
-        };
-        vm.createContext(sandbox);
-        vm.runInContext(code, sandbox, {
-          timeout: 1000
-        });
-        let executableFunction = sandbox[functionName];
-        if (typeof executableFunction !== "function") {
-          const matchedKey = Object.keys(sandbox).find(key =>
-            String(key).toLowerCase() ===
-            String(functionName).toLowerCase()
-          );
-          if (matchedKey) {
-            executableFunction = sandbox[matchedKey];
-          }
-        }
-        function parseInputValue(value) {
-          const trimmed = String(value || "").trim();
-          if (trimmed === "") {
-            return "";
-          }
-          try {
-            return JSON.parse(trimmed);
-          } catch (err) {
-            if (!isNaN(trimmed)) {
-              return Number(trimmed);
-            }
-            return trimmed;
-          }
-        }
-        function parseArgs(rawInput) {
-          const input = String(rawInput || "").trim();
-          if (input === "") {
-            return [];
-          }
-          if (input.startsWith("[") && input.endsWith("]")) {
-            try {
-              const parsed = JSON.parse(input);
-              return Array.isArray(parsed) ? [parsed] : [parsed];
-            } catch (err) {
-              return [input];
-            }
-          }
-          return input.split(",").map(value => parseInputValue(value));
-        }
-        function normalizeOutput(value) {
-          if (value === undefined) {
-            return "undefined";
-          }
-          if (value === null) {
-            return "null";
-          }
-          if (typeof value === "object") {
-            return JSON.stringify(value);
-          }
-          return String(value).trim();
-        }
-        if (typeof executableFunction === "function") {
-          for (const tc of testCases) {
-            sandbox.__studentArgs = parseArgs(tc.input);
-            sandbox.__studentResult = undefined;
-            sandbox.__studentFunction = executableFunction;
-            try {
-              vm.runInContext(
-                "__studentResult = __studentFunction(...__studentArgs)",
-                sandbox,
-                { timeout: 1000 }
-              );
-              const actual = normalizeOutput(sandbox.__studentResult);
-              const expected = String(tc.expectedOutput || "").trim();
-              if (actual === expected) {
-                passedCount++;
-              }
-            } catch (err) { }
-            delete sandbox.__studentArgs;
-            delete sandbox.__studentResult;
-            delete sandbox.__studentFunction;
-          }
-        }
-      } catch (err) { }
-      const codingTotal = testCases.length;
-      const codingPassed = codingTotal > 0 && passedCount === codingTotal;
-      if (codingPassed) {
-        finalScore++;
-      }
-      gradedAnswers.push({
-        ...answer,
-        isCorrect: codingPassed,
-        codingScore: passedCount,
-        codingTotal
-      });
+const functionName =
+  String(
+    question.codingMeta.functionName || ""
+  ).trim();
+
+const testCases = Array.isArray(question.testCases)
+  ? question.testCases
+  : [];
+
+const judgeResult =
+  await runJavaScriptSubmission({
+    code,
+    functionName,
+    testCases
+  });
+
+const codingTotal =
+  judgeResult.totalCount || testCases.length;
+
+const passedCount =
+  judgeResult.passedCount || 0;
+
+const codingPassed =
+  codingTotal > 0 &&
+  passedCount === codingTotal;
+
+if (codingPassed) {
+  finalScore++;
+}
+
+gradedAnswers.push({
+  ...answer,
+  isCorrect: codingPassed,
+  codingScore: passedCount,
+  codingTotal,
+  judgeError: judgeResult.error || null,
+  judgeResults: judgeResult.testResults || []
+});
     }
     const result = await Result.create({
       studentId,
