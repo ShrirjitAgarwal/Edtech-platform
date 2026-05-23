@@ -36,6 +36,7 @@ require("./models/School");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
 const testRoutes = require("./routes/testRoutes");
+const codeRoutes = require("./routes/codeRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const teacherRoutes = require("./routes/teacherRoutes");
@@ -77,6 +78,7 @@ app.get("/health", (req, res) => {
 // ---------- ROUTES ----------
 app.use("/", publicRoutes);
 app.use("/", testRoutes);
+app.use("/", codeRoutes);
 app.use("/", authRoutes);
 app.use("/", dashboardRoutes);
 app.use("/", teacherRoutes);

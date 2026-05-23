@@ -452,7 +452,6 @@ router.get("/api/teacher-tests-data", authMiddleware, async (req, res) => {
     const Assignment = require("../models/Assignment");
     const Student = require("../models/Student");
     const Result = require("../models/Result");
-
     const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
 const schoolScopedFilter = schoolId
@@ -464,7 +463,6 @@ const schoolScopedFilter = schoolId
       100
     );
     const skip = (page - 1) * limit;
-
     const [tests, totalTests, assignments, students, results] =
       await Promise.all([
         Test.find(schoolScopedFilter)
@@ -473,25 +471,20 @@ const schoolScopedFilter = schoolId
           .skip(skip)
           .limit(limit)
           .lean(),
-
         Test.countDocuments(schoolScopedFilter),
-
         Assignment.find(schoolScopedFilter)
           .select("testId testName className teacherId createdAt")
           .lean(),
-
         Student.find(schoolScopedFilter)
           .select("studentId name class teacherId")
           .limit(5000)
           .lean(),
-
 Result.find(schoolScopedFilter)
   .select("studentId testId testName teacherId score total date")
   .sort({ date: -1 })
   .limit(500)
   .lean()
       ]);
-
     res.json({
       tests,
       assignments,
@@ -519,7 +512,6 @@ try {
 const Question = require("../models/Question");
 const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
-
 const questions = await Question.find({
   $or: [
     { scope: "public" },
@@ -905,7 +897,6 @@ router.post("/save-test", authMiddleware, async (req, res) => {
     const normalizedClass = String(className || "").trim().toUpperCase();
 const rawSubject = String(subject || "").trim();
 let normalizedSubject = rawSubject;
-
 if (
   rawSubject.toLowerCase() === "cs" ||
   rawSubject.toLowerCase() === "computer science"
@@ -982,7 +973,6 @@ router.get("/test-settings", authMiddleware, async (req, res) => {
     const selectedTestId = req.query.id || "";
 const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
-
 const tests = await Test.find({
   teacherId,
   ...(schoolId ? { schoolId } : {})
@@ -1368,15 +1358,11 @@ router.post("/submit", async (req, res) => {
       total,
       answers
     } = req.body;
-
     const studentToken = req.cookies && req.cookies.studentSessionToken;
-
     if (!studentToken) {
       return res.status(401).json({ error: "Student session expired" });
     }
-
     let decodedStudent;
-
     try {
       decodedStudent = jwt.verify(
         studentToken,
@@ -1385,14 +1371,11 @@ router.post("/submit", async (req, res) => {
     } catch (tokenErr) {
       return res.status(401).json({ error: "Student session expired" });
     }
-
     if (!decodedStudent || decodedStudent.role !== "student") {
       return res.status(401).json({ error: "Invalid student session" });
     }
-
     const studentId = decodedStudent.studentId;
     const studentRecordId = decodedStudent.studentRecordId;
-
     if (!studentId || !studentRecordId || !testId || !Array.isArray(answers)) {
       return res.status(400).json({ error: "Invalid submission data" });
     }
@@ -1405,7 +1388,6 @@ router.post("/submit", async (req, res) => {
     const Test = require("../models/Test");
     const Question = require("../models/Question");
     const Student = require("../models/Student");
-
     const student = await Student.findOne({
       _id: studentRecordId,
       studentId,
@@ -1413,16 +1395,13 @@ router.post("/submit", async (req, res) => {
     })
       .select("studentId name class teacherId schoolId schoolCode status")
       .lean();
-
     if (!student) {
       return res.status(401).json({ error: "Invalid student session" });
     }
-
     const test = await Test.findById(testId).lean();
     if (!test) {
       return res.status(404).json({ error: "Test not found" });
     }
-
     if (
       student.schoolId &&
       test.schoolId &&
@@ -1430,11 +1409,9 @@ router.post("/submit", async (req, res) => {
     ) {
       return res.status(403).json({ error: "Test not available" });
     }
-
     const questionIds = answers
       .filter(answer => answer.questionId)
       .map(answer => answer.questionId);
-
     const questions = await Question.find({
       _id: { $in: questionIds },
       $or: [
@@ -1444,7 +1421,6 @@ router.post("/submit", async (req, res) => {
     })
       .select("codingMeta testCases")
       .lean();
-
     const questionMap = {};
     questions.forEach(question => {
       questionMap[String(question._id)] = question;
@@ -1491,11 +1467,9 @@ const functionName =
   String(
     question.codingMeta.functionName || ""
   ).trim();
-
 const testCases = Array.isArray(question.testCases)
   ? question.testCases
   : [];
-
 const judgeResult =
   await judgeSubmission({
     code,
@@ -1505,21 +1479,16 @@ const judgeResult =
       question.codingMeta?.language ||
       "javascript"
   });
-
 const codingTotal =
   judgeResult.totalCount || testCases.length;
-
 const passedCount =
   judgeResult.passedCount || 0;
-
 const codingPassed =
   codingTotal > 0 &&
   passedCount === codingTotal;
-
 if (codingPassed) {
   finalScore++;
 }
-
 gradedAnswers.push({
   ...answer,
   isCorrect: codingPassed,
@@ -1560,7 +1529,6 @@ gradedAnswers.push({
           }
         }
       }));
-
     if (bulkAnalyticsUpdates.length) {
       await Question.bulkWrite(bulkAnalyticsUpdates);
     }
@@ -2057,13 +2025,11 @@ const dropdownQuestions = await Question.find({
   .select("subject category board")
   .limit(5000)
   .lean();
-
 const subjectOptionsForQuestionBuilder = [...new Set(
   dropdownQuestions
     .map(q => q.subject || q.category)
     .filter(Boolean)
 )];
-
 const boardOptionsForQuestionBuilder = [...new Set(
   dropdownQuestions
     .map(q => q.board || "General")
@@ -2501,7 +2467,6 @@ router.get("/my-questions", authMiddleware, async (req, res) => {
     const Question = require("../models/Question");
 const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
-
 const questions = await Question.find({
   scope: "teacher",
   teacherId,
@@ -2861,7 +2826,6 @@ router.post("/assign-test", authMiddleware, async (req, res) => {
     const className = String(test.className).trim().toUpperCase();
 const rawSubject = String(test.subject || "").trim();
 let subject = rawSubject;
-
 if (
   rawSubject.toLowerCase() === "cs" ||
   rawSubject.toLowerCase() === "computer science"
@@ -2996,168 +2960,6 @@ res.json(filtered);
   } catch (err) {
     console.error("GET TESTS ERROR:", err);
     res.status(500).json({ error: "Failed to fetch tests" });
-  }
-});
-const runCodeRateLimit = {};
-function getRunCodeClientKey(req){
-  return (
-    req.ip ||
-    req.headers["x-forwarded-for"] ||
-    req.connection?.remoteAddress ||
-    "unknown"
-  );
-}
-function checkRunCodeRateLimit(req){
-  const key = getRunCodeClientKey(req);
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const maxRequests = 20;
-  if(!runCodeRateLimit[key]){
-    runCodeRateLimit[key] = [];
-  }
-  runCodeRateLimit[key] = runCodeRateLimit[key].filter(timestamp =>
-    now - timestamp < windowMs
-  );
-  if(runCodeRateLimit[key].length >= maxRequests){
-    return false;
-  }
-  runCodeRateLimit[key].push(now);
-  return true;
-}
-let activeCodeRuns = 0;
-const maxActiveCodeRuns = 25;
-// ---------- RUN CODE ----------
-router.post("/run-code", async (req, res) => {
-  try {
-    if (activeCodeRuns >= maxActiveCodeRuns) {
-      return res.status(503).json({
-        error: "Code runner is busy. Please try again in a few seconds."
-      });
-    }
-
-    if (!checkRunCodeRateLimit(req)) {
-      return res.status(429).json({
-        error: "Too many code runs. Please wait a minute and try again."
-      });
-    }
-
-    activeCodeRuns++;
-
-    const {
-      code,
-      language,
-      functionName,
-      testCases
-    } = req.body;
-
-    if (!code || !String(code).trim()) {
-      return res.status(400).json({
-        error: "Code required"
-      });
-    }
-
-    if (String(code).length > 10000) {
-      return res.status(400).json({
-        error: "Code is too long. Please keep your answer under 10,000 characters."
-      });
-    }
-
-    if (!functionName || !String(functionName).trim()) {
-      return res.status(400).json({
-        error: "Function name required"
-      });
-    }
-
-    if (!Array.isArray(testCases) || !testCases.length) {
-      return res.status(400).json({
-        error: "No test cases found"
-      });
-    }
-
-    if (testCases.length > 4) {
-      return res.status(400).json({
-        error: "Too many test cases"
-      });
-    }
-
-    const cleanTestCases = testCases
-      .filter(tc => tc && typeof tc === "object")
-      .map(tc => ({
-        input: String(tc.input || ""),
-        expectedOutput: String(tc.expectedOutput || ""),
-        isHidden: !!tc.isHidden
-      }))
-      .filter(tc =>
-        tc.input.trim() !== "" ||
-        tc.expectedOutput.trim() !== ""
-      );
-
-    if (!cleanTestCases.length) {
-      return res.status(400).json({
-        error: "No valid test cases found"
-      });
-    }
-
-    const judgeResult = await judgeSubmission({
-      code,
-      functionName: String(functionName).trim(),
-      testCases: cleanTestCases,
-      language: language || "javascript"
-    });
-
-    let output = "";
-
-    if (judgeResult.error) {
-      output += "Error:\n\n" + judgeResult.error + "\n";
-    }
-
-    const testResults = judgeResult.testResults || [];
-
-    testResults.forEach((result, index) => {
-      const originalCase = cleanTestCases[index] || {};
-      const isHidden = !!originalCase.isHidden;
-
-      if (isHidden) {
-        output +=
-          "Test Case " + (index + 1) + " (Hidden): " +
-          (result.passed ? "PASS" : "FAIL") +
-          "\n\n";
-      } else {
-        output +=
-          "Test Case " + (index + 1) + ": " +
-          (result.passed ? "PASS" : "FAIL") +
-          "\nInput: " + (result.input || "") +
-          "\nExpected: " + (result.expectedOutput || "") +
-          "\nReceived: " + (
-            result.error
-              ? "Runtime Error: " + result.error
-              : result.actualOutput
-          ) +
-          "\n\n";
-      }
-    });
-
-    output +=
-      "Result: " +
-      (judgeResult.passedCount || 0) +
-      " / " +
-      (judgeResult.totalCount || cleanTestCases.length) +
-      " test cases passed.";
-
-    res.json({
-      output,
-      passedCount: judgeResult.passedCount || 0,
-      total: judgeResult.totalCount || cleanTestCases.length,
-      passed: !!judgeResult.allPassed,
-      testResults
-    });
-  } catch (err) {
-    console.error("RUN CODE ERROR:", err);
-    res.status(500).json({
-      error: "Execution failed"
-    });
-  } finally {
-    activeCodeRuns = Math.max(activeCodeRuns - 1, 0);
   }
 });
 module.exports = router;
