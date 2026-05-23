@@ -5,3 +5,15 @@ node_modules
 .env.production
 .DS_Store
 npm-debug.log
+uploads/
+.vscode/uploads/
+
+scripts/imports/
+scripts/reports/
+
+data/questions.json
+data/results.json
+data/teachers.json
+data/tests.json
+
+tests.json
