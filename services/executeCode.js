@@ -2,6 +2,10 @@ const {
   runJavaScriptCode
 } = require("./runners/javascriptRunner");
 
+const {
+  runPythonCode
+} = require("./runners/pythonRunner");
+
 function normalizeLanguage(language) {
   const value = String(language || "javascript")
     .trim()
@@ -24,7 +28,7 @@ function normalizeLanguage(language) {
   return value;
 }
 
-function executeCode({
+async function executeCode({
   language,
   code,
   functionName,
@@ -33,18 +37,26 @@ function executeCode({
   const normalizedLanguage =
     normalizeLanguage(language);
 
-  if (normalizedLanguage === "javascript") {
-    return runJavaScriptCode({
-      code,
-      functionName,
-      args
-    });
-  }
+if (normalizedLanguage === "javascript") {
+  return runJavaScriptCode({
+    code,
+    functionName,
+    args
+  });
+}
 
-  throw new Error(
-    "Unsupported language: " +
-    normalizedLanguage
-  );
+if (normalizedLanguage === "python") {
+  return runPythonCode({
+    code,
+    functionName,
+    args
+  });
+}
+
+throw new Error(
+  "Unsupported language: " +
+  normalizedLanguage
+);
 }
 
 module.exports = {

@@ -855,7 +855,8 @@ return `
             outline:none;
           "
         >
-        <option value="javascript">JavaScript</option>
+        <option value="javascript" ${q.codingMeta?.language === "javascript" || !q.codingMeta?.language ? "selected" : ""}>JavaScript</option>
+<option value="python" ${q.codingMeta?.language === "python" ? "selected" : ""}>Python</option>
         </select>
         <div style="
           width:10px;
@@ -1083,7 +1084,7 @@ window.runCode = async function(qid){
       signal: controller.signal,
       body: JSON.stringify({
         code,
-        language: "javascript",
+        language: q.codingMeta?.language || "javascript",
         functionName: q.codingMeta?.functionName || "",
         testCases: q.testCases || []
       })
@@ -1489,6 +1490,7 @@ function submitTest(){
 <script type="module">
 import { basicSetup, EditorView } from "https://esm.sh/codemirror@6.0.1";
 import { javascript } from "https://esm.sh/@codemirror/lang-javascript@6.2.2";
+import { python } from "https://esm.sh/@codemirror/lang-python@6.1.7";
 window.codeMirrorEditors = window.codeMirrorEditors || {};
 document.querySelectorAll(".cm-editor-host").forEach(host => {
   const questionId = host.dataset.questionId;
@@ -1501,12 +1503,15 @@ document.querySelectorAll(".cm-editor-host").forEach(host => {
       : textarea
         ? textarea.value
         : "";
-    const savedLanguage = "javascript";
+    const question = (window.__testQuestions || []).find(item =>
+  String(item._id) === String(questionId)
+);
+const savedLanguage = question?.codingMeta?.language || "javascript";
   const editor = new EditorView({
     doc: initialCode,
     extensions: [
       basicSetup,
-      javascript(),
+      savedLanguage === "python" ? python() : javascript(),
       EditorView.theme({
         "&": {
           height: "360px",
@@ -1578,10 +1583,9 @@ document.querySelectorAll(".cm-editor-host").forEach(host => {
     '.language-select[data-question-id="' + questionId + '"]'
   );
   if(languageSelect){
-    languageSelect.value = savedLanguage;
-        languageSelect.addEventListener("change", function(){
-      this.value = "javascript";
-    });
+languageSelect.value = savedLanguage;
+languageSelect.disabled = true;
+languageSelect.title = "Language is set by the question";
   }
 });
 window.getCodeAnswer = function(qid){

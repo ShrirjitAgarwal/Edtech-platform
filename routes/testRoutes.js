@@ -7,7 +7,7 @@ const Test = require("../models/Test");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
 const {
-  runJavaScriptSubmission
+  judgeSubmission
 } = require("../services/codeJudge");
 // ---------- NAVBAR ----------
 function navbar(){
@@ -1497,10 +1497,13 @@ const testCases = Array.isArray(question.testCases)
   : [];
 
 const judgeResult =
-  await runJavaScriptSubmission({
+  await judgeSubmission({
     code,
     functionName,
-    testCases
+    testCases,
+    language:
+      question.codingMeta?.language ||
+      "javascript"
   });
 
 const codingTotal =
@@ -2245,13 +2248,14 @@ if(!pageUser || pageUser.role !== "teacher"){
           border:1px solid #cbd5e1;
         "
       >
-      <select id="language" style="
-        padding:12px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-      ">
-        <option value="javascript">JavaScript</option>
-      </select>
+<select id="language" style="
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #cbd5e1;
+">
+  <option value="javascript" ${editQuestion?.codingMeta?.language === "javascript" ? "selected" : ""}>JavaScript</option>
+  <option value="python" ${editQuestion?.codingMeta?.language === "python" ? "selected" : ""}>Python</option>
+</select>
     </div>
     <textarea
       id="starterCode"
@@ -3025,53 +3029,57 @@ const maxActiveCodeRuns = 25;
 // ---------- RUN CODE ----------
 router.post("/run-code", async (req, res) => {
   try {
-        if(activeCodeRuns >= maxActiveCodeRuns){
+    if (activeCodeRuns >= maxActiveCodeRuns) {
       return res.status(503).json({
         error: "Code runner is busy. Please try again in a few seconds."
       });
     }
-    if(!checkRunCodeRateLimit(req)){
+
+    if (!checkRunCodeRateLimit(req)) {
       return res.status(429).json({
         error: "Too many code runs. Please wait a minute and try again."
       });
     }
+
     activeCodeRuns++;
+
     const {
       code,
       language,
       functionName,
       testCases
     } = req.body;
-        if(!code || !String(code).trim()){
+
+    if (!code || !String(code).trim()) {
       return res.status(400).json({
         error: "Code required"
       });
     }
-    if(String(code).length > 10000){
+
+    if (String(code).length > 10000) {
       return res.status(400).json({
         error: "Code is too long. Please keep your answer under 10,000 characters."
       });
     }
-    if(language && language !== "javascript"){
-      return res.status(400).json({
-        error: "Only JavaScript execution is currently supported"
-      });
-    }
-    if(!functionName || !String(functionName).trim()){
+
+    if (!functionName || !String(functionName).trim()) {
       return res.status(400).json({
         error: "Function name required"
       });
     }
-        if(!Array.isArray(testCases) || !testCases.length){
+
+    if (!Array.isArray(testCases) || !testCases.length) {
       return res.status(400).json({
         error: "No test cases found"
       });
     }
-    if(testCases.length > 4){
+
+    if (testCases.length > 4) {
       return res.status(400).json({
         error: "Too many test cases"
       });
     }
+
     const cleanTestCases = testCases
       .filter(tc => tc && typeof tc === "object")
       .map(tc => ({
@@ -3083,139 +3091,65 @@ router.post("/run-code", async (req, res) => {
         tc.input.trim() !== "" ||
         tc.expectedOutput.trim() !== ""
       );
-    if(!cleanTestCases.length){
+
+    if (!cleanTestCases.length) {
       return res.status(400).json({
         error: "No valid test cases found"
       });
     }
-    const vm = require("vm");
-    const cleanFunctionName = String(functionName).trim();
-    const sandbox = {
-      console: {
-        log: function(){},
-        error: function(){},
-        warn: function(){}
-      }
-    };
-    vm.createContext(sandbox);
-    try {
-      vm.runInContext(String(code), sandbox, {
-        timeout: 1000
-      });
-    } catch (err) {
-      return res.status(400).json({
-        error: "Code error: " + err.message
-      });
-    }
-    let executableFunction = sandbox[cleanFunctionName];
-    if(typeof executableFunction !== "function"){
-      const matchedKey = Object.keys(sandbox).find(key =>
-        String(key).toLowerCase() ===
-        String(cleanFunctionName).toLowerCase()
-      );
-      if(matchedKey){
-        executableFunction = sandbox[matchedKey];
-      }
-    }
-    if(typeof executableFunction !== "function"){
-      return res.status(400).json({
-        error: "Function not found: " + cleanFunctionName
-      });
-    }
-    function parseInputValue(value){
-      const trimmed = String(value || "").trim();
-      if(trimmed === ""){
-        return "";
-      }
-      try {
-        return JSON.parse(trimmed);
-      } catch (err) {
-        if(!isNaN(trimmed)){
-          return Number(trimmed);
-        }
-        return trimmed;
-      }
-    }
-    function parseArgs(rawInput){
-      const input = String(rawInput || "").trim();
-      if(input === ""){
-        return [];
-      }
-      if(input.startsWith("[") && input.endsWith("]")){
-        try {
-          const parsed = JSON.parse(input);
-          return Array.isArray(parsed) ? [parsed] : [parsed];
-        } catch (err) {
-          return [input];
-        }
-      }
-      return input.split(",").map(value => parseInputValue(value));
-    }
-    function normalizeOutput(value){
-      if(value === undefined){
-        return "undefined";
-      }
-      if(value === null){
-        return "null";
-      }
-      if(typeof value === "object"){
-        return JSON.stringify(value);
-      }
-      return String(value).trim();
-    }
+
+    const judgeResult = await judgeSubmission({
+      code,
+      functionName: String(functionName).trim(),
+      testCases: cleanTestCases,
+      language: language || "javascript"
+    });
+
     let output = "";
-    let passedCount = 0;
-        for(let i = 0; i < cleanTestCases.length; i++){
-      const tc = cleanTestCases[i];
-      const rawInput = String(tc.input || "");
-      const expected = String(tc.expectedOutput || "").trim();
-      const isHidden = !!tc.isHidden;
-      const args = parseArgs(rawInput);
-      let actual = "";
-      let passed = false;
-      let runtimeError = "";
-      sandbox.__studentArgs = args;
-      sandbox.__studentResult = undefined;
-      try {
-        sandbox.__studentFunction = executableFunction;
-        vm.runInContext(
-          "__studentResult = __studentFunction(...__studentArgs)",
-          sandbox,
-          { timeout: 1000 }
-        );
-        actual = normalizeOutput(sandbox.__studentResult);
-        passed = actual === expected;
-      } catch (err) {
-        runtimeError = err.message;
-      }
-      delete sandbox.__studentFunction;
-      delete sandbox.__studentArgs;
-      delete sandbox.__studentResult;
-      if(passed){
-        passedCount++;
-      }
-      if(isHidden){
+
+    if (judgeResult.error) {
+      output += "Error:\n\n" + judgeResult.error + "\n";
+    }
+
+    const testResults = judgeResult.testResults || [];
+
+    testResults.forEach((result, index) => {
+      const originalCase = cleanTestCases[index] || {};
+      const isHidden = !!originalCase.isHidden;
+
+      if (isHidden) {
         output +=
-          "Test Case " + (i + 1) + " (Hidden): " +
-          (passed ? "PASS" : "FAIL") +
+          "Test Case " + (index + 1) + " (Hidden): " +
+          (result.passed ? "PASS" : "FAIL") +
           "\n\n";
       } else {
         output +=
-          "Test Case " + (i + 1) + ": " +
-          (passed ? "PASS" : "FAIL") +
-          "\nInput: " + rawInput +
-          "\nExpected: " + expected +
-          "\nReceived: " + (runtimeError ? "Runtime Error: " + runtimeError : actual) +
+          "Test Case " + (index + 1) + ": " +
+          (result.passed ? "PASS" : "FAIL") +
+          "\nInput: " + (result.input || "") +
+          "\nExpected: " + (result.expectedOutput || "") +
+          "\nReceived: " + (
+            result.error
+              ? "Runtime Error: " + result.error
+              : result.actualOutput
+          ) +
           "\n\n";
       }
-    }
+    });
+
     output +=
-    "Result: " + passedCount + " / " + cleanTestCases.length + " test cases passed.";
+      "Result: " +
+      (judgeResult.passedCount || 0) +
+      " / " +
+      (judgeResult.totalCount || cleanTestCases.length) +
+      " test cases passed.";
+
     res.json({
       output,
-      passedCount,
-      total: cleanTestCases.length,
-      passed: passedCount === cleanTestCases.length
+      passedCount: judgeResult.passedCount || 0,
+      total: judgeResult.totalCount || cleanTestCases.length,
+      passed: !!judgeResult.allPassed,
+      testResults
     });
   } catch (err) {
     console.error("RUN CODE ERROR:", err);

@@ -61,10 +61,11 @@ function buildSandbox() {
     }
   };
 }
-async function runJavaScriptSubmission({
+async function judgeSubmission({
   code,
   functionName,
-  testCases
+  testCases,
+  language = "javascript"
 }) {
   const safeCode = String(code || "");
   if (!safeCode.trim()) {
@@ -97,18 +98,20 @@ async function runJavaScriptSubmission({
     let executionError = null;
     try {
 const result = await executeCode({
-  language: "javascript",
+  language,
   code: safeCode,
   functionName,
   args
 });
 actualOutput = normalizeOutput(result);
-      const expectedOutput =
-        String(
-          tc.expectedOutput || ""
-        ).trim();
-      passed =
-        actualOutput === expectedOutput;
+const expectedOutput =
+  normalizeOutput(
+    tc.expectedOutput
+  );
+
+passed =
+  actualOutput.toLowerCase() ===
+  expectedOutput.toLowerCase();
       if (passed) {
         passedCount++;
       }
@@ -133,5 +136,6 @@ actualOutput = normalizeOutput(result);
   };
 }
 module.exports = {
-  runJavaScriptSubmission
+  judgeSubmission,
+  runJavaScriptSubmission: judgeSubmission
 };
