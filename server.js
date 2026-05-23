@@ -35,7 +35,6 @@ require("./models/Question");
 require("./models/School");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
-const testRoutes = require("./routes/testRoutes");
 const codeRoutes = require("./routes/codeRoutes");
 const libraryRoutes = require("./routes/libraryRoutes");
 const questionRoutes = require("./routes/questionRoutes");
@@ -82,7 +81,6 @@ app.get("/health", (req, res) => {
 });
 // ---------- ROUTES ----------
 app.use("/", publicRoutes);
-app.use("/", testRoutes);
 app.use("/", codeRoutes);
 app.use("/", libraryRoutes);
 app.use("/", questionRoutes);
