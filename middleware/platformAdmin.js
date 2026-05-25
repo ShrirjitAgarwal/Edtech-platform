@@ -1,5 +1,5 @@
 function platformAdminMiddleware(req, res, next) {
-  const allowedEmail = "admin@test.com";
+  const allowedEmail = String(process.env.PLATFORM_ADMIN_EMAIL || "").toLowerCase();
 
   if (!req.user || req.user.role !== "admin") {
     return res.status(403).send("Access denied");
@@ -7,9 +7,9 @@ function platformAdminMiddleware(req, res, next) {
 
   const email = String(req.user.email || "").toLowerCase();
 
-  if (email !== allowedEmail) {
-    return res.status(403).send("Platform admin only");
-  }
+if (!allowedEmail || email !== allowedEmail) {
+  return res.status(403).send("Platform admin only");
+}
 
   next();
 }

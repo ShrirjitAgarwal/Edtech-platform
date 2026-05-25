@@ -6,6 +6,7 @@ const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const platformAdminMiddleware = require("../middleware/platformAdmin");
 const platformController = require("../controllers/platformController");
+const platformSchoolController = require("../controllers/platformSchoolController");
 
 const upload = multer({
   dest: path.join(__dirname, "..", "uploads", "question-imports"),
@@ -13,7 +14,28 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024
   }
 });
+router.get(
+  "/platform/schools",
+  authMiddleware,
+  platformAdminMiddleware,
+  platformSchoolController.listSchoolsPage
+);
 
+router.post(
+  "/platform/schools",
+  authMiddleware,
+  platformAdminMiddleware,
+  express.urlencoded({ extended: true }),
+  platformSchoolController.createSchool
+);
+
+router.post(
+  "/platform/schools/:schoolId/teachers",
+  authMiddleware,
+  platformAdminMiddleware,
+  express.urlencoded({ extended: true }),
+  platformSchoolController.createTeacherForSchool
+);
 router.get(
   "/platform-import",
   authMiddleware,
