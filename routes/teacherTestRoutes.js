@@ -462,6 +462,8 @@ Result.find(schoolScopedFilter)
 router.get("/create-test", authMiddleware, async (req, res) => {
 try {
 const Question = require("../models/Question");
+const ClassSubject = require("../models/ClassSubject");
+
 const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
 const questions = await Question.find({
@@ -491,6 +493,65 @@ if (req.query.id) {
   ...(schoolId ? { schoolId } : {})
 }).lean();
 }
+
+const classSubjectMappings = await ClassSubject.find({
+  teacherId,
+  ...(schoolId ? { schoolId } : {})
+})
+  .select("className subject teacherId schoolId schoolCode")
+  .sort({ className: 1, subject: 1 })
+  .lean();
+
+const assignedClasses = [...new Set(
+  classSubjectMappings
+    .map(mapping => String(mapping.className || "").trim().toUpperCase())
+    .filter(Boolean)
+)];
+
+const assignedSubjects = [...new Set(
+  classSubjectMappings
+    .filter(mapping => {
+      if (!editTest?.className) {
+        return true;
+      }
+
+      return (
+        String(mapping.className || "").trim().toUpperCase() ===
+        String(editTest.className || "").trim().toUpperCase()
+      );
+    })
+    .map(mapping => String(mapping.subject || "").trim())
+    .filter(Boolean)
+)];
+
+const classOptionsHtml = assignedClasses.length
+  ? assignedClasses.map(className => `
+<option value="${className}" ${editTest?.className === className ? "selected" : ""}>${className}</option>
+`).join("")
+  : `<option value="">No assigned classes</option>`;
+
+const subjectOptionsHtml = assignedSubjects.length
+  ? assignedSubjects.map(subject => `
+<option value="${subject}" ${editTest?.subject === subject ? "selected" : ""}>${subject}</option>
+`).join("")
+  : `<option value="">No assigned subjects</option>`;
+
+const noMappingsNotice = classSubjectMappings.length
+  ? ""
+  : `
+<div style="
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:16px;
+  font-weight:600;
+">
+  No class or subject has been assigned to you yet. Please contact your school admin before creating a test.
+</div>
+`;
+
 const content = `
 <div style="
   display:flex;
@@ -500,8 +561,9 @@ const content = `
   margin-bottom:20px;
 ">
   <h1 style="margin:0;">Create Test</h1>
-  ${backButton("/teacher-tests")}
+${backButton("/teacher-tests")}
 </div>
+${noMappingsNotice}
 <div style="
 background:white;
 padding:20px;
@@ -519,15 +581,13 @@ margin-bottom:20px;
  border-radius:8px;
  border:1px solid #ccc;
  "/>
- <select id="className" style="
+ <select id="className" onchange="updateSubjectOptions()" style="
  padding:12px;
  border-radius:8px;
  border:1px solid #ccc;
  ">
  <option value="">Select Class</option>
-<option value="C1" ${editTest?.className === "C1" ? "selected" : ""}>C1</option>
-<option value="C2" ${editTest?.className === "C2" ? "selected" : ""}>C2</option>
-<option value="C3" ${editTest?.className === "C3" ? "selected" : ""}>C3</option>
+${classOptionsHtml}
  </select>
  <select id="subject" style="
  padding:12px;
@@ -535,9 +595,7 @@ margin-bottom:20px;
  border:1px solid #ccc;
  ">
  <option value="">Select Subject</option>
-<option value="Maths" ${editTest?.subject === "Maths" ? "selected" : ""}>Maths</option>
-<option value="Computer Science" ${editTest?.subject === "Computer Science" ? "selected" : ""}>Computer Science</option>
-<option value="Physics" ${editTest?.subject === "Physics" ? "selected" : ""}>Physics</option>
+${subjectOptionsHtml}
  </select>
 </div>
 </div>
@@ -649,6 +707,7 @@ if(!user || user.role !== "teacher"){
  window.location.replace("/");
 }
 const teacherId = user._id || user.id;
+const assignedClassSubjects = ${JSON.stringify(classSubjectMappings)};
 const editingTestId = "${editTest?._id || ""}";
 const editingQuestionIds = ${JSON.stringify((editTest?.questionIds || []).map(id => String(id)))};
 if(editingTestId){
@@ -786,6 +845,41 @@ function previewQuestion(id){
  "<p><b>Board:</b> " + (q.board || "N/A") + "</p>" +
  "<p><b>Difficulty:</b> " + (q.difficulty || "N/A") + "</p>";
 }
+function updateSubjectOptions(){
+ const className = document.getElementById("className").value;
+ const subjectSelect = document.getElementById("subject");
+ const currentSubject = subjectSelect.value;
+
+ const subjects = [...new Set(
+ assignedClassSubjects
+ .filter(mapping =>
+ String(mapping.className || "").trim().toUpperCase() ===
+ String(className || "").trim().toUpperCase()
+ )
+ .map(mapping => String(mapping.subject || "").trim())
+ .filter(Boolean)
+ )];
+
+ subjectSelect.innerHTML = "<option value=''>Select Subject</option>";
+
+ if(!subjects.length){
+ subjectSelect.innerHTML += "<option value=''>No assigned subjects</option>";
+ return;
+ }
+
+ subjects.forEach(subject => {
+ const option = document.createElement("option");
+ option.value = subject;
+ option.textContent = subject;
+
+ if(subject === currentSubject){
+ option.selected = true;
+ }
+
+ subjectSelect.appendChild(option);
+ });
+}
+
 function saveTest(){
  const name = document.getElementById("testName").value;
  const subject = document.getElementById("subject").value;
@@ -824,6 +918,7 @@ function clearSelection(){
  localStorage.removeItem("selectedQuestions");
  location.reload();
 }
+updateSubjectOptions();
 populateQuestionFilters();
 filterQuestions();
 </script>
