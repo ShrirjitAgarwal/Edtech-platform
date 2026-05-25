@@ -423,7 +423,7 @@ alert(
 });
 }
 function goBack(){
-window.location.replace("/school-dashboard");
+window.location.replace("/admin-dashboard");
 }
 function goToStudent(id){
 window.location.replace(
@@ -725,7 +725,7 @@ Admin
 </h2>
 <div
 onclick="
-go('/school-dashboard')
+go('/admin-dashboard')
 "
 style="
 padding:12px 14px;
@@ -734,7 +734,7 @@ cursor:pointer;
 background:#334155;
 margin-bottom:10px;
 ">
-Dashboard
+Admin Dashboard
 </div>
 <div
 onclick="
@@ -769,7 +769,7 @@ background:#eef2ff;
 overflow:auto;
 ">
 <h1>
-School Dashboard
+Admin Dashboard
 </h1>
 <div style="
 background:white;
@@ -1100,8 +1100,8 @@ const adminRows = admins.map(a => `
     box-sizing:border-box;
   ">
     <h2>Admin</h2>
-<div onclick="go('/school-dashboard')" style="padding:12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">
-  Dashboard
+<div onclick="go('/admin-dashboard')" style="padding:12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">
+  Admin Dashboard
 </div>
 <div onclick="go('/admin-settings')" style="padding:12px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">
   Settings
