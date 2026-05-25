@@ -1110,13 +1110,64 @@ const adminRows = admins.map(a => `
       Logout
     </div>
   </div>
-  <div style="flex:1;padding:30px;overflow:auto;">
+    <div style="
+    flex:1;
+    padding:30px;
+    overflow:auto;
+    box-sizing:border-box;
+  ">
     <h1>Admin Settings</h1>
-    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+
+    <div style="
+      display:grid;
+      grid-template-columns:260px minmax(900px, 1fr);
+      gap:24px;
+      align-items:start;
+      width:100%;
+      max-width:none;
+      box-sizing:border-box;
+    ">
+      <div style="
+        background:white;
+        padding:14px;
+        border-radius:14px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.06);
+        position:sticky;
+        top:0;
+        min-height:calc(100vh - 150px);
+        box-sizing:border-box;
+      ">
+        <button class="adminPanelButton" onclick="showAdminPanel('overview', this)" style="width:100%;padding:12px;margin-bottom:10px;border:none;border-radius:8px;background:#334155;color:white;cursor:pointer;text-align:left;font-weight:700;">
+          Overview
+        </button>
+
+        <button class="adminPanelButton" onclick="showAdminPanel('teachers', this)" style="width:100%;padding:12px;margin-bottom:10px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+          Teachers
+        </button>
+
+        <button class="adminPanelButton" onclick="showAdminPanel('admins', this)" style="width:100%;padding:12px;margin-bottom:10px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+          Admins
+        </button>
+
+        <button class="adminPanelButton" onclick="showAdminPanel('mappings', this)" style="width:100%;padding:12px;margin-bottom:10px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+          Teacher Mappings
+        </button>
+
+        <button class="adminPanelButton" onclick="showAdminPanel('payments', this)" style="width:100%;padding:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+          Payments
+        </button>
+      </div>
+
+            <div style="
+        width:100%;
+        min-width:0;
+        box-sizing:border-box;
+      ">
+    <div id="panel-overview" class="adminPanel" style="background:white;padding:28px;border-radius:14px;margin-bottom:20px;width:100%;box-sizing:border-box;">
       <h2>School Overview</h2>
       <p><b>School Name:</b> ${school?.name || "N/A"}</p>
       <p><b>School Code:</b> ${school?.code || req.user.schoolCode || "N/A"}</p>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:18px;width:100%;">
         <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${admins.length}</b><br>Admins</div>
         <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${teachers.length}</b><br>Teachers</div>
         <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${students.length}</b><br>Students</div>
@@ -1126,7 +1177,7 @@ const adminRows = admins.map(a => `
         <div style="background:#f8fafc;padding:14px;border-radius:10px;"><b>${mappings.length}</b><br>Mappings</div>
       </div>
     </div>
-    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+    <div id="panel-mappings" class="adminPanel" style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;display:none;">
       <h2>Map Teacher to Class and Subject</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;">
         <select id="mapClassName" style="padding:10px;">
@@ -1166,33 +1217,56 @@ const adminRows = admins.map(a => `
         ${mappingRows || "<tr><td colspan='4'>No mappings found</td></tr>"}
       </table>
     </div>
-    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
-      <h2>Add Teacher / Admin</h2>
-      <p style="color:#64748b;">This section will be connected in the next pass.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;">
-        <input id="newUserName" placeholder="Name" style="padding:10px;" />
-        <input id="newUserEmail" placeholder="Email" style="padding:10px;" />
-        <input id="newUserPassword" placeholder="Temporary Password" type="password" style="padding:10px;" />
-        <select id="newUserRole" style="padding:10px;">
-          <option value="teacher">Teacher</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button onclick="addUser()" style="
-          padding:10px 16px;
-          background:#16a34a;
-          color:white;
-          border:none;
-          border-radius:8px;
-          cursor:pointer;
-          font-weight:700;
-        ">
-          Add
-        </button>
+        <div id="panel-teachers" class="adminPanel" style="background:white;padding:24px;border-radius:14px;margin-bottom:20px;display:none;">
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:18px;
+        margin-bottom:20px;
+      ">
+        <div>
+          <h2 style="margin:0 0 6px 0;">Teachers</h2>
+          <p style="margin:0;color:#64748b;">
+            Create teachers and manage teacher accounts for this school.
+          </p>
+        </div>
       </div>
-    </div>
-    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
-      <h2>Teachers</h2>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;">
+
+      <div style="
+        background:#f8fafc;
+        border:1px solid #e5e7eb;
+        padding:16px;
+        border-radius:12px;
+        margin-bottom:22px;
+      ">
+        <h3 style="margin-top:0;">Create Teacher</h3>
+
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr 1fr auto;
+          gap:12px;
+          align-items:center;
+        ">
+          <input id="newTeacherName" placeholder="Teacher name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <input id="newTeacherEmail" placeholder="Teacher email" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <input id="newTeacherPassword" placeholder="Temporary password" type="password" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
+
+          <button onclick="addUserWithRole('teacher', 'newTeacher')" style="
+            padding:11px 16px;
+            background:#16a34a;
+            color:white;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+            font-weight:700;
+          ">
+            Add Teacher
+          </button>
+        </div>
+      </div>
+
+      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
 <tr>
   <th>Name</th>
   <th>Email</th>
@@ -1204,9 +1278,56 @@ const adminRows = admins.map(a => `
         ${teacherRows || "<tr><td colspan='6'>No teachers found</td></tr>"}
       </table>
     </div>
-    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
-      <h2>Admins</h2>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;">
+        <div id="panel-admins" class="adminPanel" style="background:white;padding:24px;border-radius:14px;margin-bottom:20px;display:none;">
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:18px;
+        margin-bottom:20px;
+      ">
+        <div>
+          <h2 style="margin:0 0 6px 0;">Admins</h2>
+          <p style="margin:0;color:#64748b;">
+            Create school admins and manage admin accounts for this school.
+          </p>
+        </div>
+      </div>
+
+      <div style="
+        background:#f8fafc;
+        border:1px solid #e5e7eb;
+        padding:16px;
+        border-radius:12px;
+        margin-bottom:22px;
+      ">
+        <h3 style="margin-top:0;">Create Admin</h3>
+
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr 1fr auto;
+          gap:12px;
+          align-items:center;
+        ">
+          <input id="newAdminName" placeholder="Admin name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <input id="newAdminEmail" placeholder="Admin email" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <input id="newAdminPassword" placeholder="Temporary password" type="password" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
+
+          <button onclick="addUserWithRole('admin', 'newAdmin')" style="
+            padding:11px 16px;
+            background:#16a34a;
+            color:white;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+            font-weight:700;
+          ">
+            Add Admin
+          </button>
+        </div>
+      </div>
+
+      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
 <tr>
   <th>Name</th>
   <th>Email</th>
@@ -1218,13 +1339,37 @@ const adminRows = admins.map(a => `
         ${adminRows || "<tr><td colspan='6'>No admins found</td></tr>"}
       </table>
     </div>
-    <div style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;">
+    <div id="panel-payments" class="adminPanel" style="background:white;padding:20px;border-radius:14px;margin-bottom:20px;display:none;">
       <h2>Payments and Invoices</h2>
       <p style="color:#64748b;">Coming later.</p>
+    </div>
+      </div>
     </div>
   </div>
 </div>
 <script>
+function showAdminPanel(panelName, button){
+  document.querySelectorAll(".adminPanel").forEach(panel => {
+    panel.style.display = "none";
+  });
+
+  const selectedPanel = document.getElementById("panel-" + panelName);
+
+  if(selectedPanel){
+    selectedPanel.style.display = "block";
+  }
+
+  document.querySelectorAll(".adminPanelButton").forEach(btn => {
+    btn.style.background = "#f8fafc";
+    btn.style.color = "#0f172a";
+  });
+
+  if(button){
+    button.style.background = "#334155";
+    button.style.color = "white";
+  }
+}
+
 function go(path){
   window.location.replace(path);
 }
@@ -1341,26 +1486,25 @@ function deleteMapping(mappingId){
     );
   });
 }
-function addUser(){
+function addUserWithRole(role, prefix){
   const name =
     document
-      .getElementById("newUserName")
+      .getElementById(prefix + "Name")
       .value
       .trim();
+
   const email =
     document
-      .getElementById("newUserEmail")
+      .getElementById(prefix + "Email")
       .value
       .trim();
+
   const password =
     document
-      .getElementById("newUserPassword")
+      .getElementById(prefix + "Password")
       .value
       .trim();
-  const role =
-    document
-      .getElementById("newUserRole")
-      .value;
+
   if(
     !name ||
     !email ||
@@ -1369,6 +1513,7 @@ function addUser(){
     alert("All fields are required");
     return;
   }
+
   fetch("/admin/add-user", {
     method:"POST",
     headers:{
@@ -1390,11 +1535,13 @@ function addUser(){
       alert(data.error);
       return;
     }
+
     alert(
       role.charAt(0).toUpperCase() +
       role.slice(1) +
       " created successfully"
     );
+
     location.reload();
   })
   .catch(() => {
