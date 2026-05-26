@@ -121,6 +121,70 @@ const teacherRows = teachers.map(t => `
   </td>
 </tr>
 `).join("");
+const studentRows = students.map(s => {
+  const assignedTeacher = teachers.find(t =>
+    String(t._id) === String(s.teacherId)
+  );
+
+  return `
+<tr>
+  <td>${s.name || s.fullName || "-"}</td>
+  <td>${s.studentId || "-"}</td>
+  <td>${s.class || "-"}</td>
+  <td>${assignedTeacher ? assignedTeacher.name || assignedTeacher.email : "-"}</td>
+  <td>
+    <select id="studentClass-${s._id}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
+      <option value="">Select Class</option>
+      ${classes.map(c => `
+        <option value="${c.name}" ${String(c.name) === String(s.class) ? "selected" : ""}>
+          ${c.name}
+        </option>
+      `).join("")}
+    </select>
+  </td>
+  <td>
+    <select id="studentTeacher-${s._id}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
+      <option value="">Select Teacher</option>
+      ${teachers.map(t => `
+        <option value="${t._id}" ${String(t._id) === String(s.teacherId) ? "selected" : ""}>
+          ${t.name || t.email}
+        </option>
+      `).join("")}
+    </select>
+  </td>
+  <td>
+    <button
+      onclick="updateStudentClass('${s._id}')"
+      style="
+        background:#4f46e5;
+        color:white;
+        border:none;
+        padding:8px 12px;
+        border-radius:8px;
+        cursor:pointer;
+        margin-right:8px;
+      "
+    >
+      Save
+    </button>
+
+    <button
+      onclick="deleteStudent('${s._id}')"
+      style="
+        background:#dc2626;
+        color:white;
+        border:none;
+        padding:8px 12px;
+        border-radius:8px;
+        cursor:pointer;
+      "
+    >
+      Delete
+    </button>
+  </td>
+</tr>
+`;
+}).join("");
 const classRows = classes.map(c => `
 <tr>
   <td>${c.name || "-"}</td>
@@ -181,11 +245,11 @@ const adminRows = admins.map(a => `
   </td>
 </tr>
 `).join("");
-    const classOptions = [...new Set(
-      students.map(s => s.class).filter(Boolean)
-    )].map(className => `
-      <option value="${className}">${className}</option>
-    `).join("");
+const classOptions = [...new Set(
+  classes.map(c => c.name).filter(Boolean)
+)].map(className => `
+  <option value="${className}">${className}</option>
+`).join("");
     res.send(`
 <body style="margin:0;font-family:Arial;background:#eef2ff;">
 <div style="display:flex;min-height:100vh;">
@@ -259,6 +323,10 @@ const adminRows = admins.map(a => `
 
         <button class="adminPanelButton" onclick="showAdminPanel('classes', this)" style="width:100%;padding:18px 16px;margin-bottom:16px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Classes
+        </button>
+
+        <button class="adminPanelButton" onclick="showAdminPanel('students', this)" style="width:100%;padding:18px 16px;margin-bottom:16px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+          Students
         </button>
 
         <button class="adminPanelButton" onclick="showAdminPanel('mappings', this)" style="width:100%;padding:18px 16px;margin-bottom:16px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
@@ -453,6 +521,86 @@ const adminRows = admins.map(a => `
         ${classRows || "<tr><td colspan='4'>No classes found</td></tr>"}
       </table>
     </div>
+        <div id="panel-students" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;height:calc(100vh - 145px);box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:18px;
+        margin-bottom:20px;
+      ">
+        <div>
+          <h2 style="margin:0 0 6px 0;">Students</h2>
+          <p style="margin:0;color:#64748b;">
+            Create students, assign them to classes, and map them to teachers.
+          </p>
+        </div>
+      </div>
+
+      <div style="
+        background:#f8fafc;
+        border:1px solid #e5e7eb;
+        padding:16px;
+        border-radius:12px;
+        margin-bottom:22px;
+      ">
+        <h3 style="margin-top:0;">Create Student</h3>
+
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr 1fr 1fr auto;
+          gap:12px;
+          align-items:center;
+        ">
+          <input
+            id="newStudentName"
+            placeholder="Student name"
+            style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
+          />
+
+          <input
+            id="newStudentId"
+            placeholder="Student ID"
+            style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
+          />
+
+          <select id="newStudentClass" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="">Select Class</option>
+            ${classOptions}
+          </select>
+
+          <select id="newStudentTeacherId" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="">Select Teacher</option>
+            ${teacherOptions}
+          </select>
+
+          <button onclick="createStudent()" style="
+            padding:11px 16px;
+            background:#16a34a;
+            color:white;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+            font-weight:700;
+          ">
+            Add Student
+          </button>
+        </div>
+      </div>
+
+      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
+<tr>
+  <th>Name</th>
+  <th>Student ID</th>
+  <th>Class</th>
+  <th>Current Teacher</th>
+  <th>Assign Class</th>
+  <th>Assign Teacher</th>
+  <th>Action</th>
+</tr>
+        ${studentRows || "<tr><td colspan='7'>No students found</td></tr>"}
+      </table>
+    </div>
         <div id="panel-admins" class="adminPanel" style="background:white;padding:32px;border-radius:14px;margin-bottom:20px;display:none;min-height:calc(100vh - 170px);box-sizing:border-box;">
       <div style="
         display:flex;
@@ -616,6 +764,138 @@ function deleteClass(classId){
   })
   .catch(() => {
     alert("Failed to delete class");
+  });
+}
+  function createStudent(){
+  const name =
+    document
+      .getElementById("newStudentName")
+      .value
+      .trim();
+
+  const studentId =
+    document
+      .getElementById("newStudentId")
+      .value
+      .trim();
+
+  const className =
+    document
+      .getElementById("newStudentClass")
+      .value
+      .trim();
+
+  const teacherId =
+    document
+      .getElementById("newStudentTeacherId")
+      .value
+      .trim();
+
+  if(!name || !studentId || !className || !teacherId){
+    alert("Student name, student ID, class, and teacher are required");
+    return;
+  }
+
+  fetch("/admin/create-student", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      name,
+      studentId,
+      className,
+      teacherId
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+
+    alert("Student created");
+    location.reload();
+  })
+  .catch(() => {
+    alert("Failed to create student");
+  });
+}
+
+function updateStudentClass(studentMongoId){
+  const className =
+    document
+      .getElementById("studentClass-" + studentMongoId)
+      .value
+      .trim();
+
+  const teacherId =
+    document
+      .getElementById("studentTeacher-" + studentMongoId)
+      .value
+      .trim();
+
+  if(!className || !teacherId){
+    alert("Class and teacher are required");
+    return;
+  }
+
+  fetch("/admin/update-student-class", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      studentMongoId,
+      className,
+      teacherId
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+
+    alert("Student updated");
+    location.reload();
+  })
+  .catch(() => {
+    alert("Failed to update student");
+  });
+}
+
+function deleteStudent(studentMongoId){
+  if(!confirm("Delete this student?")){
+    return;
+  }
+
+  fetch("/admin/delete-student", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      studentMongoId
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+
+    alert("Student deleted");
+    location.reload();
+  })
+  .catch(() => {
+    alert("Failed to delete student");
   });
 }
 function saveMapping(){
