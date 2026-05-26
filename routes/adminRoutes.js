@@ -17,7 +17,6 @@ router.get(
   authMiddleware,
   adminController.schoolDashboardPage
 );
-
 router.get(
   "/school-dashboard",
   authMiddleware,
@@ -43,7 +42,6 @@ router.post(
   authMiddleware,
   adminController.createClassFromAdmin
 );
-
 router.post(
   "/admin/delete-class",
   authMiddleware,
@@ -54,13 +52,16 @@ router.post(
   authMiddleware,
   adminController.createStudentFromAdmin
 );
-
+router.post(
+  "/admin/bulk-create-students",
+  authMiddleware,
+  adminController.bulkCreateStudentsFromAdmin
+);
 router.post(
   "/admin/update-student-class",
   authMiddleware,
   adminController.updateStudentClassFromAdmin
 );
-
 router.post(
   "/admin/delete-student",
   authMiddleware,
