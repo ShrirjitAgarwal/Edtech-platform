@@ -24,11 +24,27 @@ router.post("/register", async (req, res) => {
   role,
   class: studentClass,
   teacherId,
-  schoolName,
   schoolCode
 } = req.body;
   try {
-    const existing = await User.findOne({ email });
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedRole = String(role || "teacher").trim().toLowerCase();
+
+    if (!name || !normalizedEmail || !password) {
+      return res.status(400).json({ error: "Name, email, and password are required" });
+    }
+
+    if (normalizedRole === "admin") {
+      return res.status(403).json({
+        error: "Admin accounts must be created by an existing admin"
+      });
+    }
+
+    if (!["teacher", "student"].includes(normalizedRole)) {
+      return res.status(400).json({ error: "Invalid role" });
+    }
+
+    const existing = await User.findOne({ email: normalizedEmail });
 if(existing){
   return res.json({ error: "User already exists" });
 }
@@ -36,28 +52,13 @@ let school = null;
 
 if (schoolCode) {
   school = await School.findOne({
-    code: String(schoolCode).trim()
-  });
-}
-
-if (!school && schoolName) {
-  let generatedCode = "";
-  let codeExists = true;
-
-  while (codeExists) {
-    generatedCode = String(Math.floor(1000 + Math.random() * 9000));
-    codeExists = await School.findOne({ code: generatedCode });
-  }
-
-  school = await School.create({
-    name: String(schoolName).trim(),
-    code: generatedCode
+    code: String(schoolCode).trim().toUpperCase()
   });
 }
 
 if (!school) {
   return res.status(400).json({
-    error: "School name or school code required"
+    error: "Valid school code required"
   });
 }
 
@@ -65,10 +66,10 @@ if (!school) {
 const hashedPassword = await bcrypt.hash(password, 10);
 
 const user = await User.create({
-  name,
-  email,
+  name: String(name || "").trim(),
+  email: normalizedEmail,
   password: hashedPassword,
-  role: role || "teacher",
+  role: normalizedRole,
   class: studentClass,
   teacherId,
   schoolId: String(school._id),

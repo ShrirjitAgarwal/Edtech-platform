@@ -13,6 +13,12 @@ router.get(
   adminController.adminClassPage
 );
 router.get(
+  "/admin-dashboard",
+  authMiddleware,
+  adminController.schoolDashboardPage
+);
+
+router.get(
   "/school-dashboard",
   authMiddleware,
   adminController.schoolDashboardPage
@@ -31,6 +37,17 @@ router.post(
   "/admin/add-user",
   authMiddleware,
   adminController.addUserFromAdmin
+);
+router.post(
+  "/admin/create-class",
+  authMiddleware,
+  adminController.createClassFromAdmin
+);
+
+router.post(
+  "/admin/delete-class",
+  authMiddleware,
+  adminController.deleteClassFromAdmin
 );
 router.post(
   "/admin/delete-class-subject-mapping",
