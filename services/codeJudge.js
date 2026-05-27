@@ -154,13 +154,63 @@ function valuesEqual(actual, expected) {
 
   return String(actualValue).trim() === String(expectedValue).trim();
 }
-function buildSandbox() {
+function buildJudgeFailure(error) {
   return {
-    console: {
-      log: function () { },
-      error: function () { },
-      warn: function () { }
-    }
+    success: false,
+    error,
+    passedCount: 0,
+    totalCount: 0,
+    allPassed: false,
+    testResults: []
+  };
+}
+
+function isValidTestCase(testCase) {
+  return (
+    testCase &&
+    typeof testCase === "object" &&
+    Object.prototype.hasOwnProperty.call(testCase, "expectedOutput")
+  );
+}
+
+function normalizeTestCases(testCases) {
+  if (!Array.isArray(testCases)) {
+    return {
+      ok: false,
+      error: "Test cases must be an array",
+      testCases: []
+    };
+  }
+
+  if (testCases.length === 0) {
+    return {
+      ok: false,
+      error: "At least one test case is required",
+      testCases: []
+    };
+  }
+
+  const limitedTestCases = testCases.slice(
+    0,
+    EXECUTION_LIMITS.MAX_TEST_CASES
+  );
+
+  const invalidIndex = limitedTestCases.findIndex(
+    testCase => !isValidTestCase(testCase)
+  );
+
+  if (invalidIndex !== -1) {
+    return {
+      ok: false,
+      error: "Invalid test case at index " + invalidIndex,
+      testCases: []
+    };
+  }
+
+  return {
+    ok: true,
+    error: null,
+    testCases: limitedTestCases
   };
 }
 async function judgeSubmission({
@@ -170,70 +220,82 @@ async function judgeSubmission({
   language = "javascript"
 }) {
   const safeCode = String(code || "");
+  const safeFunctionName = String(functionName || "").trim();
+  const safeLanguage = String(language || "javascript").trim().toLowerCase();
+
   if (!safeCode.trim()) {
-    return {
-      success: false,
-      error: "Empty code submission",
-      passedCount: 0,
-      totalCount: 0,
-      testResults: []
-    };
+    return buildJudgeFailure("Empty code submission");
   }
+
   if (safeCode.length > EXECUTION_LIMITS.MAX_CODE_LENGTH) {
-    return {
-      success: false,
-      error: "Code exceeds limit",
-      passedCount: 0,
-      totalCount: 0,
-      testResults: []
-    };
+    return buildJudgeFailure("Code exceeds limit");
   }
-  const safeTestCases = Array.isArray(testCases)
-    ? testCases.slice(0, EXECUTION_LIMITS.MAX_TEST_CASES)
-    : [];
+
+  if (!safeFunctionName) {
+    return buildJudgeFailure("Function name is required");
+  }
+
+  if (!EXECUTION_LIMITS.SUPPORTED_LANGUAGES.includes(safeLanguage)) {
+    return buildJudgeFailure("Unsupported language: " + safeLanguage);
+  }
+
+  const normalizedTestCases = normalizeTestCases(testCases);
+
+  if (!normalizedTestCases.ok) {
+    return buildJudgeFailure(normalizedTestCases.error);
+  }
+
+  const safeTestCases = normalizedTestCases.testCases;
   const testResults = [];
   let passedCount = 0;
-  for (const tc of safeTestCases) {
+
+  for (let index = 0; index < safeTestCases.length; index++) {
+    const tc = safeTestCases[index];
     const args = parseArgs(tc.input);
     let passed = false;
     let actualOutput = "";
+    let expectedOutput = normalizeOutput(tc.expectedOutput);
     let executionError = null;
+
     try {
-const result = await executeCode({
-  language,
-  code: safeCode,
-  functionName,
-  args
-});
-actualOutput = normalizeOutput(result);
-const expectedOutput =
-  normalizeOutput(
-    tc.expectedOutput
-  );
-passed = valuesEqual(
-  actualOutput,
-  expectedOutput
-);
+      const result = await executeCode({
+        language: safeLanguage,
+        code: safeCode,
+        functionName: safeFunctionName,
+        args
+      });
+
+      actualOutput = normalizeOutput(result);
+
+      passed = valuesEqual(
+        actualOutput,
+        expectedOutput
+      );
+
       if (passed) {
         passedCount++;
       }
     } catch (err) {
       executionError = err.message;
     }
+
     testResults.push({
+      index,
       input: tc.input,
       expectedOutput: tc.expectedOutput,
+      normalizedExpectedOutput: expectedOutput,
       actualOutput,
       passed,
       error: executionError
     });
   }
+
   return {
     success: true,
+    error: null,
     passedCount,
     totalCount: safeTestCases.length,
-    allPassed:
-      passedCount === safeTestCases.length,
+    allPassed: passedCount === safeTestCases.length,
     testResults
   };
 }
