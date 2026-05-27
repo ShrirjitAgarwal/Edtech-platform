@@ -23,9 +23,17 @@ if (!policyResult.ok) {
 }
   const serializedArgs =
     JSON.stringify(args || []);
-  const pythonScript = `
+const pythonScript = `
 import json
 import sys
+
+try:
+    import resource
+    memory_limit_bytes = ${EXECUTION_LIMITS.PYTHON_MEMORY_MB} * 1024 * 1024
+    resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
+except Exception:
+    pass
+
 student_globals = {}
 ${code}
 function_name = "${functionName}"
@@ -58,15 +66,17 @@ except Exception as err:
 maxBuffer: EXECUTION_LIMITS.STDOUT_MAX_BUFFER_BYTES
     },
     (err, stdout) => {
-      if (err) {
-        if (process.send) {
-          process.send({
-            ok: false,
-            error: "Python execution failed"
-          });
-        }
-        return;
-      }
+if (err) {
+ if (process.send) {
+ process.send({
+ ok: false,
+ error: err.killed
+   ? "Python execution timed out"
+   : "Python execution failed or exceeded memory limit"
+ });
+ }
+ return;
+}
       try {
         const parsed = JSON.parse(
           String(stdout || "").trim()
