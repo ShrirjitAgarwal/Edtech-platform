@@ -1,4 +1,6 @@
-const MAX_PYTHON_CODE_LENGTH = 10000;
+const {
+  EXECUTION_LIMITS
+} = require("../config/executionLimits");
 
 const BLOCKED_PATTERNS = [
   /\bimport\s+os\b/,
@@ -10,9 +12,24 @@ const BLOCKED_PATTERNS = [
   /\bimport\s+glob\b/,
   /\bimport\s+inspect\b/,
   /\bimport\s+ctypes\b/,
+  /\bimport\s+importlib\b/,
+  /\bimport\s+builtins\b/,
+  /\bimport\s+pickle\b/,
+  /\bimport\s+marshal\b/,
+  /\bimport\s+tempfile\b/,
+  /\bimport\s+signal\b/,
+  /\bimport\s+resource\b/,
+  /\bimport\s+multiprocessing\b/,
+  /\bimport\s+threading\b/,
   /\bfrom\s+os\s+import\b/,
   /\bfrom\s+sys\s+import\b/,
   /\bfrom\s+subprocess\s+import\b/,
+  /\bfrom\s+socket\s+import\b/,
+  /\bfrom\s+pathlib\s+import\b/,
+  /\bfrom\s+shutil\s+import\b/,
+  /\bfrom\s+ctypes\s+import\b/,
+  /\bfrom\s+importlib\s+import\b/,
+  /\bfrom\s+builtins\s+import\b/,
   /\bopen\s*\(/,
   /\beval\s*\(/,
   /\bexec\s*\(/,
@@ -29,6 +46,8 @@ const BLOCKED_PATTERNS = [
   /\bhelp\s*\(/,
   /\bexit\s*\(/,
   /\bquit\s*\(/,
+  /\bmro\s*\(/,
+  /\bsubclasses\s*\(/,
   /__/
 ];
 
@@ -42,7 +61,7 @@ function validatePythonCode(code) {
     };
   }
 
-  if (safeCode.length > MAX_PYTHON_CODE_LENGTH) {
+  if (safeCode.length > EXECUTION_LIMITS.MAX_CODE_LENGTH) {
     return {
       ok: false,
       error: "Code exceeds limit"

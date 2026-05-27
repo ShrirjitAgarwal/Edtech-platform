@@ -14,12 +14,50 @@ function buildSandbox() {
     }
   });
 }
+const BLOCKED_JS_PATTERNS = [
+  /\brequire\s*\(/,
+  /\bprocess\b/,
+  /\bglobal\b/,
+  /\bglobalThis\b/,
+  /\bFunction\s*\(/,
+  /\beval\s*\(/,
+  /\bconstructor\b/,
+  /\bmodule\b/,
+  /\bexports\b/,
+  /\bBuffer\b/,
+  /\bsetTimeout\b/,
+  /\bsetInterval\b/,
+  /\bsetImmediate\b/,
+  /\bPromise\b/,
+  /\bWebAssembly\b/,
+  /\bimport\s*\(/,
+  /\bwhile\s*\(\s*true\s*\)/
+];
+
+function validateJavaScriptCode(code) {
+  const safeCode = String(code || "");
+
+  if (!safeCode.trim()) {
+    throw new Error("Empty code submission");
+  }
+
+  if (safeCode.length > EXECUTION_LIMITS.MAX_CODE_LENGTH) {
+    throw new Error("Code exceeds limit");
+  }
+
+  for (const pattern of BLOCKED_JS_PATTERNS) {
+    if (pattern.test(safeCode)) {
+      throw new Error("Code uses blocked JavaScript features");
+    }
+  }
+}
 function runJavaScriptCode({
-  code,
-  functionName,
-  args
+code,
+functionName,
+args
 }) {
-  const sandbox = buildSandbox();
+validateJavaScriptCode(code);
+const sandbox = buildSandbox();
   vm.createContext(sandbox);
   vm.runInContext(
     String(code || ""),
