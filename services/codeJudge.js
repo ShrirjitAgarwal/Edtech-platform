@@ -44,13 +44,115 @@ function normalizeOutput(value) {
   if (value === undefined) {
     return "undefined";
   }
+
   if (value === null) {
     return "null";
   }
-  if (typeof value === "object") {
-    return JSON.stringify(value);
+
+  if (typeof value === "string") {
+    return value.trim();
   }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "object") {
+    return stableStringify(value);
+  }
+
   return String(value).trim();
+}
+
+function tryParseComparableValue(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+
+  if (trimmed === "") {
+    return "";
+  }
+
+  if (trimmed === "undefined") {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch (err) {
+    if (!Number.isNaN(Number(trimmed))) {
+      return Number(trimmed);
+    }
+
+    if (trimmed.toLowerCase() === "true") {
+      return true;
+    }
+
+    if (trimmed.toLowerCase() === "false") {
+      return false;
+    }
+
+    return trimmed;
+  }
+}
+
+function stableStringify(value) {
+  if (value === null) {
+    return "null";
+  }
+
+  if (Array.isArray(value)) {
+    return "[" + value.map(item => stableStringify(item)).join(",") + "]";
+  }
+
+  if (typeof value === "object") {
+    const keys = Object.keys(value).sort();
+
+    return "{" + keys.map(key =>
+      JSON.stringify(key) + ":" + stableStringify(value[key])
+    ).join(",") + "}";
+  }
+
+  return JSON.stringify(value);
+}
+
+function valuesEqual(actual, expected) {
+  const actualValue = tryParseComparableValue(actual);
+  const expectedValue = tryParseComparableValue(expected);
+
+  if (
+    typeof actualValue === "number" &&
+    typeof expectedValue === "number"
+  ) {
+    return Object.is(actualValue, expectedValue);
+  }
+
+  if (
+    typeof actualValue === "boolean" ||
+    typeof expectedValue === "boolean"
+  ) {
+    return actualValue === expectedValue;
+  }
+
+  if (
+    actualValue === null ||
+    expectedValue === null ||
+    actualValue === undefined ||
+    expectedValue === undefined
+  ) {
+    return actualValue === expectedValue;
+  }
+
+  if (
+    typeof actualValue === "object" &&
+    typeof expectedValue === "object"
+  ) {
+    return stableStringify(actualValue) === stableStringify(expectedValue);
+  }
+
+  return String(actualValue).trim() === String(expectedValue).trim();
 }
 function buildSandbox() {
   return {
@@ -108,9 +210,10 @@ const expectedOutput =
   normalizeOutput(
     tc.expectedOutput
   );
-passed =
-  actualOutput.toLowerCase() ===
-  expectedOutput.toLowerCase();
+passed = valuesEqual(
+  actualOutput,
+  expectedOutput
+);
       if (passed) {
         passedCount++;
       }
