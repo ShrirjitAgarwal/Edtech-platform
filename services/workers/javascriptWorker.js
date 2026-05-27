@@ -1,7 +1,7 @@
 const vm = require("vm");
-
-const EXECUTION_TIMEOUT = 1000;
-
+const {
+  EXECUTION_LIMITS
+} = require("../config/executionLimits");
 function buildSandbox() {
   return Object.create(null, {
     console: {
@@ -14,27 +14,22 @@ function buildSandbox() {
     }
   });
 }
-
 function runJavaScriptCode({
   code,
   functionName,
   args
 }) {
   const sandbox = buildSandbox();
-
   vm.createContext(sandbox);
-
   vm.runInContext(
     String(code || ""),
     sandbox,
     {
-      timeout: EXECUTION_TIMEOUT
+      timeout: EXECUTION_LIMITS.VM_TIMEOUT_MS
     }
   );
-
   let executableFunction =
     sandbox[functionName];
-
   if (
     typeof executableFunction !== "function"
   ) {
@@ -43,44 +38,35 @@ function runJavaScriptCode({
         String(key).toLowerCase() ===
         String(functionName).toLowerCase()
       );
-
     if (matchedKey) {
       executableFunction =
         sandbox[matchedKey];
     }
   }
-
   if (
     typeof executableFunction !== "function"
   ) {
     throw new Error("Function not found");
   }
-
   sandbox.__studentArgs = args;
   sandbox.__studentFunction =
     executableFunction;
-
   vm.runInContext(
     "__studentResult = __studentFunction(...__studentArgs)",
     sandbox,
     {
-      timeout: EXECUTION_TIMEOUT
+      timeout: EXECUTION_LIMITS.VM_TIMEOUT_MS
     }
   );
-
   const result = sandbox.__studentResult;
-
   delete sandbox.__studentArgs;
   delete sandbox.__studentFunction;
   delete sandbox.__studentResult;
-
   return result;
 }
-
 process.on("message", (payload) => {
   try {
     const result = runJavaScriptCode(payload);
-
     if (process.send) {
       process.send({
         ok: true,

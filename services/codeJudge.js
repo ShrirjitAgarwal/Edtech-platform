@@ -1,9 +1,9 @@
 const {
   executeCode
 } = require("./executeCode");
-const MAX_CODE_LENGTH = 10000;
-const EXECUTION_TIMEOUT = 1000;
-const MAX_TEST_CASES = 20;
+const {
+  EXECUTION_LIMITS
+} = require("./config/executionLimits");
 function parseInputValue(value) {
   const trimmed = String(value || "").trim();
   if (trimmed === "") {
@@ -77,7 +77,7 @@ async function judgeSubmission({
       testResults: []
     };
   }
-  if (safeCode.length > MAX_CODE_LENGTH) {
+  if (safeCode.length > EXECUTION_LIMITS.MAX_CODE_LENGTH) {
     return {
       success: false,
       error: "Code exceeds limit",
@@ -87,7 +87,7 @@ async function judgeSubmission({
     };
   }
   const safeTestCases = Array.isArray(testCases)
-    ? testCases.slice(0, MAX_TEST_CASES)
+    ? testCases.slice(0, EXECUTION_LIMITS.MAX_TEST_CASES)
     : [];
   const testResults = [];
   let passedCount = 0;
@@ -108,7 +108,6 @@ const expectedOutput =
   normalizeOutput(
     tc.expectedOutput
   );
-
 passed =
   actualOutput.toLowerCase() ===
   expectedOutput.toLowerCase();

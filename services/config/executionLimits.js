@@ -1,0 +1,21 @@
+const EXECUTION_LIMITS = Object.freeze({
+  MAX_CODE_LENGTH: 10000,
+  MAX_TEST_CASES: 20,
+
+  WORKER_TIMEOUT_MS: 1500,
+  VM_TIMEOUT_MS: 1000,
+  PYTHON_TIMEOUT_MS: 1000,
+
+  STDOUT_MAX_BUFFER_BYTES: 1024 * 1024,
+
+  JAVASCRIPT_MEMORY_MB: 64,
+
+  SUPPORTED_LANGUAGES: Object.freeze([
+    "javascript",
+    "python"
+  ])
+});
+
+module.exports = {
+  EXECUTION_LIMITS
+};

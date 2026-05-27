@@ -1,12 +1,11 @@
 const path = require("path");
 const { fork } = require("child_process");
-
 const {
   executionQueue
 } = require("../queue/executionQueue");
-
-const WORKER_TIMEOUT = 1500;
-
+const {
+  EXECUTION_LIMITS
+} = require("../config/executionLimits");
 function runPythonCode({
   code,
   functionName,
@@ -20,7 +19,6 @@ function runPythonCode({
         "workers",
         "pythonWorker.js"
       );
-
       const child = fork(workerPath, [], {
         stdio: [
           "ignore",
@@ -29,34 +27,24 @@ function runPythonCode({
           "ipc"
         ]
       });
-
       let settled = false;
-
       const timer = setTimeout(() => {
         if (settled) {
           return;
         }
-
         settled = true;
-
         child.kill("SIGKILL");
-
         reject(
           new Error("Python execution timed out")
         );
-      }, WORKER_TIMEOUT);
-
+      }, EXECUTION_LIMITS.WORKER_TIMEOUT_MS);
       child.on("message", (message) => {
         if (settled) {
           return;
         }
-
         settled = true;
-
         clearTimeout(timer);
-
         child.kill();
-
         if (message.ok) {
           resolve(message.result);
         } else {
@@ -68,28 +56,20 @@ function runPythonCode({
           );
         }
       });
-
       child.on("error", (err) => {
         if (settled) {
           return;
         }
-
         settled = true;
-
         clearTimeout(timer);
-
         reject(err);
       });
-
       child.on("exit", (code) => {
         if (settled) {
           return;
         }
-
         settled = true;
-
         clearTimeout(timer);
-
         reject(
           new Error(
             "Python worker exited with code " +
@@ -97,7 +77,6 @@ function runPythonCode({
           )
         );
       });
-
       child.send({
         code,
         functionName,
@@ -106,7 +85,6 @@ function runPythonCode({
     })
   );
 }
-
 module.exports = {
   runPythonCode
 };
