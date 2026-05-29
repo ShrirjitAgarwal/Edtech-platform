@@ -22,28 +22,24 @@ const cookieParser = require("cookie-parser");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
+const fs = require("fs");
 const connectDB = require("./data/config/db");
 const logger = require("./utils/logger");
 const app = express();
 app.set("trust proxy", 1);
-
 app.disable("x-powered-by");
-
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "same-origin");
-
   if (process.env.NODE_ENV === "production") {
     res.setHeader(
       "Strict-Transport-Security",
       "max-age=31536000; includeSubDomains"
     );
   }
-
   next();
 });
-
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
@@ -85,7 +81,24 @@ app.use(express.json({
 }));
 app.use(globalLimiter);
 app.use(logger.requestLogger);
-app.use(express.static(path.join(__dirname, "public")));
+const staticDir = path.join(__dirname, "public");
+
+if (fs.existsSync(staticDir)) {
+  app.use(
+    express.static(staticDir, {
+      maxAge:
+        process.env.NODE_ENV === "production"
+          ? "7d"
+          : 0,
+      etag: true,
+      lastModified: true
+    })
+  );
+} else {
+  logger.info("static directory not found, skipping static middleware", {
+    staticDir
+  });
+}
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
