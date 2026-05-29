@@ -9,13 +9,21 @@ const {
   validateEnv
 } = require("./config/validateEnv");
 const envConfig = validateEnv();
-console.log("ENV:", envConfig.nodeEnv);
+console.log(
+  JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: "info",
+    message: "environment loaded",
+    environment: envConfig.nodeEnv
+  })
+);
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
 const connectDB = require("./data/config/db");
+const logger = require("./utils/logger");
 const app = express();
 app.set("trust proxy", 1);
 
@@ -76,22 +84,7 @@ app.use(express.json({
   limit: "2mb"
 }));
 app.use(globalLimiter);
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    console.log(
-      "[" +
-      new Date().toISOString() +
-      "]",
-      req.method,
-      req.originalUrl,
-      res.statusCode,
-      duration + "ms"
-    );
-  });
-  next();
-});
+app.use(logger.requestLogger);
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -117,15 +110,7 @@ app.use("/", studentRoutes);
 app.use("/", reportRoutes);
 app.use("/", platformRoutes);
 app.use((err, req, res, next) => {
-  console.error("SERVER ERROR:", {
-    message: err.message,
-    stack:
-      process.env.NODE_ENV !== "production"
-        ? err.stack
-        : undefined,
-    path: req.originalUrl,
-    method: req.method
-  });
+  logger.errorLogger(err, req);
   if (res.headersSent) {
     return next(err);
   }
@@ -140,7 +125,9 @@ const startServer = async () => {
   await connectDB();
   const PORT = envConfig.port;
   app.listen(PORT, "0.0.0.0", () => {
-    console.log("Server running on port " + PORT);
+      logger.info("server started", {
+      port: PORT
+    });
   });
 };
 startServer();
