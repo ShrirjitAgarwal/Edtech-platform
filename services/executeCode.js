@@ -52,7 +52,6 @@ async function executeCode({
     normalizeLanguage(language);
       const safeCode = String(code || "");
   const safeFunctionName = String(functionName || "").trim();
-
   if (
     !EXECUTION_LIMITS.SUPPORTED_LANGUAGES.includes(
       normalizedLanguage
@@ -63,22 +62,18 @@ async function executeCode({
       normalizedLanguage
     );
   }
-
   if (!safeCode.trim()) {
     throw new Error("Empty code submission");
   }
-
   if (
     safeCode.length >
     EXECUTION_LIMITS.MAX_CODE_LENGTH
   ) {
     throw new Error("Code exceeds limit");
   }
-
   if (!safeFunctionName) {
     throw new Error("Function name is required");
   }
-
   if (
     getPayloadSize(args) >
     EXECUTION_LIMITS.MAX_ARGS_PAYLOAD_BYTES
@@ -86,9 +81,12 @@ async function executeCode({
     throw new Error("Input payload exceeds limit");
   }
   const provider = getJudgeProvider();
-
   assertProviderAllowed(provider);
-
+  if (provider === "disabled") {
+    throw new Error(
+      "Code execution is temporarily unavailable"
+    );
+  }
   if (provider === "judge0") {
     return runJudge0Code({
       language: normalizedLanguage,
@@ -97,14 +95,12 @@ async function executeCode({
       args
     });
   }
-
   if (provider !== "local") {
     throw new Error(
       "Unsupported judge provider: " +
       provider
     );
   }
-
   if (normalizedLanguage === "javascript") {
     return runJavaScriptCode({
       code: safeCode,
@@ -112,7 +108,6 @@ async function executeCode({
       args
     });
   }
-
   if (normalizedLanguage === "python") {
     return runPythonCode({
       code: safeCode,
@@ -120,7 +115,6 @@ async function executeCode({
       args
     });
   }
-
   throw new Error(
     "Unsupported language: " +
     normalizedLanguage
