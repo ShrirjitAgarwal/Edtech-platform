@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "NODE_ENV=local node server.js",
-    "staging": "NODE_ENV=staging node server.js",
-    "production": "NODE_ENV=production node server.js"
-  },
+"scripts": {
+  "start": "NODE_ENV=production node server.js",
+  "dev": "NODE_ENV=local node server.js",
+  "staging": "NODE_ENV=staging node server.js",
+  "production": "NODE_ENV=production node server.js",
+  "check": "node -c server.js && node -c config/validateEnv.js && node -c data/config/db.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
