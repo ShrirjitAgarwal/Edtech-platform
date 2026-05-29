@@ -5,7 +5,11 @@ const envFile =
     ? ".env.staging"
     : ".env.local";
 require("dotenv").config({ path: envFile });
-console.log("ENV:", process.env.NODE_ENV || "local");
+const {
+  validateEnv
+} = require("./config/validateEnv");
+const envConfig = validateEnv();
+console.log("ENV:", envConfig.nodeEnv);
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const compression = require("compression");
@@ -116,7 +120,7 @@ app.use((err, req, res, next) => {
 });
 const startServer = async () => {
   await connectDB();
-  const PORT = process.env.PORT || 3000;
+  const PORT = envConfig.port;
   app.listen(PORT, "0.0.0.0", () => {
     console.log("Server running on port " + PORT);
   });
