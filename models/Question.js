@@ -9,9 +9,22 @@ const testCaseSchema = new mongoose.Schema({
 });
 const questionSchema = new mongoose.Schema({
   legacyId: Number,
-  importKey: {
-  type: String,
-  default: null
+importKey: {
+type: String,
+default: null
+},
+importBatchId: {
+type: mongoose.Schema.Types.ObjectId,
+ref: "ImportBatch",
+default: null
+},
+importSource: {
+type: String,
+default: null
+},
+importedAt: {
+type: Date,
+default: null
 },
 type: {
   type: String,
@@ -96,7 +109,8 @@ questionSchema.index({ board: 1 });
 questionSchema.index({ type: 1 });
 questionSchema.index({ legacyId: 1 });
 questionSchema.index({ importKey: 1 });
-
+questionSchema.index({ importBatchId: 1 });
+questionSchema.index({ importSource: 1 });
 // PERFORMANCE INDEXES
 questionSchema.index({ scope: 1, teacherId: 1 });
 questionSchema.index({ subject: 1, board: 1 });

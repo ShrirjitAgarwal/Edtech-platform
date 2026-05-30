@@ -58,6 +58,7 @@ require("./models/Result");
 require("./models/Assignment");
 require("./models/ClassSubject");
 require("./models/Question");
+require("./models/ImportBatch");
 require("./models/School");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
@@ -82,7 +83,6 @@ app.use(express.json({
 app.use(globalLimiter);
 app.use(logger.requestLogger);
 const staticDir = path.join(__dirname, "public");
-
 if (fs.existsSync(staticDir)) {
   app.use(
     express.static(staticDir, {
