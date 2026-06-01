@@ -519,7 +519,6 @@ window.onload = function(){
         return res.json();
       })
       .then(tests => {
-        console.log("TESTS:", tests);
         testList.innerHTML = "";
         if (!tests.length) {
           testList.innerHTML = "<p>No tests available</p>";
@@ -1343,7 +1342,6 @@ function startExamMode(){
   }, 1500);
 }
 function autoSubmit(reason){
-  console.log("Auto submitted:", reason);
   window.__submitReason = reason || "Manual submit";
   submitTest();
 }

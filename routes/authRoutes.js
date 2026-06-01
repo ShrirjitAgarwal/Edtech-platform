@@ -110,7 +110,6 @@ if (user.password.startsWith("$2b$")) {
     const newHashed = await bcrypt.hash(passwordInput, 10);
     user.password = newHashed;
     await user.save();
-    console.log("Password upgraded to bcrypt");
   }
 }
 // ❌ INVALID PASSWORD
@@ -157,7 +156,6 @@ if (user.role === "student") {
       { name: user.name }
     ]
   });
-  console.log("MATCHED STUDENT:", studentData);
 }
 res.cookie("authToken", token, {
   httpOnly: true,
@@ -194,7 +192,6 @@ router.post(
 router.post("/logout", async (req, res) => {
   const token = req.cookies && req.cookies.authToken;
   let logoutActor = null;
-
   if (token) {
     try {
       logoutActor = jwt.verify(token, process.env.JWT_SECRET);
@@ -202,7 +199,6 @@ router.post("/logout", async (req, res) => {
       logoutActor = null;
     }
   }
-
   await logAuditEvent(req, {
     event: "logout",
     status: "success",
@@ -211,7 +207,6 @@ router.post("/logout", async (req, res) => {
       hadCookie: Boolean(token)
     }
   });
-
   res.clearCookie("authToken", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

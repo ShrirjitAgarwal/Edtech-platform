@@ -1,15 +1,11 @@
 const express = require("express");
 const router = express.Router();
-
 const authMiddleware = require("../middleware/auth");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
-
 // ---------- LIBRARY ----------
 router.get("/library", authMiddleware, async (req, res) => {
   try {
-    console.log("LIBRARY ROUTE HIT");
-
     const content = `
 <div style="
 display:flex;
@@ -45,7 +41,6 @@ Manage Questions
 </button>
 </div>
 </div>
-
 <div style="
 background:white;
 padding:18px;
@@ -78,7 +73,6 @@ box-sizing:border-box;
 "
 />
 </div>
-
 <div>
 <label style="font-size:13px;">Subject</label><br>
 <select id="subjectFilter" onchange="renderLibrary()" style="
@@ -90,7 +84,6 @@ font-size:13px;
 <option value="all">All</option>
 </select>
 </div>
-
 <div>
 <label style="font-size:13px;">Board</label><br>
 <select id="boardFilter" onchange="renderLibrary()" style="
@@ -102,7 +95,6 @@ font-size:13px;
 <option value="all">All</option>
 </select>
 </div>
-
 <div>
 <label style="font-size:13px;">Difficulty</label><br>
 <select id="difficultyFilter" onchange="renderLibrary()" style="
@@ -117,7 +109,6 @@ font-size:13px;
 <option value="hard">Hard</option>
 </select>
 </div>
-
 <div>
 <label style="font-size:13px;">Attempt</label><br>
 <select id="attemptFilter" onchange="renderLibrary()" style="
@@ -131,7 +122,6 @@ font-size:13px;
 <option value="not_attempted">Not Attempted</option>
 </select>
 </div>
-
 <div>
 <label style="font-size:13px;">Library Type</label><br>
 <select id="scopeFilter" onchange="renderLibrary()" style="
@@ -147,7 +137,6 @@ font-size:13px;
 </div>
 </div>
 </div>
-
 <div style="
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -168,7 +157,6 @@ overflow-y:auto;
 <h2 style="margin-top:0;">Questions</h2>
 <div id="libraryList"></div>
 </div>
-
 <div
 id="questionPreview"
 style="
@@ -187,19 +175,15 @@ Select a question to preview it here.
 </p>
 </div>
 </div>
-
 <script>
 const user = JSON.parse(localStorage.getItem("user") || "null");
 if(!user || user.role !== "teacher"){
 window.location.replace("/");
 }
-
 const teacherId = user._id || user.id;
 let questions = [];
-
 document.getElementById("libraryList").innerHTML =
 "<p style='color:#64748b;'>Loading questions...</p>";
-
 fetch("/api/library-data", {
 headers:{
 "Authorization": "Bearer " + localStorage.getItem("token")
@@ -221,7 +205,6 @@ console.error("LIBRARY LOAD ERROR:", err);
 document.getElementById("libraryList").innerHTML =
 "<p style='color:#dc2626;'>Failed to load questions. Please refresh.</p>";
 });
-
 function getVisibleQuestions(){
 return questions.filter(q =>
 q.scope === "public" ||
@@ -231,32 +214,26 @@ String(q.teacherId) === String(teacherId)
 )
 );
 }
-
 function populateFilters(){
 const visibleQuestions = getVisibleQuestions();
-
 const subjects = [...new Set(
 visibleQuestions
 .map(q => q.subject || q.category)
 .filter(Boolean)
 )];
-
 const boards = [...new Set(
 visibleQuestions
 .map(q => q.board || "General")
 .filter(Boolean)
 )];
-
 const subjectFilter = document.getElementById("subjectFilter");
 const boardFilter = document.getElementById("boardFilter");
-
 subjects.forEach(s => {
 const option = document.createElement("option");
 option.value = s;
 option.textContent = s;
 subjectFilter.appendChild(option);
 });
-
 boards.forEach(b => {
 const option = document.createElement("option");
 option.value = b;
@@ -264,13 +241,11 @@ option.textContent = b;
 boardFilter.appendChild(option);
 });
 }
-
 function buildQuestionCard(q){
 const sourceLabel =
 q.scope === "teacher"
 ? "My Question"
 : "Platform Question";
-
 return \`
 <div
 onclick="previewQuestion('\${q._id}')"
@@ -316,16 +291,13 @@ cursor:pointer;
 </div>
 \`;
 }
-
 function previewQuestion(id){
 const q = questions.find(item =>
 String(item._id) === String(id)
 );
-
 if(!q){
 return;
 }
-
 const optionsHtml =
 q.options && q.options.length
 ? q.options.map((opt, index) =>
@@ -334,12 +306,10 @@ q.options && q.options.length
 "</div>"
 ).join("")
 : "<p style='color:#64748b;'>No options found. This may be a coding or written question.</p>";
-
 const sourceLabel =
 q.scope === "teacher"
 ? "My Question"
 : "Platform Question";
-
 document.getElementById("questionPreview").innerHTML =
 "<h2 style='margin-top:0;'>Question Preview</h2>" +
 "<div style='background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:15px;'>" +
@@ -373,61 +343,46 @@ optionsHtml +
 "cursor:pointer;" +
 "\\">+ Add to Test</button>";
 }
-
 function renderLibrary(){
 const subject = document.getElementById("subjectFilter").value;
 const board = document.getElementById("boardFilter").value;
 const scope = document.getElementById("scopeFilter").value;
 const difficulty = document.getElementById("difficultyFilter").value;
 const attempt = document.getElementById("attemptFilter").value;
-
 const searchValue =
 (document.getElementById("questionSearch").value || "")
 .trim()
 .toLowerCase();
-
 let visibleQuestions = getVisibleQuestions();
-
 visibleQuestions = visibleQuestions.filter(q => {
 const qSubject = q.subject || q.category;
 const qBoard = q.board || "General";
 const questionText = String(q.question || "").toLowerCase();
-
 const subjectMatch =
 subject === "all" || qSubject === subject;
-
 const boardMatch =
 board === "all" || qBoard === board;
-
 const scopeMatch =
 scope === "all" || q.scope === scope;
-
 const searchMatch =
 !searchValue || questionText.includes(searchValue);
-
 const difficultyMatch =
 difficulty === "all" ||
 String(q.difficulty || "").toLowerCase() === difficulty;
-
 const attemptedCount = q.analytics?.attempted || 0;
-
 const attemptMatch =
 attempt === "all" ||
 (attempt === "attempted" && attemptedCount > 0) ||
 (attempt === "not_attempted" && attemptedCount === 0);
-
 return subjectMatch && boardMatch && scopeMatch && searchMatch && difficultyMatch && attemptMatch;
 });
-
 document.getElementById("libraryList").innerHTML =
 visibleQuestions.length
 ? visibleQuestions.map(q => buildQuestionCard(q)).join("")
 : "<p>No questions found</p>";
 }
-
 function addToTest(id){
 let selected = JSON.parse(localStorage.getItem("selectedQuestions") || "[]");
-
 if(!selected.includes(id)){
 selected.push(id);
 localStorage.setItem("selectedQuestions", JSON.stringify(selected));
@@ -438,29 +393,24 @@ alert("Question already added");
 }
 </script>
 `;
-
     res.send(layout(content, "library"));
   } catch (err) {
     console.error(err);
     res.send("Error loading library");
   }
 });
-
 // ---------- LIBRARY DATA API ----------
 router.get("/api/library-data", authMiddleware, async (req, res) => {
   try {
     const Question = require("../models/Question");
-
     const teacherId = String(req.user.id);
     const schoolId = req.user.schoolId || null;
-
     const page = Math.max(parseInt(req.query.page || "1"), 1);
     const limit = Math.min(
       Math.max(parseInt(req.query.limit || "50"), 1),
       100
     );
     const skip = (page - 1) * limit;
-
     const query = {
       $or: [
         { scope: "public" },
@@ -476,7 +426,6 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
             }
       ]
     };
-
     const [questions, total] = await Promise.all([
       Question.find(query)
         .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
@@ -486,7 +435,6 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
         .lean(),
       Question.countDocuments(query)
     ]);
-
     res.json({
       questions,
       pagination: {
@@ -505,5 +453,4 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
     });
   }
 });
-
 module.exports = router;
