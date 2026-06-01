@@ -37,14 +37,19 @@ function navbar(){
      .logout { background:#ff4d4d; color:white; }
    </style>
    <script>
-     function go(path){ window.location.href = path; }
-     function logout(){
-  localStorage.removeItem("user");
-  localStorage.removeItem("token");
-  localStorage.removeItem("role"); // keep this if you're using it
-  window.location.replace("/");
-}
-   </script>
+  function go(path){
+    window.location.href = path;
+  }
+
+  function logout(){
+    fetch("/logout", {
+      method: "POST"
+    }).finally(() => {
+      localStorage.clear();
+      window.location.href = "/";
+    });
+  }
+</script>
  `;
 }
 // ---------- GLOBAL LAYOUT ----------
@@ -70,10 +75,14 @@ function layout(content, active = "") {
       function go(path){
         window.location.replace(path);
       }
-      function logout(){
-        localStorage.clear();
-        window.location.replace("/");
-      }
+function logout(){
+  fetch("/logout", {
+    method: "POST"
+  }).finally(() => {
+    localStorage.clear();
+    window.location.replace("/");
+  });
+}
       function toggleManage(){
         const menu = document.getElementById("manageMenu");
         if (!menu) return;
@@ -92,7 +101,6 @@ const allResults = await Result.find()
   .sort({ date: -1 })
   .limit(5000)
   .lean();
-
 const tests = await Test.find()
   .select("name teacherId")
   .sort({ createdAt: -1 })

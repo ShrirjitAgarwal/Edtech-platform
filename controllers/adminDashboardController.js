@@ -467,8 +467,12 @@ function go(path){
 window.location.replace(path);
 }
 function logout(){
-localStorage.clear();
-window.location.replace("/");
+  fetch("/logout", {
+    method: "POST"
+  }).finally(() => {
+    localStorage.clear();
+    window.location.href = "/";
+  });
 }
 function goToClass(cls){
 window.location.replace(

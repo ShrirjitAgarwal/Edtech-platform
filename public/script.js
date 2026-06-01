@@ -5,6 +5,10 @@ function go(path){
 }
 
 function logout(){
-  localStorage.clear();
-  window.location.href = "/";
+  fetch("/logout", {
+    method: "POST"
+  }).finally(() => {
+    localStorage.clear();
+    window.location.href = "/";
+  });
 }

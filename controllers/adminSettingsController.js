@@ -10,20 +10,22 @@ exports.adminSettingsPage = async (req, res) => {
     const Test = require("../models/Test");
     const Result = require("../models/Result");
     const ClassSubject = require("../models/ClassSubject");
+    const Subject = require("../models/Subject");
     const schoolId = req.user.schoolId || null;
     const schoolScopedFilter = schoolId
       ? { schoolId }
       : {};
-    const [
-      school,
-      admins,
-      teachers,
-      students,
-      classes,
-      tests,
-      results,
-      mappings
-    ] = await Promise.all([
+const [
+  school,
+  admins,
+  teachers,
+  students,
+  classes,
+  tests,
+  results,
+  mappings,
+  subjects
+] = await Promise.all([
       schoolId
         ? School.findById(schoolId).lean()
         : null,
@@ -51,15 +53,47 @@ exports.adminSettingsPage = async (req, res) => {
       Result.find(schoolScopedFilter)
         .select("studentId testId score total schoolId schoolCode")
         .lean(),
-      ClassSubject.find(schoolScopedFilter)
-        .select("className subject teacherId schoolId schoolCode")
-        .lean()
+ClassSubject.find(schoolScopedFilter)
+  .select("className subject teacherId schoolId schoolCode")
+  .lean(),
+Subject.find(schoolScopedFilter)
+  .select("name schoolId schoolCode createdAt")
+  .sort({ name: 1 })
+  .lean()
     ]);
     const teacherOptions = teachers.map(t => `
       <option value="${t._id}">
         ${t.name || t.email || "Unnamed Teacher"} - ${t.email || ""}
       </option>
     `).join("");
+    const subjectRows = subjects.map(s => `
+<tr>
+  <td>${s.name || "-"}</td>
+  <td>${
+    s.createdAt
+      ? new Date(s.createdAt).toLocaleString()
+      : "-"
+  }</td>
+  <td>
+    <button
+      onclick="deleteSubject('${s._id}')"
+      style="
+        background:#dc2626;
+        color:white;
+        border:none;
+        padding:8px 12px;
+        border-radius:8px;
+        cursor:pointer;
+      "
+    >
+      Delete
+    </button>
+  </td>
+</tr>
+`).join("");
+const subjectOptions = subjects.map(s => `
+  <option value="${s.name}">${s.name}</option>
+`).join("");
     const mappingRows = mappings.map(m => {
   const teacher = teachers.find(t =>
     String(t._id) === String(m.teacherId)
@@ -313,6 +347,9 @@ const classOptions = [...new Set(
         <button class="adminPanelButton" onclick="showAdminPanel('classes', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Classes
         </button>
+        <button class="adminPanelButton" onclick="showAdminPanel('subjects', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+  Subjects
+</button>
         <button class="adminPanelButton" onclick="showAdminPanel('students', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Students
         </button>
@@ -353,11 +390,9 @@ const classOptions = [...new Set(
           <option value="">Select Class</option>
           ${classOptions}
         </select>
-        <select id="mapSubject" style="padding:10px;">
+<select id="mapSubject" style="padding:10px;">
   <option value="">Select Subject</option>
-  <option value="Maths">Maths</option>
-  <option value="Computer Science">Computer Science</option>
-  <option value="Physics">Physics</option>
+  ${subjectOptions}
 </select>
         <select id="mapTeacherId" style="padding:10px;">
           <option value="">Select Teacher</option>
@@ -500,6 +535,62 @@ const classOptions = [...new Set(
         ${classRows || "<tr><td colspan='4'>No classes found</td></tr>"}
       </table>
     </div>
+    <div id="panel-subjects" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:18px;
+    margin-bottom:20px;
+  ">
+    <div>
+      <h2 style="margin:0 0 6px 0;">Subjects</h2>
+      <p style="margin:0;color:#64748b;">
+        Create and manage subjects for this school.
+      </p>
+    </div>
+  </div>
+  <div style="
+    background:#f8fafc;
+    border:1px solid #e5e7eb;
+    padding:16px;
+    border-radius:12px;
+    margin-bottom:22px;
+  ">
+    <h3 style="margin-top:0;">Create Subject</h3>
+    <div style="
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:12px;
+      align-items:center;
+    ">
+      <input
+        id="newSubjectName"
+        placeholder="Subject name, example Maths"
+        style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
+      />
+      <button onclick="createSubject()" style="
+        padding:11px 16px;
+        background:#16a34a;
+        color:white;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:700;
+      ">
+        Add Subject
+      </button>
+    </div>
+  </div>
+  <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
+<tr>
+  <th>Subject</th>
+  <th>Created Date</th>
+  <th>Action</th>
+</tr>
+    ${subjectRows || "<tr><td colspan='3'>No subjects found</td></tr>"}
+  </table>
+</div>
         <div id="panel-students" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
       <div style="
         display:flex;
@@ -685,8 +776,72 @@ function go(path){
   window.location.replace(path);
 }
 function logout(){
-  localStorage.clear();
-  window.location.replace("/");
+  fetch("/logout", {
+    method: "POST"
+  }).finally(() => {
+    localStorage.clear();
+    window.location.href = "/";
+  });
+}
+  function createSubject(){
+  const name =
+    document
+      .getElementById("newSubjectName")
+      .value
+      .trim();
+  if(!name){
+    alert("Subject name is required");
+    return;
+  }
+  fetch("/admin/create-subject", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      name
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("Subject created");
+    location.reload();
+  })
+  .catch(() => {
+    alert("Failed to create subject");
+  });
+}
+function deleteSubject(subjectId){
+  if(!confirm("Delete this subject?")){
+    return;
+  }
+  fetch("/admin/delete-subject", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      subjectId
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    alert("Subject deleted");
+    location.reload();
+  })
+  .catch(() => {
+    alert("Failed to delete subject");
+  });
 }
   function createClass(){
   const name =

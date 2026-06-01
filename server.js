@@ -65,6 +65,7 @@ require("./models/ClassSubject");
 require("./models/Question");
 require("./models/ImportBatch");
 require("./models/AdminActionLog");
+require("./models/AuditLog");
 require("./models/School");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
@@ -114,7 +115,6 @@ function getMongoHealth() {
     2: "connecting",
     3: "disconnecting"
   };
-
   return {
     status: states[readyState] || "unknown",
     readyState,
@@ -122,11 +122,9 @@ function getMongoHealth() {
     host: mongoose.connection.host || null
   };
 }
-
 app.get("/health", (req, res) => {
   const mongo = getMongoHealth();
   const isHealthy = mongo.readyState === 1;
-
   res.status(isHealthy ? 200 : 503).json({
     status: isHealthy ? "ok" : "degraded",
     environment: process.env.NODE_ENV || "local",

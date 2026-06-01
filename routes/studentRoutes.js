@@ -28,8 +28,12 @@ function go(path){
   window.location.replace(path);
 }
 function logout(){
-  localStorage.clear();
-  window.location.replace("/");
+  fetch("/logout", {
+    method: "POST"
+  }).finally(() => {
+    localStorage.clear();
+    window.location.href = "/";
+  });
 }
 </script>
 `;
@@ -160,26 +164,22 @@ padding:30px;
 border-radius:12px;
 ">
 <h2>Student Login</h2>
-
 <div id="lookupForm">
   <input
     id="firstName"
     placeholder="First Name"
     style="width:100%;padding:10px;margin-bottom:15px;box-sizing:border-box;"
   />
-
   <input
     id="lastName"
     placeholder="Last Name"
     style="width:100%;padding:10px;margin-bottom:15px;box-sizing:border-box;"
   />
-
   <input
     id="studentId"
     placeholder="Student ID"
     style="width:100%;padding:10px;margin-bottom:15px;box-sizing:border-box;"
   />
-
   <button onclick="lookupStudent()" style="
     width:100%;
     padding:12px;
@@ -193,7 +193,6 @@ border-radius:12px;
     Find My Record
   </button>
 </div>
-
 <div
   id="errorBox"
   style="
@@ -203,7 +202,6 @@ border-radius:12px;
     font-weight:700;
   "
 ></div>
-
 <div
   id="confirmBox"
   style="
@@ -216,36 +214,28 @@ border-radius:12px;
   "
 ></div>
 </div>
-
 <script>
 localStorage.clear();
-
 let matchedStudent = null;
-
 function showError(message){
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "block";
   errorBox.innerText = message;
 }
-
 function clearError(){
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "none";
   errorBox.innerText = "";
 }
-
 function lookupStudent(){
   clearError();
-
   const firstName = document.getElementById("firstName").value.trim();
   const lastName = document.getElementById("lastName").value.trim();
   const studentId = document.getElementById("studentId").value.trim();
-
   if(!firstName || !lastName || !studentId){
     showError("Please enter first name, last name, and student ID.");
     return;
   }
-
   fetch("/student-lookup", {
     method:"POST",
     headers:{
@@ -265,9 +255,7 @@ function lookupStudent(){
       showError(data.error);
       return;
     }
-
     matchedStudent = data.student;
-
     document.getElementById("confirmBox").style.display = "block";
     document.getElementById("confirmBox").innerHTML =
       "<h3 style='margin-top:0;'>Confirm Your Details</h3>" +
@@ -302,22 +290,18 @@ function lookupStudent(){
     showError("Lookup failed. Please try again.");
   });
 }
-
 function resetLookup(){
   matchedStudent = null;
   document.getElementById("confirmBox").style.display = "none";
   clearError();
 }
-
 function confirmStudent(){
   if(!matchedStudent){
     showError("No student record selected.");
     return;
   }
-
   localStorage.setItem("student", JSON.stringify(matchedStudent));
   localStorage.setItem("class", matchedStudent.class);
-
   go("/my-tests");
 }
 </script>
@@ -333,28 +317,23 @@ router.post("/student-lookup", async (req, res) => {
     const firstName = String(req.body.firstName || "").trim();
     const lastName = String(req.body.lastName || "").trim();
     const studentId = String(req.body.studentId || "").trim();
-
     if (!firstName || !lastName || !studentId) {
       return res.status(400).json({
         error: "Please enter first name, last name, and student ID."
       });
     }
-
     const normalize = value =>
       String(value || "")
         .trim()
         .replace(/\s+/g, " ")
         .toLowerCase();
-
     const normalizeStudentId = value =>
       String(value || "")
         .trim()
         .replace(/\s+/g, "")
         .toLowerCase();
-
     const nameKey = normalize(firstName + " " + lastName);
     const studentKey = normalizeStudentId(studentId);
-
     const matches = await Student.find({
       studentKey,
       nameKey,
@@ -363,26 +342,21 @@ router.post("/student-lookup", async (req, res) => {
       .select("studentId studentKey name firstName lastName fullName nameKey class teacherId schoolId schoolCode status")
       .limit(10)
       .lean();
-
     if (matches.length === 0) {
       return res.status(404).json({
         error: "We could not find a matching student record. Please recheck your name and student ID."
       });
     }
-
     if (matches.length > 1) {
       return res.status(409).json({
         error: "Multiple matching records found. Please contact your teacher or school admin."
       });
     }
-
     const student = matches[0];
-
     await Student.updateOne(
       { _id: student._id },
       { $set: { lastVerifiedAt: new Date() } }
     );
-
     const school = student.schoolId
       ? await School.findById(student.schoolId)
           .select("name")
@@ -402,14 +376,12 @@ router.post("/student-lookup", async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
-
     res.cookie("studentSessionToken", studentSessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 2 * 60 * 60 * 1000
     });
-
     res.json({
       status: "matched",
       student: {
@@ -690,13 +662,10 @@ router.get("/test", async (req, res) => {
   try {
     const id = req.query.id;
     const studentToken = req.cookies && req.cookies.studentSessionToken;
-
     if (!id || !studentToken) {
       return res.redirect("/student-entry");
     }
-
     let decodedStudent;
-
     try {
       decodedStudent = jwt.verify(
         studentToken,
@@ -705,14 +674,11 @@ router.get("/test", async (req, res) => {
     } catch (tokenErr) {
       return res.redirect("/student-entry");
     }
-
     if (!decodedStudent || decodedStudent.role !== "student") {
       return res.redirect("/student-entry");
     }
-
     const studentId = decodedStudent.studentId;
     const studentRecordId = decodedStudent.studentRecordId;
-
     const student = await Student.findOne({
       _id: studentRecordId,
       studentId,
