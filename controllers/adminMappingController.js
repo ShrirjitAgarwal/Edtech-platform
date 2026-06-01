@@ -1,3 +1,6 @@
+const {
+  logAdminAction
+} = require("../services/adminActionLogger");
 exports.mapClassSubject = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -48,7 +51,19 @@ const newMapping =
     schoolCode:
       req.user.schoolCode || null
   });
-    res.json({ status: "mapped", data: newMapping });
+    await logAdminAction(req, {
+  action: "admin_mapping_created",
+  status: "success",
+  targetType: "ClassSubject",
+  targetId: newMapping._id,
+  metadata: {
+    className: newMapping.className,
+    subject: newMapping.subject,
+    teacherId: newMapping.teacherId
+  }
+});
+
+res.json({ status: "mapped", data: newMapping });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed mapping" });
@@ -86,9 +101,21 @@ exports.deleteClassSubjectMapping =
           error: "Mapping not found"
         });
       }
-      res.json({
-        status: "deleted"
-      });
+await logAdminAction(req, {
+  action: "admin_mapping_deleted",
+  status: "success",
+  targetType: "ClassSubject",
+  targetId: mappingId,
+  metadata: {
+    className: deleted.className,
+    subject: deleted.subject,
+    teacherId: deleted.teacherId
+  }
+});
+
+ res.json({
+ status: "deleted"
+ });
     } catch (err) {
       console.error(
         "DELETE MAPPING ERROR:",

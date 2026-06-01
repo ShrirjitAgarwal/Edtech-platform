@@ -1,3 +1,6 @@
+const {
+  logAdminAction
+} = require("../services/adminActionLogger");
 exports.addUserFromAdmin = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -71,17 +74,29 @@ const user =
     createdByName:
       String(req.user.name || "Admin")
   });
-    res.json({
-      status: "created",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        schoolId: user.schoolId,
-        schoolCode: user.schoolCode
-      }
-    });
+await logAdminAction(req, {
+  action: "admin_user_created",
+  status: "success",
+  targetType: "User",
+  targetId: user._id,
+  metadata: {
+    createdUserEmail: user.email,
+    createdUserRole: user.role,
+    createdUserName: user.name
+  }
+});
+
+res.json({
+ status: "created",
+ user: {
+ _id: user._id,
+ name: user.name,
+ email: user.email,
+ role: user.role,
+ schoolId: user.schoolId,
+ schoolCode: user.schoolCode
+ }
+ });
   } catch (err) {
     console.error(
       "ADMIN ADD USER ERROR:",
@@ -162,12 +177,25 @@ const user =
           });
         }
       }
-      await User.deleteOne({
-        _id: userId
-      });
-      res.json({
-        status: "deleted"
-      });
+await User.deleteOne({
+ _id: userId
+ });
+
+await logAdminAction(req, {
+  action: "admin_user_deleted",
+  status: "success",
+  targetType: "User",
+  targetId: userId,
+  metadata: {
+    deletedUserEmail: targetUser.email,
+    deletedUserRole: targetUser.role,
+    deletedUserName: targetUser.name
+  }
+});
+
+ res.json({
+ status: "deleted"
+ });
     } catch (err) {
       console.error(
         "DELETE USER ERROR:",

@@ -1,3 +1,6 @@
+const {
+  logAdminAction
+} = require("../services/adminActionLogger");
 function normalizeKey(value) {
   return String(value || "")
     .trim()
@@ -79,10 +82,23 @@ exports.createStudentFromAdmin = async (req, res) => {
         }
       }
     );
-    res.json({
-      status: "created",
-      student
-    });
+await logAdminAction(req, {
+  action: "admin_student_created",
+  status: "success",
+  targetType: "Student",
+  targetId: student._id,
+  metadata: {
+    studentId: student.studentId,
+    studentName: student.name,
+    className: student.class,
+    teacherId: student.teacherId
+  }
+});
+
+res.json({
+ status: "created",
+ student
+ });
   } catch (err) {
     console.error("ADMIN CREATE STUDENT ERROR:", err);
     res.status(500).json({
@@ -201,11 +217,24 @@ exports.bulkCreateStudentsFromAdmin = async (req, res) => {
         }
       }
     );
-    res.json({
-      status: "created",
-      createdCount: createdStudents.length,
-      students: createdStudents
-    });
+await logAdminAction(req, {
+  action: "admin_students_bulk_created",
+  status: "success",
+  targetType: "Student",
+  targetId: null,
+  metadata: {
+    createdCount: createdStudents.length,
+    className,
+    teacherId,
+    studentIds: createdStudents.map(s => s.studentId)
+  }
+});
+
+res.json({
+ status: "created",
+ createdCount: createdStudents.length,
+ students: createdStudents
+ });
   } catch (err) {
     console.error("ADMIN BULK CREATE STUDENTS ERROR:", err);
     res.status(500).json({
@@ -288,10 +317,25 @@ exports.updateStudentClassFromAdmin = async (req, res) => {
         }
       }
     );
-    res.json({
-      status: "updated",
-      student
-    });
+await logAdminAction(req, {
+  action: "admin_student_updated",
+  status: "success",
+  targetType: "Student",
+  targetId: student._id,
+  metadata: {
+    studentId: student.studentId,
+    studentName: student.name,
+    previousClassName,
+    newClassName: student.class,
+    previousTeacherId: null,
+    newTeacherId: student.teacherId
+  }
+});
+
+res.json({
+ status: "updated",
+ student
+ });
   } catch (err) {
     console.error("ADMIN UPDATE STUDENT ERROR:", err);
     res.status(500).json({
@@ -334,13 +378,27 @@ exports.deleteStudentFromAdmin = async (req, res) => {
         }
       }
     );
-    await Student.deleteOne({
-      _id: studentMongoId,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
-    });
-    res.json({
-      status: "deleted"
-    });
+await Student.deleteOne({
+ _id: studentMongoId,
+ ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+ });
+
+await logAdminAction(req, {
+  action: "admin_student_deleted",
+  status: "success",
+  targetType: "Student",
+  targetId: studentMongoId,
+  metadata: {
+    studentId: student.studentId,
+    studentName: student.name,
+    className: student.class,
+    teacherId: student.teacherId
+  }
+});
+
+ res.json({
+ status: "deleted"
+ });
   } catch (err) {
     console.error("ADMIN DELETE STUDENT ERROR:", err);
     res.status(500).json({
