@@ -23,9 +23,13 @@ const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
 const fs = require("fs");
+const mongoose = require("mongoose");
 const connectDB = require("./data/config/db");
 const logger = require("./utils/logger");
 const requestIdMiddleware = require("./middleware/requestId");
+const {
+  getJudgeProvider
+} = require("./services/config/judgeProvider");
 const app = express();
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
@@ -101,11 +105,36 @@ if (fs.existsSync(staticDir)) {
     staticDir
   });
 }
+function getMongoHealth() {
+  const readyState = mongoose.connection.readyState;
+  const states = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting"
+  };
+
+  return {
+    status: states[readyState] || "unknown",
+    readyState,
+    databaseName: mongoose.connection.name || null,
+    host: mongoose.connection.host || null
+  };
+}
+
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
+  const mongo = getMongoHealth();
+  const isHealthy = mongo.readyState === 1;
+
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? "ok" : "degraded",
     environment: process.env.NODE_ENV || "local",
     uptime: process.uptime(),
+    mongo,
+    judgeProvider: getJudgeProvider(),
+    localCodeExecutionEnabled:
+      String(process.env.LOCAL_CODE_EXECUTION_ENABLED || "").toLowerCase() === "true",
+    requestId: req.requestId || null,
     timestamp: new Date().toISOString()
   });
 });
