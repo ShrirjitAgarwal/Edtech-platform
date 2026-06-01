@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
-
 const authMiddleware = require("../middleware/auth");
 const Test = require("../models/Test");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
-
+const {
+  logAuditEvent
+} = require("../services/auditLogger");
 // ---------- TEACHER TEST LIST ----------
 router.get("/teacher-tests", authMiddleware, async (req, res) => {
   const content = `
@@ -463,7 +464,6 @@ router.get("/create-test", authMiddleware, async (req, res) => {
 try {
 const Question = require("../models/Question");
 const ClassSubject = require("../models/ClassSubject");
-
 const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
 const questions = await Question.find({
@@ -493,7 +493,6 @@ if (req.query.id) {
   ...(schoolId ? { schoolId } : {})
 }).lean();
 }
-
 const classSubjectMappings = await ClassSubject.find({
   teacherId,
   ...(schoolId ? { schoolId } : {})
@@ -501,20 +500,17 @@ const classSubjectMappings = await ClassSubject.find({
   .select("className subject teacherId schoolId schoolCode")
   .sort({ className: 1, subject: 1 })
   .lean();
-
 const assignedClasses = [...new Set(
   classSubjectMappings
     .map(mapping => String(mapping.className || "").trim().toUpperCase())
     .filter(Boolean)
 )];
-
 const assignedSubjects = [...new Set(
   classSubjectMappings
     .filter(mapping => {
       if (!editTest?.className) {
         return true;
       }
-
       return (
         String(mapping.className || "").trim().toUpperCase() ===
         String(editTest.className || "").trim().toUpperCase()
@@ -523,19 +519,16 @@ const assignedSubjects = [...new Set(
     .map(mapping => String(mapping.subject || "").trim())
     .filter(Boolean)
 )];
-
 const classOptionsHtml = assignedClasses.length
   ? assignedClasses.map(className => `
 <option value="${className}" ${editTest?.className === className ? "selected" : ""}>${className}</option>
 `).join("")
   : `<option value="">No assigned classes</option>`;
-
 const subjectOptionsHtml = assignedSubjects.length
   ? assignedSubjects.map(subject => `
 <option value="${subject}" ${editTest?.subject === subject ? "selected" : ""}>${subject}</option>
 `).join("")
   : `<option value="">No assigned subjects</option>`;
-
 const noMappingsNotice = classSubjectMappings.length
   ? ""
   : `
@@ -551,7 +544,6 @@ const noMappingsNotice = classSubjectMappings.length
   No class or subject has been assigned to you yet. Please contact your school admin before creating a test.
 </div>
 `;
-
 const content = `
 <div style="
   display:flex;
@@ -581,7 +573,7 @@ margin-bottom:20px;
  border-radius:8px;
  border:1px solid #ccc;
  "/>
- <select id="className" onchange="updateSubjectOptions()" style="
+ <select id="className" style="
  padding:12px;
  border-radius:8px;
  border:1px solid #ccc;
@@ -703,7 +695,13 @@ style="
 </div>
 <script>
 const user = JSON.parse(localStorage.getItem("user") || "null");
-if(!user || user.role !== "teacher"){
+if(
+ !user ||
+ (
+   user.role !== "teacher" &&
+   user.role !== "admin"
+ )
+){
  window.location.replace("/");
 }
 const teacherId = user._id || user.id;
@@ -846,40 +844,28 @@ function previewQuestion(id){
  "<p><b>Difficulty:</b> " + (q.difficulty || "N/A") + "</p>";
 }
 function updateSubjectOptions(){
- const className = document.getElementById("className").value;
  const subjectSelect = document.getElementById("subject");
  const currentSubject = subjectSelect.value;
-
  const subjects = [...new Set(
  assignedClassSubjects
- .filter(mapping =>
- String(mapping.className || "").trim().toUpperCase() ===
- String(className || "").trim().toUpperCase()
- )
  .map(mapping => String(mapping.subject || "").trim())
  .filter(Boolean)
  )];
-
  subjectSelect.innerHTML = "<option value=''>Select Subject</option>";
-
  if(!subjects.length){
  subjectSelect.innerHTML += "<option value=''>No assigned subjects</option>";
  return;
  }
-
  subjects.forEach(subject => {
  const option = document.createElement("option");
  option.value = subject;
  option.textContent = subject;
-
  if(subject === currentSubject){
  option.selected = true;
  }
-
  subjectSelect.appendChild(option);
  });
 }
-
 function saveTest(){
  const name = document.getElementById("testName").value;
  const subject = document.getElementById("subject").value;
@@ -939,28 +925,9 @@ router.post("/save-test", authMiddleware, async (req, res) => {
     if (!className || !subject) {
       return res.status(400).json({ error: "Class and subject required" });
     }
-    console.log("SAVE TEST BODY:", req.body);
     const ClassSubject = require("../models/ClassSubject");
     const normalizedClass = String(className || "").trim().toUpperCase();
-const rawSubject = String(subject || "").trim();
-let normalizedSubject = rawSubject;
-if (
-  rawSubject.toLowerCase() === "cs" ||
-  rawSubject.toLowerCase() === "computer science"
-) {
-  normalizedSubject = "Computer Science";
-} else if (
-  rawSubject.toLowerCase() === "maths" ||
-  rawSubject.toLowerCase() === "math"
-) {
-  normalizedSubject = "Maths";
-} else if (rawSubject.toLowerCase() === "physics") {
-  normalizedSubject = "Physics";
-}
-    console.log("INPUT VALUES:", {
-  normalizedClass,
-  normalizedSubject
-});
+const normalizedSubject = String(subject || "").trim();
 // 🔒 CHECK MAPPING
 const mapping = await ClassSubject.findOne({
   className: normalizedClass,
@@ -991,11 +958,24 @@ const existingTest = await Test.findOne({
       existingTest.subject = normalizedSubject;
       existingTest.schoolId = existingTest.schoolId || req.user.schoolId || null;
 existingTest.schoolCode = existingTest.schoolCode || req.user.schoolCode || null;
-      await existingTest.save();
-      return res.json({
-        status: "draft_updated",
-        test: existingTest
-      });
+await existingTest.save();
+await logAuditEvent(req, {
+  event: "teacher_test_updated",
+  status: "success",
+  metadata: {
+    testId: existingTest._id,
+    testName: existingTest.name,
+    className: existingTest.className,
+    subject: existingTest.subject,
+    questionCount: existingTest.questionIds.length,
+    schoolId: existingTest.schoolId || null,
+    schoolCode: existingTest.schoolCode || null
+  }
+});
+return res.json({
+ status: "draft_updated",
+ test: existingTest
+ });
     }
 const newTest = await Test.create({
   name,
@@ -1008,7 +988,20 @@ const newTest = await Test.create({
   status: "draft",
   publishedAt: null
 });
-    res.json({ status: "draft_saved", test: newTest });
+    await logAuditEvent(req, {
+  event: "teacher_test_created",
+  status: "success",
+  metadata: {
+    testId: newTest._id,
+    testName: newTest.name,
+    className: newTest.className,
+    subject: newTest.subject,
+    questionCount: newTest.questionIds.length,
+    schoolId: newTest.schoolId || null,
+    schoolCode: newTest.schoolCode || null
+  }
+});
+res.json({ status: "draft_saved", test: newTest });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to save test" });
@@ -1072,7 +1065,13 @@ const tests = await Test.find({
 </div>
 <script>
 const pageUser = JSON.parse(localStorage.getItem("user") || "null");
-if(!pageUser || pageUser.role !== "teacher"){
+if(
+  !pageUser ||
+  (
+    pageUser.role !== "teacher" &&
+    pageUser.role !== "admin"
+  )
+){
   window.location.replace("/");
 }
 const teacherId = pageUser._id || pageUser.id;
@@ -1318,11 +1317,25 @@ const test = await Test.findOne({
     test.durationMinutes = duration;
     test.testType = testType;
     test.questionTimersEnabled = !!questionTimersEnabled;
-    await test.save();
-    res.json({
-      status: "settings_saved",
-      test
-    });
+await test.save();
+await logAuditEvent(req, {
+  event: "teacher_test_settings_updated",
+  status: "success",
+  metadata: {
+    testId: test._id,
+    testName: test.name,
+    scheduledAt: test.scheduledAt,
+    durationMinutes: test.durationMinutes,
+    testType: test.testType,
+    questionTimersEnabled: test.questionTimersEnabled,
+    schoolId: test.schoolId || null,
+    schoolCode: test.schoolCode || null
+  }
+});
+res.json({
+ status: "settings_saved",
+ test
+ });
   } catch (err) {
     console.error("SAVE TEST SETTINGS ERROR:", err);
     res.status(500).json({
@@ -1355,12 +1368,24 @@ const test = await Test.findOne({
   ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
 });
     // 🧹 Remove assignments linked to this test
-    await Assignment.deleteMany({
-  testId: id,
-  teacherId: req.user.id,
-  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+await Assignment.deleteMany({
+testId: id,
+teacherId: req.user.id,
+...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
 });
-    res.json({ status: "deleted" });
+await logAuditEvent(req, {
+  event: "teacher_test_deleted",
+  status: "success",
+  metadata: {
+    testId: test._id,
+    testName: test.name,
+    className: test.className,
+    subject: test.subject,
+    schoolId: test.schoolId || null,
+    schoolCode: test.schoolCode || null
+  }
+});
+ res.json({ status: "deleted" });
   } catch (err) {
     console.error("DELETE TEST ERROR:", err);
     res.status(500).json({ error: "Failed to delete test" });
@@ -1374,22 +1399,45 @@ router.post("/delete-multiple-tests", authMiddleware, async (req, res) => {
     }
     const Test = require("../models/Test");
     const Assignment = require("../models/Assignment");
-    // 🔒 Only delete teacher's own tests
+    
+ const testsToDelete = await Test.find({
+ _id: { $in: ids },
+ teacherId: req.user.id,
+ ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+ })
+ .select("_id name className subject schoolId schoolCode")
+ .lean();
+ // 🔒 Only delete teacher's own tests
 await Test.deleteMany({
   _id: { $in: ids },
   teacherId: req.user.id,
   ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
 });
 await Assignment.deleteMany({
-  testId: { $in: ids },
-  teacherId: req.user.id,
-  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+testId: { $in: ids },
+teacherId: req.user.id,
+...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
 });
-    res.json({ status: "deleted" });
+await logAuditEvent(req, {
+  event: "teacher_tests_bulk_deleted",
+  status: "success",
+  metadata: {
+    requestedIds: ids,
+    deletedCount: testsToDelete.length,
+    tests: testsToDelete.map(test => ({
+      testId: test._id,
+      testName: test.name,
+      className: test.className,
+      subject: test.subject,
+      schoolId: test.schoolId || null,
+      schoolCode: test.schoolCode || null
+    }))
+  }
+});
+ res.json({ status: "deleted" });
   } catch (err) {
     console.error("BULK DELETE ERROR:", err);
     res.status(500).json({ error: "Bulk delete failed" });
   }
 });
-
 module.exports = router;

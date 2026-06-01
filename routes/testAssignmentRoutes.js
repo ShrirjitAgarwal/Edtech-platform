@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-
 const authMiddleware = require("../middleware/auth");
-
+const {
+  logAuditEvent
+} = require("../services/auditLogger");
 // ---------- BULK UPLOAD STUDENTS ----------
 router.post("/upload-students", authMiddleware, async (req, res) => {
 try {
@@ -143,14 +144,28 @@ await Assignment.create({
   schoolCode: test.schoolCode || req.user.schoolCode || null
 });
     }
-    test.status = "published";
-    test.publishedAt = test.publishedAt || new Date();
-    await test.save();
-    res.json({
-      status: "published",
-      message: "Test published successfully",
-      test
-    });
+test.status = "published";
+test.publishedAt = test.publishedAt || new Date();
+await test.save();
+await logAuditEvent(req, {
+  event: "teacher_test_published",
+  status: "success",
+  metadata: {
+    testId: test._id,
+    testName: test.name,
+    className,
+    subject,
+    assignmentCreated: !exists,
+    schoolId: test.schoolId || req.user.schoolId || null,
+    schoolCode: test.schoolCode || req.user.schoolCode || null,
+    publishedAt: test.publishedAt
+  }
+});
+ res.json({
+ status: "published",
+ message: "Test published successfully",
+ test
+ });
   } catch (err) {
     console.error("PUBLISH ERROR:", err);
     res.status(500).json({ error: "Failed to publish test" });
@@ -241,5 +256,4 @@ res.json(filtered);
     res.status(500).json({ error: "Failed to fetch tests" });
   }
 });
-
 module.exports = router;
