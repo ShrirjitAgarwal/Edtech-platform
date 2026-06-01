@@ -25,6 +25,7 @@ const path = require("path");
 const fs = require("fs");
 const connectDB = require("./data/config/db");
 const logger = require("./utils/logger");
+const requestIdMiddleware = require("./middleware/requestId");
 const app = express();
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
@@ -75,6 +76,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const platformRoutes = require("./routes/platformRoutes");
+app.use(requestIdMiddleware);
 app.use(compression());
 app.use(cookieParser());
 app.use(express.json({
@@ -131,7 +133,8 @@ app.use((err, req, res, next) => {
     error:
       process.env.NODE_ENV === "production"
         ? "Internal server error"
-        : err.message || "Internal server error"
+        : err.message || "Internal server error",
+    requestId: req.requestId || null
   });
 });
 const startServer = async () => {
