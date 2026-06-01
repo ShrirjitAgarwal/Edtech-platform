@@ -1,11 +1,12 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
-
 const {
   judgeSubmission
 } = require("../services/codeJudge");
-
+const {
+  logAuditEvent
+} = require("../services/auditLogger");
 // ---------- TEST PAGE ----------
 router.get("/test", async (req, res, next) => {
   return next();
@@ -22,6 +23,17 @@ router.post("/submit", async (req, res) => {
     } = req.body;
     const studentToken = req.cookies && req.cookies.studentSessionToken;
     if (!studentToken) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        metadata: {
+          testId,
+          testName,
+          reason: "missing_student_session_token"
+        },
+        error: "Student session expired"
+      });
+
       return res.status(401).json({ error: "Student session expired" });
     }
     let decodedStudent;
@@ -31,17 +43,69 @@ router.post("/submit", async (req, res) => {
         process.env.JWT_SECRET
       );
     } catch (tokenErr) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        metadata: {
+          testId,
+          testName,
+          reason: "invalid_student_session_token"
+        },
+        error: "Student session expired"
+      });
+
       return res.status(401).json({ error: "Student session expired" });
     }
     if (!decodedStudent || decodedStudent.role !== "student") {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName,
+          reason: "invalid_student_role"
+        },
+        error: "Invalid student session"
+      });
+
       return res.status(401).json({ error: "Invalid student session" });
     }
     const studentId = decodedStudent.studentId;
     const studentRecordId = decodedStudent.studentRecordId;
     if (!studentId || !studentRecordId || !testId || !Array.isArray(answers)) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName,
+          studentId,
+          studentRecordId,
+          reason: "invalid_submission_data"
+        },
+        error: "Invalid submission data"
+      });
+
       return res.status(400).json({ error: "Invalid submission data" });
     }
     if (answers.length > 200) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName,
+          studentId,
+          studentRecordId,
+          answerCount: answers.length,
+          reason: "too_many_answers"
+        },
+        error: "Too many answers submitted"
+      });
+
       return res.status(400).json({
         error: "Too many answers submitted"
       });
@@ -58,10 +122,38 @@ router.post("/submit", async (req, res) => {
       .select("studentId name class teacherId schoolId schoolCode status")
       .lean();
     if (!student) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName,
+          studentId,
+          studentRecordId,
+          reason: "student_not_found"
+        },
+        error: "Invalid student session"
+      });
+
       return res.status(401).json({ error: "Invalid student session" });
     }
     const test = await Test.findById(testId).lean();
     if (!test) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName,
+          studentId,
+          studentRecordId,
+          reason: "test_not_found"
+        },
+        error: "Test not found"
+      });
+
       return res.status(404).json({ error: "Test not found" });
     }
     if (
@@ -69,6 +161,22 @@ router.post("/submit", async (req, res) => {
       test.schoolId &&
       String(student.schoolId) !== String(test.schoolId)
     ) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName: testName || test.name,
+          studentId,
+          studentRecordId,
+          studentSchoolId: student.schoolId,
+          testSchoolId: test.schoolId,
+          reason: "school_mismatch"
+        },
+        error: "Test not available"
+      });
+
       return res.status(403).json({ error: "Test not available" });
     }
     const questionIds = answers
@@ -94,6 +202,21 @@ router.post("/submit", async (req, res) => {
     });
     if (existing) {
       if (!test.allowRetake) {
+        await logAuditEvent(req, {
+          event: "student_test_submission_failed",
+          status: "failed",
+          actor: decodedStudent,
+          metadata: {
+            testId,
+            testName: testName || test.name,
+            studentId,
+            studentRecordId,
+            resultId: existing._id,
+            reason: "already_submitted"
+          },
+          error: "Test already submitted"
+        });
+
         return res.status(409).json({ error: "Test already submitted" });
       }
     }
@@ -194,6 +317,24 @@ gradedAnswers.push({
     if (bulkAnalyticsUpdates.length) {
       await Question.bulkWrite(bulkAnalyticsUpdates);
     }
+    await logAuditEvent(req, {
+      event: "student_test_submitted",
+      status: "success",
+      actor: decodedStudent,
+      metadata: {
+        resultId: result._id,
+        testId,
+        testName: testName || test.name,
+        studentId,
+        studentRecordId,
+        score: finalScore,
+        total,
+        answerCount: gradedAnswers.length,
+        schoolId: result.schoolId || null,
+        schoolCode: result.schoolCode || null
+      }
+    });
+
     res.json({
       status: "submitted",
       result
@@ -201,10 +342,27 @@ gradedAnswers.push({
   } catch (err) {
     console.error("SUBMIT ERROR:", err);
     if (err.code === 11000) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        metadata: {
+          reason: "duplicate_result_key"
+        },
+        error: "Test already submitted"
+      });
+
       return res.status(409).json({ error: "Test already submitted" });
     }
+    await logAuditEvent(req, {
+      event: "student_test_submission_failed",
+      status: "failed",
+      metadata: {
+        reason: "submit_exception"
+      },
+      error: err.message
+    });
+
     res.status(500).json({ error: "Failed to submit test" });
   }
 });
-
 module.exports = router;
