@@ -64,6 +64,7 @@ require("./models/Assignment");
 require("./models/ClassSubject");
 require("./models/Question");
 require("./models/ImportBatch");
+require("./models/AdminActionLog");
 require("./models/School");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
