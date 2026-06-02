@@ -126,6 +126,21 @@ if (!isMatch) {
   });
   return res.status(401).json({ error: "Invalid credentials" });
 }
+if (user.role === "platform_admin") {
+await logAuditEvent(req, {
+ event: "login_failed",
+ status: "failed",
+ actor: user,
+ metadata: {
+ email: emailInput,
+ reason: "platform_admin_used_normal_login"
+ },
+ error: "Use platform admin login"
+});
+return res.status(403).json({
+ error: "Use platform admin login"
+});
+}
 const token = jwt.sign(
 {
   id: user._id,
