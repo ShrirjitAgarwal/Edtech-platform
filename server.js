@@ -62,6 +62,7 @@ require("./models/Test");
 require("./models/Result");
 require("./models/Assignment");
 require("./models/ClassSubject");
+require("./models/Subject");
 require("./models/Question");
 require("./models/ImportBatch");
 require("./models/AdminActionLog");
