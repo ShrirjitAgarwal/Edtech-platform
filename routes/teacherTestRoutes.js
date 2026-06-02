@@ -550,148 +550,216 @@ const content = `
   justify-content:space-between;
   align-items:center;
   gap:14px;
-  margin-bottom:20px;
+  margin-bottom:22px;
 ">
-  <h1 style="margin:0;">Create Test</h1>
-${backButton("/teacher-tests")}
+  <div>
+    <h1 style="margin:0;font-size:30px;color:#0f172a;">Create Test</h1>
+    <p style="margin:8px 0 0 0;color:#64748b;font-size:14px;">
+      Build a draft test by selecting class, subject, and questions from your library.
+    </p>
+  </div>
+  ${backButton("/teacher-tests")}
 </div>
 ${noMappingsNotice}
 <div style="
-background:white;
-padding:20px;
-border-radius:14px;
-box-shadow:0 4px 12px rgba(0,0,0,0.08);
-margin-bottom:20px;
+  background:linear-gradient(135deg,#ffffff,#f8fafc);
+  padding:22px;
+  border-radius:18px;
+  box-shadow:0 10px 28px rgba(15,23,42,0.08);
+  margin-bottom:22px;
+  border:1px solid #e5e7eb;
 ">
+  <div style="
+    display:grid;
+    grid-template-columns:1.2fr 0.9fr 0.9fr;
+    gap:14px;
+  ">
+    <div>
+      <label style="display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:8px;">
+        Test Name
+      </label>
+      <input id="testName" value="${editTest?.name || ""}" placeholder="Example: Fractions Unit Test" style="
+        width:100%;
+        padding:13px 14px;
+        border-radius:12px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        outline:none;
+        font-size:14px;
+      "/>
+    </div>
+    <div>
+      <label style="display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:8px;">
+        Class
+      </label>
+      <select id="className" onchange="updateSubjectOptions()" style="
+        width:100%;
+        padding:13px 14px;
+        border-radius:12px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        outline:none;
+        font-size:14px;
+        background:white;
+      ">
+        <option value="">Select Class</option>
+        ${classOptionsHtml}
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:8px;">
+        Subject
+      </label>
+      <select id="subject" style="
+        width:100%;
+        padding:13px 14px;
+        border-radius:12px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        outline:none;
+        font-size:14px;
+        background:white;
+      ">
+        <option value="">Select Subject</option>
+        ${subjectOptionsHtml}
+      </select>
+    </div>
+  </div>
+</div>
 <div style="
- display:grid;
- grid-template-columns:1.2fr 0.9fr 0.9fr;
- gap:14px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(360px,0.9fr);
+  gap:22px;
+  align-items:start;
 ">
- <input id="testName" value="${editTest?.name || ""}" placeholder="Enter test name" style="
- padding:12px;
- border-radius:8px;
- border:1px solid #ccc;
- "/>
- <select id="className" style="
- padding:12px;
- border-radius:8px;
- border:1px solid #ccc;
- ">
- <option value="">Select Class</option>
-${classOptionsHtml}
- </select>
- <select id="subject" style="
- padding:12px;
- border-radius:8px;
- border:1px solid #ccc;
- ">
- <option value="">Select Subject</option>
-${subjectOptionsHtml}
- </select>
-</div>
-</div>
-<div style="
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:22px;
-align-items:start;
-">
-<div style="
-background:white;
-padding:20px;
-border-radius:14px;
-box-shadow:0 4px 12px rgba(0,0,0,0.08);
-height:620px;
-box-sizing:border-box;
-display:flex;
-flex-direction:column;
-">
- <div style="
- display:flex;
- justify-content:space-between;
- align-items:center;
- gap:12px;
- margin-bottom:14px;
- flex-wrap:wrap;
- ">
- <h3 style="margin:0;">Select Questions</h3>
- <div style="
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-min-width:260px;
-">
- <select id="questionSubjectFilter" onchange="filterQuestions()" style="
- padding:8px;
- border-radius:8px;
- border:1px solid #cbd5e1;
- ">
- <option value="all">All Subjects</option>
- </select>
- <select id="questionBoardFilter" onchange="filterQuestions()" style="
- padding:8px;
- border-radius:8px;
- border:1px solid #cbd5e1;
- ">
- <option value="all">All Boards</option>
- </select>
- </div>
- </div>
-<div
-id="questionList"
-style="
- flex:1;
- overflow-y:auto;
- padding-right:6px;
- min-height:0;
-"
->
- <p style="color:#64748b;">Loading questions...</p>
-</div>
- <button onclick="clearSelection()" style="
- margin-top:14px;
- padding:8px 12px;
- background:#dc3545;
- color:white;
- border:none;
- border-radius:6px;
- cursor:pointer;
- ">
- Clear Selection
- </button>
- <button onclick="saveTest()" style="
- margin-top:20px;
- width:100%;
- padding:12px;
- background:#4f46e5;
- color:white;
- border:none;
- border-radius:8px;
- font-weight:600;
- cursor:pointer;
- font-size:16px;
- ">
- Save Test
- </button>
-</div>
-<div
- id="questionPreview"
- style="
- background:white;
- padding:22px;
- border-radius:14px;
- box-shadow:0 4px 12px rgba(0,0,0,0.08);
- height:620px;
- overflow-y:auto;
- box-sizing:border-box;
- "
->
- <h3 style="margin-top:0;">Question Preview</h3>
- <p style="color:#64748b;">
- Select a question to preview it here.
- </p>
-</div>
+  <div style="
+    background:white;
+    padding:20px;
+    border-radius:18px;
+    box-shadow:0 10px 28px rgba(15,23,42,0.08);
+    height:680px;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    border:1px solid #e5e7eb;
+  ">
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:14px;
+    ">
+      <div>
+        <h3 style="margin:0;font-size:20px;color:#0f172a;">Select Questions</h3>
+        <p id="selectedQuestionCount" style="margin:6px 0 0 0;color:#64748b;font-size:13px;">
+          0 selected
+        </p>
+      </div>
+      <button onclick="clearSelection()" style="
+        padding:9px 12px;
+        background:#fee2e2;
+        color:#991b1b;
+        border:1px solid #fecaca;
+        border-radius:10px;
+        cursor:pointer;
+        font-weight:800;
+        font-size:12px;
+      ">
+        Clear
+      </button>
+    </div>
+    <input
+      id="questionSearch"
+      oninput="filterQuestions()"
+      placeholder="Search question text..."
+      style="
+        width:100%;
+        padding:12px 14px;
+        border-radius:12px;
+        border:1px solid #cbd5e1;
+        box-sizing:border-box;
+        outline:none;
+        margin-bottom:12px;
+        font-size:14px;
+      "
+    />
+    <div style="
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+      margin-bottom:10px;
+    ">
+      <select id="questionSubjectFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
+        <option value="all">All Subjects</option>
+      </select>
+      <select id="questionBoardFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
+        <option value="all">All Boards</option>
+      </select>
+      <select id="questionDifficultyFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
+        <option value="all">All Difficulty</option>
+      </select>
+    </div>
+    <div style="
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-bottom:14px;
+    ">
+      <select id="questionTypeFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
+        <option value="all">All Types</option>
+      </select>
+      <select id="questionScopeFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
+        <option value="all">All Sources</option>
+        <option value="public">Public</option>
+        <option value="teacher">My Questions</option>
+      </select>
+    </div>
+    <div
+      id="questionList"
+      style="
+        flex:1;
+        overflow-y:auto;
+        padding-right:6px;
+        min-height:0;
+      "
+    >
+      <p style="color:#64748b;">Loading questions...</p>
+    </div>
+    <button id="saveTestButton" onclick="saveTest()" style="
+      margin-top:18px;
+      width:100%;
+      padding:14px;
+      background:linear-gradient(135deg,#4f46e5,#6366f1);
+      color:white;
+      border:none;
+      border-radius:12px;
+      font-weight:800;
+      cursor:pointer;
+      font-size:15px;
+      box-shadow:0 8px 18px rgba(79,70,229,0.25);
+    ">
+      Save Test
+    </button>
+  </div>
+  <div
+    id="questionPreview"
+    style="
+      background:white;
+      padding:24px;
+      border-radius:18px;
+      box-shadow:0 10px 28px rgba(15,23,42,0.08);
+      height:680px;
+      overflow-y:auto;
+      box-sizing:border-box;
+      border:1px solid #e5e7eb;
+    "
+  >
+    <h3 style="margin-top:0;font-size:20px;color:#0f172a;">Question Preview</h3>
+    <p style="color:#64748b;line-height:1.6;">
+      Select a question to preview details, answer, metadata, and options here.
+    </p>
+  </div>
 </div>
 <script>
 const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -722,126 +790,282 @@ const questions = allQuestions.filter(q =>
 function getQuestionId(q){
  return String(q._id);
 }
+function getQuestionType(q){
+  return String(q.type || "mcq").trim().toLowerCase();
+}
+function getQuestionSubject(q){
+  return String(q.subject || q.category || "Uncategorized").trim();
+}
+function getQuestionBoard(q){
+  return String(q.board || "General").trim();
+}
+function getQuestionDifficulty(q){
+  return String(q.difficulty || "Unspecified").trim();
+}
+function getQuestionScope(q){
+  return String(q.scope || "public").trim().toLowerCase();
+}
+function getBadge(label, background, color){
+  return "<span style='" +
+    "display:inline-flex;" +
+    "align-items:center;" +
+    "padding:4px 8px;" +
+    "border-radius:999px;" +
+    "font-size:11px;" +
+    "font-weight:800;" +
+    "background:" + background + ";" +
+    "color:" + color + ";" +
+    "border:1px solid rgba(15,23,42,0.08);" +
+  "'>" + label + "</span>";
+}
 function buildQuestionRow(q){
- const id = getQuestionId(q);
- return \`
-<label
-onclick="previewQuestion('\${id}')"
-style="
- display:block;
- padding:12px;
- border:1px solid #ddd;
- border-radius:10px;
- margin-bottom:10px;
- cursor:pointer;
- background:white;
-"
->
-<input type="checkbox" value="\${id}" class="qbox" onclick="event.stopPropagation()">
-\${q.question}
-</label>
-\`;
+  const id = getQuestionId(q);
+  const type = getQuestionType(q);
+  const subject = getQuestionSubject(q);
+  const board = getQuestionBoard(q);
+  const difficulty = getQuestionDifficulty(q);
+  const scope = getQuestionScope(q);
+  const selected = JSON.parse(
+    localStorage.getItem("selectedQuestions") || "[]"
+  ).map(item => String(item)).includes(id);
+  const typeLabel =
+    type === "coding"
+      ? "Coding"
+      : type === "written"
+      ? "Written"
+      : "MCQ";
+  return \`
+    <label
+      onclick="previewQuestion('\${id}')"
+      style="
+        display:block;
+        padding:14px;
+        border:\${selected ? "2px solid #4f46e5" : "1px solid #e5e7eb"};
+        border-radius:14px;
+        margin-bottom:12px;
+        cursor:pointer;
+        background:\${selected ? "#eef2ff" : "#ffffff"};
+        box-shadow:\${selected ? "0 8px 18px rgba(79,70,229,0.14)" : "0 4px 10px rgba(15,23,42,0.04)"};
+        transition:all 0.15s ease;
+      "
+    >
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <input
+          type="checkbox"
+          value="\${id}"
+          class="qbox"
+          \${selected ? "checked" : ""}
+          onclick="event.stopPropagation()"
+          style="margin-top:4px;width:16px;height:16px;"
+        >
+        <div style="min-width:0;flex:1;">
+          <div style="
+            color:#0f172a;
+            font-weight:800;
+            font-size:14px;
+            line-height:1.35;
+            margin-bottom:10px;
+          ">
+            \${q.question || "Untitled question"}
+          </div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;">
+            \${getBadge(typeLabel, "#eef2ff", "#3730a3")}
+            \${getBadge(subject, "#ecfdf5", "#166534")}
+            \${getBadge(board, "#f8fafc", "#334155")}
+            \${getBadge(difficulty, "#fff7ed", "#9a3412")}
+            \${getBadge(scope === "teacher" ? "My Question" : "Public", "#f1f5f9", "#475569")}
+          </div>
+        </div>
+      </div>
+    </label>
+  \`;
+}
+function addOptions(selectId, values){
+  const select = document.getElementById(selectId);
+  values.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
 }
 function populateQuestionFilters(){
- const subjectSelect =
- document.getElementById("questionSubjectFilter");
- const boardSelect =
- document.getElementById("questionBoardFilter");
- const subjects = [...new Set(
- questions.map(q => q.subject || q.category).filter(Boolean)
- )];
- const boards = [...new Set(
- questions.map(q => q.board || "General").filter(Boolean)
- )];
- subjects.forEach(s => {
- const option = document.createElement("option");
- option.value = s;
- option.textContent = s;
- subjectSelect.appendChild(option);
- });
- boards.forEach(b => {
- const option = document.createElement("option");
- option.value = b;
- option.textContent = b;
- boardSelect.appendChild(option);
- });
+  const subjects = [...new Set(
+    questions.map(q => getQuestionSubject(q)).filter(Boolean)
+  )].sort();
+  const boards = [...new Set(
+    questions.map(q => getQuestionBoard(q)).filter(Boolean)
+  )].sort();
+  const difficulties = [...new Set(
+    questions.map(q => getQuestionDifficulty(q)).filter(Boolean)
+  )].sort();
+  const types = [...new Set(
+    questions.map(q => getQuestionType(q)).filter(Boolean)
+  )].sort();
+  addOptions("questionSubjectFilter", subjects);
+  addOptions("questionBoardFilter", boards);
+  addOptions("questionDifficultyFilter", difficulties);
+  const typeSelect = document.getElementById("questionTypeFilter");
+  types.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent =
+      type === "coding"
+        ? "Coding"
+        : type === "written"
+        ? "Written"
+        : "MCQ";
+    typeSelect.appendChild(option);
+  });
+}
+function updateSelectedQuestionCount(){
+  const selected = JSON.parse(
+    localStorage.getItem("selectedQuestions") || "[]"
+  ).map(id => String(id));
+  const counter = document.getElementById("selectedQuestionCount");
+  if(counter){
+    counter.textContent =
+      selected.length === 1
+        ? "1 question selected"
+        : selected.length + " questions selected";
+  }
 }
 function filterQuestions(){
- const subject =
- document.getElementById("questionSubjectFilter").value;
- const board =
- document.getElementById("questionBoardFilter").value;
- const filtered = questions.filter(q => {
- const qSubject = q.subject || q.category;
- const qBoard = q.board || "General";
- const subjectMatch =
- subject === "all" || qSubject === subject;
- const boardMatch =
- board === "all" || qBoard === board;
- return subjectMatch && boardMatch;
- });
- document.getElementById("questionList").innerHTML =
- filtered.length
- ? filtered.map(q => buildQuestionRow(q)).join("")
- : "<p style='color:#64748b;'>No questions found</p>";
- restoreSelectedQuestions();
+  const search = String(
+    document.getElementById("questionSearch")?.value || ""
+  ).trim().toLowerCase();
+  const subject = document.getElementById("questionSubjectFilter").value;
+  const board = document.getElementById("questionBoardFilter").value;
+  const difficulty = document.getElementById("questionDifficultyFilter").value;
+  const type = document.getElementById("questionTypeFilter").value;
+  const scope = document.getElementById("questionScopeFilter").value;
+  const filtered = questions.filter(q => {
+    const qText = String(q.question || "").toLowerCase();
+    const qSubject = getQuestionSubject(q);
+    const qBoard = getQuestionBoard(q);
+    const qDifficulty = getQuestionDifficulty(q);
+    const qType = getQuestionType(q);
+    const qScope = getQuestionScope(q);
+    const searchMatch =
+      !search ||
+      qText.includes(search) ||
+      qSubject.toLowerCase().includes(search) ||
+      qBoard.toLowerCase().includes(search);
+    const subjectMatch =
+      subject === "all" || qSubject === subject;
+    const boardMatch =
+      board === "all" || qBoard === board;
+    const difficultyMatch =
+      difficulty === "all" || qDifficulty === difficulty;
+    const typeMatch =
+      type === "all" || qType === type;
+    const scopeMatch =
+      scope === "all" || qScope === scope;
+    return (
+      searchMatch &&
+      subjectMatch &&
+      boardMatch &&
+      difficultyMatch &&
+      typeMatch &&
+      scopeMatch
+    );
+  });
+  document.getElementById("questionList").innerHTML =
+    filtered.length
+      ? filtered.map(q => buildQuestionRow(q)).join("")
+      : "<div style='background:#f8fafc;border:1px dashed #cbd5e1;border-radius:14px;padding:28px;text-align:center;color:#64748b;font-weight:700;'>No questions match these filters.</div>";
+  restoreSelectedQuestions();
+  updateSelectedQuestionCount();
 }
 function restoreSelectedQuestions(){
- const selected = JSON.parse(
- localStorage.getItem("selectedQuestions") || "[]"
- ).map(id => String(id));
- document.querySelectorAll(".qbox").forEach(cb => {
- if(selected.includes(String(cb.value))){
- cb.checked = true;
- }
- cb.addEventListener("change", function(){
- let selectedQuestions = JSON.parse(
- localStorage.getItem("selectedQuestions") || "[]"
- ).map(id => String(id));
- const value = String(this.value);
- if(this.checked && !selectedQuestions.includes(value)){
- selectedQuestions.push(value);
- }
- if(!this.checked){
- selectedQuestions = selectedQuestions.filter(id => id !== value);
- }
- localStorage.setItem(
- "selectedQuestions",
- JSON.stringify(selectedQuestions)
- );
- });
- });
+  const selected = JSON.parse(
+    localStorage.getItem("selectedQuestions") || "[]"
+  ).map(id => String(id));
+  document.querySelectorAll(".qbox").forEach(cb => {
+    if(selected.includes(String(cb.value))){
+      cb.checked = true;
+    }
+    cb.addEventListener("change", function(){
+      let selectedQuestions = JSON.parse(
+        localStorage.getItem("selectedQuestions") || "[]"
+      ).map(id => String(id));
+      const value = String(this.value);
+      if(this.checked && !selectedQuestions.includes(value)){
+        selectedQuestions.push(value);
+      }
+      if(!this.checked){
+        selectedQuestions = selectedQuestions.filter(id => id !== value);
+      }
+      localStorage.setItem(
+        "selectedQuestions",
+        JSON.stringify(selectedQuestions)
+      );
+      updateSelectedQuestionCount();
+      filterQuestions();
+    });
+  });
+  updateSelectedQuestionCount();
 }
 function previewQuestion(id){
- const q = questions.find(item =>
- String(item._id) === String(id)
- );
- if(!q){
- return;
- }
- const optionsHtml =
- q.options && q.options.length
- ? q.options.map((opt, index) =>
- "<div style='background:#f8fafc;padding:10px;margin:8px 0;border-radius:8px;'>" +
- "<b>Option " + (index + 1) + ":</b> " + opt +
- "</div>"
- ).join("")
- : "<p style='color:#64748b;'>No options found. This may be a coding or written question.</p>";
- document.getElementById("questionPreview").innerHTML =
- "<h3 style='margin-top:0;'>Question Preview</h3>" +
- "<div style='background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:15px;'>" +
- "<b>Question:</b><br>" +
- "<div style='margin-top:8px;line-height:1.5;'>" + (q.question || "No question text") + "</div>" +
- "</div>" +
- "<div style='margin-bottom:15px;'>" +
- optionsHtml +
- "</div>" +
- "<div style='background:#ecfdf5;padding:12px;border-radius:10px;margin-bottom:12px;'>" +
- "<b>Correct Answer:</b> " + (q.correct || "N/A") +
- "</div>" +
- "<p><b>Subject:</b> " + (q.subject || q.category || "N/A") + "</p>" +
- "<p><b>Board:</b> " + (q.board || "N/A") + "</p>" +
- "<p><b>Difficulty:</b> " + (q.difficulty || "N/A") + "</p>";
+  const q = questions.find(item =>
+    String(item._id) === String(id)
+  );
+  if(!q){
+    return;
+  }
+  const type = getQuestionType(q);
+  const subject = getQuestionSubject(q);
+  const board = getQuestionBoard(q);
+  const difficulty = getQuestionDifficulty(q);
+  const scope = getQuestionScope(q);
+  const optionsHtml =
+    q.options && q.options.length
+      ? q.options.map((opt, index) =>
+        "<div style='background:#f8fafc;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #e5e7eb;'>" +
+        "<b>Option " + (index + 1) + ":</b> " + opt +
+        "</div>"
+      ).join("")
+      : "<p style='color:#64748b;'>No options found. This may be a coding or written question.</p>";
+  const testCasesHtml =
+    q.testCases && q.testCases.length
+      ? "<div style='margin-top:14px;'>" +
+        "<h4 style='margin:0 0 8px 0;'>Test Cases</h4>" +
+        q.testCases.map((testCase, index) =>
+          "<div style='background:#f8fafc;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #e5e7eb;'>" +
+          "<b>Case " + (index + 1) + "</b><br>" +
+          "<span style='color:#64748b;'>Input:</span> " + JSON.stringify(testCase.input || "") + "<br>" +
+          "<span style='color:#64748b;'>Expected:</span> " + JSON.stringify(testCase.expected || "") +
+          "</div>"
+        ).join("") +
+        "</div>"
+      : "";
+  document.getElementById("questionPreview").innerHTML =
+    "<div style='display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;'>" +
+      "<div>" +
+        "<h3 style='margin:0;font-size:20px;color:#0f172a;'>Question Preview</h3>" +
+        "<p style='margin:6px 0 0 0;color:#64748b;font-size:13px;'>Review before adding it to your test.</p>" +
+      "</div>" +
+      getBadge(type === "coding" ? "Coding" : type === "written" ? "Written" : "MCQ", "#eef2ff", "#3730a3") +
+    "</div>" +
+    "<div style='background:#f8fafc;padding:18px;border-radius:14px;margin-bottom:16px;border:1px solid #e5e7eb;'>" +
+      "<b style='color:#0f172a;'>Question</b><br>" +
+      "<div style='margin-top:10px;line-height:1.55;color:#1e293b;font-size:15px;'>" +
+        (q.question || "No question text") +
+      "</div>" +
+    "</div>" +
+    "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;'>" +
+      getBadge(subject, "#ecfdf5", "#166534") +
+      getBadge(board, "#f8fafc", "#334155") +
+      getBadge(difficulty, "#fff7ed", "#9a3412") +
+      getBadge(scope === "teacher" ? "My Question" : "Public", "#f1f5f9", "#475569") +
+    "</div>" +
+    "<div style='margin-bottom:16px;'>" +
+      optionsHtml +
+    "</div>" +
+    "<div style='background:#ecfdf5;padding:14px;border-radius:12px;margin-bottom:14px;border:1px solid #bbf7d0;'>" +
+      "<b>Correct Answer:</b> " + (q.correct || q.correctAnswers || "N/A") +
+    "</div>" +
+    testCasesHtml;
 }
 function updateSubjectOptions(){
  const subjectSelect = document.getElementById("subject");
