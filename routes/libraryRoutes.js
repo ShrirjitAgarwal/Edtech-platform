@@ -206,13 +206,18 @@ document.getElementById("libraryList").innerHTML =
 "<p style='color:#dc2626;'>Failed to load questions. Please refresh.</p>";
 });
 function getVisibleQuestions(){
-return questions.filter(q =>
-q.scope === "public" ||
+return questions.filter(q => {
+const scope = String(q.scope || "").trim();
+
+return (
+scope === "public" ||
+scope === "" ||
 (
-q.scope === "teacher" &&
+scope === "teacher" &&
 String(q.teacherId) === String(teacherId)
 )
 );
+});
 }
 function populateFilters(){
 const visibleQuestions = getVisibleQuestions();
@@ -411,21 +416,32 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
       100
     );
     const skip = (page - 1) * limit;
-    const query = {
-      $or: [
-        { scope: "public" },
-        schoolId
-          ? {
-              scope: "teacher",
-              teacherId,
-              schoolId
-            }
-          : {
-              scope: "teacher",
-              teacherId
-            }
-      ]
-    };
+ const publicQuestionQuery = {
+   $or: [
+     { scope: "public" },
+     { scope: { $exists: false } },
+     { scope: null },
+     { scope: "" }
+   ]
+ };
+
+ const teacherQuestionQuery = schoolId
+   ? {
+       scope: "teacher",
+       teacherId,
+       schoolId
+     }
+   : {
+       scope: "teacher",
+       teacherId
+     };
+
+ const query = {
+   $or: [
+     publicQuestionQuery,
+     teacherQuestionQuery
+   ]
+ };
     const [questions, total] = await Promise.all([
       Question.find(query)
         .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
