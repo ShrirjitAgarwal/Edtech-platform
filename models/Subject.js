@@ -13,5 +13,9 @@ const subjectSchema = new mongoose.Schema({
   }
 });
 subjectSchema.index({ schoolId: 1 });
+subjectSchema.index({ schoolCode: 1 });
 subjectSchema.index({ schoolId: 1, name: 1 }, { unique: true });
-module.exports = mongoose.model("Subject", subjectSchema);
+subjectSchema.index({ createdAt: -1 });
+module.exports =
+  mongoose.models.Subject ||
+  mongoose.model("Subject", subjectSchema);
