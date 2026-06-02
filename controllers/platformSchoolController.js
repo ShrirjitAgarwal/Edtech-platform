@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt");
 const School = require("../models/School");
 const User = require("../models/User");
-
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -10,7 +9,6 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
 function normalizeSchoolCode(value) {
   return String(value || "")
     .trim()
@@ -18,33 +16,27 @@ function normalizeSchoolCode(value) {
     .replace(/\s+/g, "-")
     .replace(/[^A-Z0-9-]/g, "");
 }
-
 exports.listSchoolsPage = async (req, res) => {
   try {
     const schools = await School.find({})
       .sort({ createdAt: -1 })
       .lean();
-
-    const teachers = await User.find({
-      role: "teacher"
+    const admins = await User.find({
+      role: "admin"
     })
       .select("name email schoolId schoolCode createdAt")
       .sort({ createdAt: -1 })
       .lean();
-
-    const teachersBySchoolCode = {};
-
-    teachers.forEach(teacher => {
-      const code = String(teacher.schoolCode || "");
-      if (!teachersBySchoolCode[code]) {
-        teachersBySchoolCode[code] = [];
+    const adminsBySchoolCode = {};
+    admins.forEach(admin => {
+      const code = String(admin.schoolCode || "");
+      if (!adminsBySchoolCode[code]) {
+        adminsBySchoolCode[code] = [];
       }
-      teachersBySchoolCode[code].push(teacher);
+      adminsBySchoolCode[code].push(admin);
     });
-
     const schoolRows = schools.map(school => {
-      const schoolTeachers = teachersBySchoolCode[String(school.code || "")] || [];
-
+    const schoolAdmins = adminsBySchoolCode[String(school.code || "")] || [];
       return `
         <div style="
           background:#f8fafc;
@@ -56,40 +48,33 @@ exports.listSchoolsPage = async (req, res) => {
           <h2 style="margin:0 0 8px 0;">
             ${escapeHtml(school.name)}
           </h2>
-
           <p style="margin:4px 0;color:#475569;">
             <b>Code:</b> ${escapeHtml(school.code)}
           </p>
-
           <p style="margin:4px 0;color:#475569;">
             <b>Status:</b> ${escapeHtml(school.status)}
           </p>
-
           <p style="margin:4px 0;color:#475569;">
-            <b>Teachers:</b> ${schoolTeachers.length}
+            <b>School Admins:</b> ${schoolAdmins.length}
           </p>
-
           <details style="margin-top:14px;">
             <summary style="cursor:pointer;font-weight:700;">
-              Add first / additional teacher
+              Add first / additional school admin
             </summary>
-
-            <form method="POST" action="/platform/schools/${school._id}/teachers" style="margin-top:14px;">
+            <form method="POST" action="/platform/schools/${school._id}/admins" style="margin-top:14px;">
               <input
                 name="name"
-                placeholder="Teacher name"
+                placeholder="Admin name"
                 required
                 style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
               />
-
               <input
                 name="email"
                 type="email"
-                placeholder="Teacher email"
+                placeholder="Admin email"
                 required
                 style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
               />
-
               <input
                 name="password"
                 type="password"
@@ -98,7 +83,6 @@ exports.listSchoolsPage = async (req, res) => {
                 minlength="6"
                 style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
               />
-
               <button type="submit" style="
                 padding:10px 14px;
                 background:#16a34a;
@@ -108,17 +92,16 @@ exports.listSchoolsPage = async (req, res) => {
                 font-weight:700;
                 cursor:pointer;
               ">
-                Create Teacher
+                Create School Admin
               </button>
             </form>
           </details>
-
           ${
-            schoolTeachers.length
+            schoolAdmins.length
               ? `
                 <div style="margin-top:16px;">
-                  <h3 style="margin-bottom:8px;">Teachers</h3>
-                  ${schoolTeachers.map(teacher => `
+                  <h3 style="margin-bottom:8px;">School Admins</h3>
+                  ${schoolAdmins.map(admin => `
                     <div style="
                       background:white;
                       border:1px solid #e5e7eb;
@@ -126,8 +109,8 @@ exports.listSchoolsPage = async (req, res) => {
                       padding:10px;
                       margin-bottom:8px;
                     ">
-                      <b>${escapeHtml(teacher.name)}</b><br>
-                      <span style="color:#64748b;">${escapeHtml(teacher.email)}</span>
+                      <b>${escapeHtml(admin.name)}</b><br>
+                      <span style="color:#64748b;">${escapeHtml(admin.email)}</span>
                     </div>
                   `).join("")}
                 </div>
@@ -137,7 +120,6 @@ exports.listSchoolsPage = async (req, res) => {
         </div>
       `;
     }).join("");
-
     res.send(`
 <body style="font-family:Arial;background:#eef2ff;margin:0;padding:40px;">
   <div style="
@@ -156,7 +138,6 @@ exports.listSchoolsPage = async (req, res) => {
       margin-bottom:20px;
     ">
       <h1 style="margin:0;">School Onboarding</h1>
-
       <div style="display:flex;gap:10px;">
         <button onclick="window.location.replace('/platform-import')" style="
           padding:10px 14px;
@@ -169,7 +150,6 @@ exports.listSchoolsPage = async (req, res) => {
         ">
           Question Import
         </button>
-
         <button onclick="window.location.replace('/school-dashboard')" style="
           padding:10px 14px;
           background:#64748b;
@@ -183,7 +163,6 @@ exports.listSchoolsPage = async (req, res) => {
         </button>
       </div>
     </div>
-
     <div style="
       background:#f8fafc;
       border:1px solid #e5e7eb;
@@ -192,7 +171,6 @@ exports.listSchoolsPage = async (req, res) => {
       margin-bottom:24px;
     ">
       <h2 style="margin-top:0;">Create School</h2>
-
       <form method="POST" action="/platform/schools">
         <input
           name="name"
@@ -200,14 +178,12 @@ exports.listSchoolsPage = async (req, res) => {
           required
           style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
         />
-
         <input
           name="code"
           placeholder="School code, example DPS-KOLKATA"
           required
           style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
         />
-
         <button type="submit" style="
           padding:12px 18px;
           background:#4f46e5;
@@ -221,9 +197,7 @@ exports.listSchoolsPage = async (req, res) => {
         </button>
       </form>
     </div>
-
     <h2>Existing Schools</h2>
-
     ${
       schoolRows ||
       `<p style="color:#64748b;">No schools created yet.</p>`
@@ -236,83 +210,65 @@ exports.listSchoolsPage = async (req, res) => {
     res.status(500).send("Failed to load schools");
   }
 };
-
 exports.createSchool = async (req, res) => {
   try {
     const name = String(req.body.name || "").trim();
     const code = normalizeSchoolCode(req.body.code);
-
     if (!name || !code) {
       return res.status(400).send("School name and code are required");
     }
-
     const existingSchool = await School.findOne({ code }).lean();
-
     if (existingSchool) {
       return res.status(409).send("School code already exists");
     }
-
     await School.create({
       name,
       code,
       status: "active"
     });
-
     res.redirect("/platform/schools");
   } catch (err) {
     console.error("CREATE SCHOOL ERROR:", err);
-
     if (err.code === 11000) {
       return res.status(409).send("School code already exists");
     }
-
     res.status(500).send("Failed to create school");
   }
 };
-
-exports.createTeacherForSchool = async (req, res) => {
+exports.createAdminForSchool = async (req, res) => {
   try {
     const schoolId = req.params.schoolId;
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
-
     if (!schoolId || !name || !email || !password) {
-      return res.status(400).send("Teacher name, email, and password are required");
+      return res.status(400).send("Admin name, email, and password are required");
     }
-
     if (password.length < 6) {
       return res.status(400).send("Password must be at least 6 characters");
     }
-
     const school = await School.findById(schoolId).lean();
-
     if (!school) {
       return res.status(404).send("School not found");
     }
-
     const existingUser = await User.findOne({ email }).lean();
-
     if (existingUser) {
       return res.status(409).send("A user with this email already exists");
     }
-
     const hashedPassword = await bcrypt.hash(password, 10);
-
     await User.create({
       name,
       email,
       password: hashedPassword,
-      role: "teacher",
+      role: "admin",
       schoolId: String(school._id),
       schoolCode: school.code,
       createdBy: String(req.user.id || req.user._id || ""),
       createdByName: req.user.name || req.user.email || "Platform Admin"
     });
-
     res.redirect("/platform/schools");
   } catch (err) {
-    console.error("CREATE SCHOOL TEACHER ERROR:", err);
-    res.status(500).send("Failed to create teacher");
+    console.error("CREATE SCHOOL ADMIN ERROR:", err);
+    res.status(500).send("Failed to create school admin");
   }
 };

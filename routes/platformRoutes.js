@@ -2,12 +2,10 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const router = express.Router();
-
 const authMiddleware = require("../middleware/auth");
 const platformAdminMiddleware = require("../middleware/platformAdmin");
 const platformController = require("../controllers/platformController");
 const platformSchoolController = require("../controllers/platformSchoolController");
-
 const upload = multer({
   dest: path.join(__dirname, "..", "uploads", "question-imports"),
   limits: {
@@ -20,7 +18,6 @@ router.get(
   platformAdminMiddleware,
   platformSchoolController.listSchoolsPage
 );
-
 router.post(
   "/platform/schools",
   authMiddleware,
@@ -28,13 +25,12 @@ router.post(
   express.urlencoded({ extended: true }),
   platformSchoolController.createSchool
 );
-
 router.post(
-  "/platform/schools/:schoolId/teachers",
+  "/platform/schools/:schoolId/admins",
   authMiddleware,
   platformAdminMiddleware,
   express.urlencoded({ extended: true }),
-  platformSchoolController.createTeacherForSchool
+  platformSchoolController.createAdminForSchool
 );
 router.get(
   "/platform-import",
@@ -42,7 +38,6 @@ router.get(
   platformAdminMiddleware,
   platformController.importPage
 );
-
 router.post(
   "/platform/import-questions",
   authMiddleware,
@@ -50,5 +45,4 @@ router.post(
   upload.single("questionFile"),
   platformController.importQuestions
 );
-
 module.exports = router;
