@@ -33,7 +33,6 @@ router.post("/register", async (req, res) => {
     },
     error: "Public registration disabled"
   });
-
   return res.status(403).json({
     error: "Public registration is disabled. Please contact your school admin."
   });

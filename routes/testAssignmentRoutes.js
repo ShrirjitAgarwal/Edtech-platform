@@ -206,51 +206,127 @@ router.post("/add-subject", async (req, res) => {
 // ---------- GET TESTS FOR STUDENT ----------
 router.get("/get-tests", async (req, res) => {
   try {
-    const className = String(req.query.className || "").trim().toUpperCase();
-    const subject = String(req.query.subject || "").trim();
-    const teacherId = String(req.query.teacherId || "").trim();
-if (!teacherId) {
-  return res.status(400).json({ error: "Missing teacherId" });
-}
-    if (!className || !subject) {
-      return res.status(400).json({ error: "Missing params" });
-    }
+    const jwt = require("jsonwebtoken");
     const Assignment = require("../models/Assignment");
     const Test = require("../models/Test");
-    // 1. Get assignments for class
-    const assignments = await Assignment.find({ className, teacherId });
-    // 2. Fetch tests
-    const tests = await Promise.all(
-      assignments.map(a => Test.findById(a.testId))
-    );
-const now = new Date();
-const validTests = tests.filter(t =>
-  t &&
-  String(t.status || "draft") === "published" &&
-  (
-    !t.scheduledAt ||
-    new Date(t.scheduledAt) <= now
-  )
-);
-// 🔒 GET STUDENT ID
-const studentId = String(req.query.studentId || "").trim();
-if (!studentId) {
-  return res.status(400).json({ error: "Missing studentId" });
-}
-const Result = require("../models/Result");
-// 🔒 GET ATTEMPTED TESTS
-const attempted = await Result.find({ studentId }).select("testId");
-const attemptedIds = attempted.map(r => String(r.testId));
-// 3. Filter by subject + remove attempted
-const filtered = validTests.filter(t => {
-  const subjectMatch =
-    String(t.subject || "").trim().toLowerCase() ===
-    String(subject || "").trim().toLowerCase();
-  const notAttempted =
-    !attemptedIds.includes(String(t._id));
-  return subjectMatch && notAttempted;
-});
-res.json(filtered);
+    const Result = require("../models/Result");
+    const Student = require("../models/Student");
+
+    const studentToken = req.cookies && req.cookies.studentSessionToken;
+
+    if (!studentToken) {
+      return res.status(401).json({
+        error: "Student session expired"
+      });
+    }
+
+    let decodedStudent;
+
+    try {
+      decodedStudent = jwt.verify(
+        studentToken,
+        process.env.JWT_SECRET
+      );
+    } catch (tokenErr) {
+      return res.status(401).json({
+        error: "Student session expired"
+      });
+    }
+
+    if (!decodedStudent || decodedStudent.role !== "student") {
+      return res.status(401).json({
+        error: "Invalid student session"
+      });
+    }
+
+    const subject = String(req.query.subject || "").trim();
+
+    if (!subject) {
+      return res.status(400).json({
+        error: "Missing subject"
+      });
+    }
+
+    const student = await Student.findOne({
+      _id: decodedStudent.studentRecordId,
+      studentId: decodedStudent.studentId,
+      status: "active"
+    })
+      .select("studentId class teacherId schoolId schoolCode status")
+      .lean();
+
+    if (!student) {
+      return res.status(401).json({
+        error: "Invalid student session"
+      });
+    }
+
+    const className = String(student.class || "").trim().toUpperCase();
+    const teacherId = String(student.teacherId || "").trim();
+    const studentId = String(student.studentId || "").trim();
+
+    if (!className || !teacherId || !studentId) {
+      return res.status(400).json({
+        error: "Student is missing class, teacher, or student ID data"
+      });
+    }
+
+    const assignments = await Assignment.find({
+      className,
+      teacherId,
+      ...(student.schoolId ? { schoolId: student.schoolId } : {})
+    })
+      .select("testId className teacherId schoolId schoolCode")
+      .lean();
+
+    const testIds = assignments
+      .map(assignment => assignment.testId)
+      .filter(Boolean);
+
+    if (!testIds.length) {
+      return res.json([]);
+    }
+
+    const now = new Date();
+
+    const tests = await Test.find({
+      _id: { $in: testIds },
+      status: "published",
+      teacherId,
+      ...(student.schoolId ? { schoolId: student.schoolId } : {}),
+      $or: [
+        { scheduledAt: { $exists: false } },
+        { scheduledAt: null },
+        { scheduledAt: { $lte: now } }
+      ]
+    })
+      .select("name subject className status teacherId schoolId schoolCode scheduledAt durationMinutes testType questionTimersEnabled createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const attempted = await Result.find({
+      studentId,
+      ...(student.schoolId ? { schoolId: student.schoolId } : {})
+    })
+      .select("testId")
+      .lean();
+
+    const attemptedIds = attempted.map(result => String(result.testId));
+
+    const filtered = tests.filter(test => {
+      const subjectMatch =
+        String(test.subject || "").trim().toLowerCase() ===
+        String(subject || "").trim().toLowerCase();
+
+      const classMatch =
+        String(test.className || "").trim().toUpperCase() === className;
+
+      const notAttempted = !attemptedIds.includes(String(test._id));
+
+      return subjectMatch && classMatch && notAttempted;
+    });
+
+    res.json(filtered);
   } catch (err) {
     console.error("GET TESTS ERROR:", err);
     res.status(500).json({ error: "Failed to fetch tests" });

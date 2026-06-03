@@ -33,7 +33,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Student session expired"
       });
-
       return res.status(401).json({ error: "Student session expired" });
     }
     let decodedStudent;
@@ -53,7 +52,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Student session expired"
       });
-
       return res.status(401).json({ error: "Student session expired" });
     }
     if (!decodedStudent || decodedStudent.role !== "student") {
@@ -68,7 +66,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Invalid student session"
       });
-
       return res.status(401).json({ error: "Invalid student session" });
     }
     const studentId = decodedStudent.studentId;
@@ -87,7 +84,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Invalid submission data"
       });
-
       return res.status(400).json({ error: "Invalid submission data" });
     }
     if (answers.length > 200) {
@@ -105,7 +101,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Too many answers submitted"
       });
-
       return res.status(400).json({
         error: "Too many answers submitted"
       });
@@ -135,7 +130,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Invalid student session"
       });
-
       return res.status(401).json({ error: "Invalid student session" });
     }
     const test = await Test.findById(testId).lean();
@@ -153,7 +147,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Test not found"
       });
-
       return res.status(404).json({ error: "Test not found" });
     }
     if (
@@ -176,7 +169,6 @@ router.post("/submit", async (req, res) => {
         },
         error: "Test not available"
       });
-
       return res.status(403).json({ error: "Test not available" });
     }
     const questionIds = answers
@@ -216,7 +208,6 @@ router.post("/submit", async (req, res) => {
           },
           error: "Test already submitted"
         });
-
         return res.status(409).json({ error: "Test already submitted" });
       }
     }
@@ -334,7 +325,6 @@ gradedAnswers.push({
         schoolCode: result.schoolCode || null
       }
     });
-
     res.json({
       status: "submitted",
       result
@@ -350,7 +340,6 @@ gradedAnswers.push({
         },
         error: "Test already submitted"
       });
-
       return res.status(409).json({ error: "Test already submitted" });
     }
     await logAuditEvent(req, {
@@ -361,7 +350,6 @@ gradedAnswers.push({
       },
       error: err.message
     });
-
     res.status(500).json({ error: "Failed to submit test" });
   }
 });

@@ -38,6 +38,17 @@ function logout(){
 </script>
 `;
 }
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
 // ======================================================
 // STUDENT DETAIL PAGE
 // ======================================================
@@ -217,6 +228,11 @@ border-radius:12px;
 <script>
 localStorage.clear();
 let matchedStudent = null;
+function escapeHtml(value){
+  const div = document.createElement("div");
+  div.textContent = String(value || "");
+  return div.innerHTML;
+}
 function showError(message){
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "block";
@@ -259,10 +275,10 @@ function lookupStudent(){
     document.getElementById("confirmBox").style.display = "block";
     document.getElementById("confirmBox").innerHTML =
       "<h3 style='margin-top:0;'>Confirm Your Details</h3>" +
-      "<p><b>Name:</b> " + matchedStudent.name + "</p>" +
-      "<p><b>Class ID:</b> " + matchedStudent.class + "</p>" +
-      "<p><b>Student ID:</b> " + matchedStudent.studentId + "</p>" +
-      "<p><b>School:</b> " + matchedStudent.schoolName + "</p>" +
+      "<p><b>Name:</b> " + escapeHtml(matchedStudent.name) + "</p>" +
+      "<p><b>Class ID:</b> " + escapeHtml(matchedStudent.class) + "</p>" +
+      "<p><b>Student ID:</b> " + escapeHtml(matchedStudent.studentId) + "</p>" +
+      "<p><b>School:</b> " + escapeHtml(matchedStudent.schoolName) + "</p>" +
       "<div style='display:flex;gap:10px;margin-top:18px;'>" +
         "<button onclick='confirmStudent()' style='" +
           "flex:1;" +
@@ -334,7 +350,8 @@ router.post("/student-lookup", async (req, res) => {
         .toLowerCase();
     const nameKey = normalize(firstName + " " + lastName);
     const studentKey = normalizeStudentId(studentId);
-    const matches = await Student.find({
+    const fullNameInput = normalize(firstName + " " + lastName);
+    let matches = await Student.find({
       studentKey,
       nameKey,
       status: "active"
@@ -342,6 +359,34 @@ router.post("/student-lookup", async (req, res) => {
       .select("studentId studentKey name firstName lastName fullName nameKey class teacherId schoolId schoolCode status")
       .limit(10)
       .lean();
+    if (!matches.length) {
+      matches = await Student.find({
+        status: "active",
+        $or: [
+          { studentKey },
+          { studentId },
+          { studentId: studentId.toUpperCase() },
+          { studentId: studentId.toLowerCase() }
+        ]
+      })
+        .select("studentId studentKey name firstName lastName fullName nameKey class teacherId schoolId schoolCode status")
+        .limit(25)
+        .lean();
+      matches = matches.filter(student => {
+        const dbFullName = normalize(
+          student.fullName ||
+          student.name ||
+          `${student.firstName || ""} ${student.lastName || ""}`
+        );
+        const dbFirstLast = normalize(
+          `${student.firstName || ""} ${student.lastName || ""}`
+        );
+        return (
+          dbFullName === fullNameInput ||
+          dbFirstLast === fullNameInput
+        );
+      });
+    }
     if (matches.length === 0) {
       return res.status(404).json({
         error: "We could not find a matching student record. Please recheck your name and student ID."
@@ -353,9 +398,18 @@ router.post("/student-lookup", async (req, res) => {
       });
     }
     const student = matches[0];
+    const updatedFields = {
+      lastVerifiedAt: new Date()
+    };
+    if (!student.studentKey) {
+      updatedFields.studentKey = studentKey;
+    }
+    if (!student.nameKey) {
+      updatedFields.nameKey = nameKey;
+    }
     await Student.updateOne(
       { _id: student._id },
-      { $set: { lastVerifiedAt: new Date() } }
+      { $set: updatedFields }
     );
     const school = student.schoolId
       ? await School.findById(student.schoolId)
@@ -367,7 +421,7 @@ router.post("/student-lookup", async (req, res) => {
         role: "student",
         studentRecordId: String(student._id),
         studentId: student.studentId,
-        studentKey: student.studentKey,
+        studentKey: student.studentKey || studentKey,
         class: student.class,
         teacherId: student.teacherId,
         schoolId: student.schoolId || null,
@@ -387,7 +441,7 @@ router.post("/student-lookup", async (req, res) => {
       student: {
         studentRecordId: String(student._id),
         studentId: student.studentId,
-        studentKey: student.studentKey,
+        studentKey: student.studentKey || studentKey,
         name: student.fullName || student.name,
         firstName: student.firstName || "",
         lastName: student.lastName || "",
@@ -480,14 +534,7 @@ window.onload = function(){
   const subjectSelect = document.getElementById("subjectSelect");
   const testList = document.getElementById("testList");
   // LOAD SUBJECTS
-  fetch(
-    "/get-subjects?className=" +
-    encodeURIComponent(student.class) +
-    "&teacherId=" +
-    encodeURIComponent(student.teacherId) +
-    "&schoolCode=" +
-    encodeURIComponent(student.schoolCode || "")
-  )
+  fetch("/get-subjects")
     .then(res => res.json())
     .then(subjects => {
       subjectSelect.innerHTML = '<option value="">Select Subject</option>';
@@ -502,18 +549,10 @@ window.onload = function(){
   subjectSelect.addEventListener("change", function(){
     const subject = this.value;
     if (!subject) return;
-    fetch(
-      "/get-tests?className=" +
-      encodeURIComponent(student.class) +
-      "&subject=" +
-      encodeURIComponent(subject) +
-      "&studentId=" +
-      encodeURIComponent(student.studentId) +
-      "&teacherId=" +
-      encodeURIComponent(student.teacherId) +
-      "&schoolCode=" +
-      encodeURIComponent(student.schoolCode || "")
-    )
+fetch(
+  "/get-tests?subject=" +
+  encodeURIComponent(subject)
+)
       .then(res => {
         if (!res.ok) throw new Error("API error");
         return res.json();
@@ -560,27 +599,77 @@ window.onload = function(){
 // ======================================================
 router.get("/get-subjects", async (req, res) => {
   try {
-    const className =
-      String(req.query.className || "").trim().toUpperCase();
-    const teacherId =
-      String(req.query.teacherId || "").trim();
-    const schoolCode =
-      String(req.query.schoolCode || "").trim();
-    if (!className || !teacherId || !schoolCode) {
-      return res.status(400).json({ error: "Missing fields" });
+    const studentToken = req.cookies && req.cookies.studentSessionToken;
+
+    if (!studentToken) {
+      return res.status(401).json({
+        error: "Student session expired"
+      });
     }
-const rows = await ClassSubject.find({
-  className,
-  teacherId,
-  schoolCode
-})
-  .select("subject")
-  .lean();
-    const subjects = [...new Set(rows.map(r => r.subject))];
+
+    let decodedStudent;
+
+    try {
+      decodedStudent = jwt.verify(
+        studentToken,
+        process.env.JWT_SECRET
+      );
+    } catch (tokenErr) {
+      return res.status(401).json({
+        error: "Student session expired"
+      });
+    }
+
+    if (!decodedStudent || decodedStudent.role !== "student") {
+      return res.status(401).json({
+        error: "Invalid student session"
+      });
+    }
+
+    const student = await Student.findOne({
+      _id: decodedStudent.studentRecordId,
+      studentId: decodedStudent.studentId,
+      status: "active"
+    })
+      .select("studentId class teacherId schoolId schoolCode status")
+      .lean();
+
+    if (!student) {
+      return res.status(401).json({
+        error: "Invalid student session"
+      });
+    }
+
+    const className = String(student.class || "").trim().toUpperCase();
+    const teacherId = String(student.teacherId || "").trim();
+    const schoolCode = String(student.schoolCode || "").trim();
+
+    if (!className || !teacherId || !schoolCode) {
+      return res.status(400).json({
+        error: "Student is missing class, teacher, or school data"
+      });
+    }
+
+    const rows = await ClassSubject.find({
+      className,
+      teacherId,
+      schoolCode
+    })
+      .select("subject")
+      .lean();
+
+    const subjects = [...new Set(
+      rows
+        .map(row => row.subject)
+        .filter(Boolean)
+    )];
+
     res.json(subjects);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch subjects" });
+    console.error("GET STUDENT SUBJECTS ERROR:", err);
+    res.status(500).json({
+      error: "Failed to fetch subjects"
+    });
   }
 });
 router.get("/get-classes", async (req, res) => {
