@@ -77,14 +77,12 @@ exports.schoolDashboardPage = async (req, res) => {
         .select("studentId testId class className score total schoolId schoolCode createdAt")
         .sort({ createdAt: -1 })
         .lean(),
-      Question.find({
-        $or: [
-          { scope: "public" },
-          { scope: "teacher", ...schoolScopedFilter }
-        ]
-      })
-        .select("scope schoolId teacherId createdAt")
-        .lean()
+Question.find({
+  scope: "teacher",
+  ...schoolScopedFilter
+})
+  .select("scope schoolId teacherId createdAt")
+  .lean()
     ]);
 
     function escapeHtml(value) {
