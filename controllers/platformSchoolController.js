@@ -5,6 +5,9 @@ const Student = require("../models/Student");
 const ClassModel = require("../models/Class");
 const Subject = require("../models/Subject");
 const ClassSubject = require("../models/ClassSubject");
+const {
+  validatePasswordPolicy
+} = require("../utils/passwordPolicy");
 const Test = require("../models/Test");
 function escapeHtml(value) {
   return String(value || "")
@@ -94,7 +97,6 @@ exports.listSchoolsPage = async (req, res) => {
  </button>
  </form>
  </details>
-
  <form
  method="POST"
  action="/platform/schools/${school._id}/delete"
@@ -136,7 +138,7 @@ exports.listSchoolsPage = async (req, res) => {
                 type="password"
                 placeholder="Temporary password"
                 required
-                minlength="6"
+                minlength="10"
                 style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
               />
               <button type="submit" style="
@@ -296,35 +298,26 @@ exports.updateSchool = async (req, res) => {
     const schoolId = req.params.schoolId;
     const name = String(req.body.name || "").trim();
     const code = normalizeSchoolCode(req.body.code);
-
     if (!schoolId || !name || !code) {
       return res.status(400).send("School name and code are required");
     }
-
     const school = await School.findById(schoolId);
-
     if (!school) {
       return res.status(404).send("School not found");
     }
-
     const existingSchool = await School.findOne({
       code,
       _id: {
         $ne: school._id
       }
     }).lean();
-
     if (existingSchool) {
       return res.status(409).send("School code already exists");
     }
-
     const oldCode = school.code;
-
     school.name = name;
     school.code = code;
-
     await school.save();
-
     if (oldCode !== code) {
       await Promise.all([
         User.updateMany(
@@ -353,36 +346,28 @@ exports.updateSchool = async (req, res) => {
         )
       ]);
     }
-
     res.redirect("/platform/schools");
   } catch (err) {
     console.error("UPDATE SCHOOL ERROR:", err);
-
     if (err.code === 11000) {
       return res.status(409).send("School code already exists");
     }
-
     res.status(500).send("Failed to update school");
   }
 };
 exports.deleteSchool = async (req, res) => {
   try {
     const schoolId = req.params.schoolId;
-
     if (!schoolId) {
       return res.status(400).send("Missing schoolId");
     }
-
     const school = await School.findById(schoolId).lean();
-
     if (!school) {
       return res.status(404).send("School not found");
     }
-
     const schoolFilter = {
       schoolId: String(school._id)
     };
-
     const [
       userCount,
       studentCount,
@@ -398,7 +383,6 @@ exports.deleteSchool = async (req, res) => {
       ClassSubject.countDocuments(schoolFilter),
       Test.countDocuments(schoolFilter)
     ]);
-
     const totalLinkedRecords =
       userCount +
       studentCount +
@@ -406,17 +390,14 @@ exports.deleteSchool = async (req, res) => {
       subjectCount +
       mappingCount +
       testCount;
-
     if (totalLinkedRecords > 0) {
       return res.status(400).send(
         "Cannot delete school because it still has linked data. Delete school admins, teachers, students, classes, subjects, mappings, and tests first."
       );
     }
-
     await School.deleteOne({
       _id: school._id
     });
-
     res.redirect("/platform/schools");
   } catch (err) {
     console.error("DELETE SCHOOL ERROR:", err);
@@ -432,9 +413,11 @@ exports.createAdminForSchool = async (req, res) => {
     if (!schoolId || !name || !email || !password) {
       return res.status(400).send("Admin name, email, and password are required");
     }
-    if (password.length < 6) {
-      return res.status(400).send("Password must be at least 6 characters");
-    }
+ const passwordPolicyError = validatePasswordPolicy(password);
+
+ if (passwordPolicyError) {
+   return res.status(400).send(passwordPolicyError);
+ }
     const school = await School.findById(schoolId).lean();
     if (!school) {
       return res.status(404).send("School not found");

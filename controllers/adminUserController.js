@@ -1,6 +1,9 @@
 const {
   logAdminAction
 } = require("../services/adminActionLogger");
+const {
+  validatePasswordPolicy
+} = require("../utils/passwordPolicy");
 exports.addUserFromAdmin = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -37,6 +40,14 @@ exports.addUserFromAdmin = async (req, res) => {
         error: "All fields are required"
       });
     }
+     const passwordPolicyError =
+   validatePasswordPolicy(normalizedPassword);
+
+ if (passwordPolicyError) {
+   return res.status(400).json({
+     error: passwordPolicyError
+   });
+ }
     if (
       normalizedRole !== "teacher" &&
       normalizedRole !== "admin"
