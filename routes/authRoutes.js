@@ -5,6 +5,8 @@ const School = require("../models/School");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const authController = require("../controllers/authController");
+const crypto = require("crypto");
+const RevokedToken = require("../models/RevokedToken");
 const {
   logAuditEvent
 } = require("../services/auditLogger");
@@ -18,6 +20,12 @@ const loginLimiter = rateLimit({
     error: "Too many login attempts. Please try again after 15 minutes."
   }
 });
+function hashToken(token) {
+  return crypto
+    .createHash("sha256")
+    .update(String(token || ""))
+    .digest("hex");
+}
 // ---------- REGISTER ----------
 // Public self-registration is disabled.
 // Teachers/admins must be created by an authorized school admin.
@@ -163,11 +171,40 @@ router.post(
   authController.registerTeacher
 );
 router.post("/logout", async (req, res) => {
-  const token = req.cookies && req.cookies.authToken;
+  const token =
+    (req.cookies && req.cookies.authToken) ||
+    (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer ")
+        ? req.headers.authorization.split(" ")[1]
+        : null
+    );
   let logoutActor = null;
   if (token) {
     try {
       logoutActor = jwt.verify(token, process.env.JWT_SECRET);
+      const tokenHash = hashToken(token);
+      const expiresAt = logoutActor.exp
+        ? new Date(logoutActor.exp * 1000)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      if (expiresAt > new Date()) {
+        await RevokedToken.updateOne(
+          {
+            tokenHash
+          },
+          {
+            $setOnInsert: {
+              tokenHash,
+              userId: logoutActor.id || null,
+              role: logoutActor.role || null,
+              expiresAt
+            }
+          },
+          {
+            upsert: true
+          }
+        );
+      }
     } catch (err) {
       logoutActor = null;
     }
@@ -177,7 +214,11 @@ router.post("/logout", async (req, res) => {
     status: "success",
     actor: logoutActor,
     metadata: {
-      hadCookie: Boolean(token)
+      hadCookie: Boolean(req.cookies && req.cookies.authToken),
+      hadBearerToken: Boolean(
+        req.headers.authorization &&
+        req.headers.authorization.startsWith("Bearer ")
+      )
     }
   });
   res.clearCookie("authToken", {

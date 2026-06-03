@@ -68,6 +68,7 @@ require("./models/ImportBatch");
 require("./models/AdminActionLog");
 require("./models/AuditLog");
 require("./models/School");
+require("./models/RevokedToken");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
 const codeRoutes = require("./routes/codeRoutes");
