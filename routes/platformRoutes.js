@@ -26,6 +26,21 @@ router.post(
   platformSchoolController.createSchool
 );
 router.post(
+  "/platform/schools/:schoolId/update",
+  authMiddleware,
+  platformAdminMiddleware,
+  express.urlencoded({ extended: true }),
+  platformSchoolController.updateSchool
+);
+
+router.post(
+  "/platform/schools/:schoolId/delete",
+  authMiddleware,
+  platformAdminMiddleware,
+  express.urlencoded({ extended: true }),
+  platformSchoolController.deleteSchool
+);
+router.post(
   "/platform/schools/:schoolId/admins",
   authMiddleware,
   platformAdminMiddleware,

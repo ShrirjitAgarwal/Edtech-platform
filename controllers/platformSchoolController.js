@@ -1,6 +1,11 @@
 const bcrypt = require("bcrypt");
 const School = require("../models/School");
 const User = require("../models/User");
+const Student = require("../models/Student");
+const ClassModel = require("../models/Class");
+const Subject = require("../models/Subject");
+const ClassSubject = require("../models/ClassSubject");
+const Test = require("../models/Test");
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -57,6 +62,57 @@ exports.listSchoolsPage = async (req, res) => {
           <p style="margin:4px 0;color:#475569;">
             <b>School Admins:</b> ${schoolAdmins.length}
           </p>
+           <details style="margin-top:14px;">
+ <summary style="cursor:pointer;font-weight:700;">
+ Edit school
+ </summary>
+ <form method="POST" action="/platform/schools/${school._id}/update" style="margin-top:14px;">
+ <input
+ name="name"
+ value="${escapeHtml(school.name)}"
+ placeholder="School name"
+ required
+ style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+ />
+ <input
+ name="code"
+ value="${escapeHtml(school.code)}"
+ placeholder="School code"
+ required
+ style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+ />
+ <button type="submit" style="
+ padding:10px 14px;
+ background:#4f46e5;
+ color:white;
+ border:none;
+ border-radius:8px;
+ font-weight:700;
+ cursor:pointer;
+ ">
+ Save School
+ </button>
+ </form>
+ </details>
+
+ <form
+ method="POST"
+ action="/platform/schools/${school._id}/delete"
+ onsubmit="return confirm('Delete this school? This is only allowed if the school has no users, students, classes, subjects, mappings, or tests.');"
+ style="margin-top:12px;"
+ >
+ <button type="submit" style="
+ padding:10px 14px;
+ background:#dc2626;
+ color:white;
+ border:none;
+ border-radius:8px;
+ font-weight:700;
+ cursor:pointer;
+ ">
+ Delete School
+ </button>
+ </form>
           <details style="margin-top:14px;">
             <summary style="cursor:pointer;font-weight:700;">
               Add first / additional school admin
@@ -233,6 +289,138 @@ exports.createSchool = async (req, res) => {
       return res.status(409).send("School code already exists");
     }
     res.status(500).send("Failed to create school");
+  }
+};
+exports.updateSchool = async (req, res) => {
+  try {
+    const schoolId = req.params.schoolId;
+    const name = String(req.body.name || "").trim();
+    const code = normalizeSchoolCode(req.body.code);
+
+    if (!schoolId || !name || !code) {
+      return res.status(400).send("School name and code are required");
+    }
+
+    const school = await School.findById(schoolId);
+
+    if (!school) {
+      return res.status(404).send("School not found");
+    }
+
+    const existingSchool = await School.findOne({
+      code,
+      _id: {
+        $ne: school._id
+      }
+    }).lean();
+
+    if (existingSchool) {
+      return res.status(409).send("School code already exists");
+    }
+
+    const oldCode = school.code;
+
+    school.name = name;
+    school.code = code;
+
+    await school.save();
+
+    if (oldCode !== code) {
+      await Promise.all([
+        User.updateMany(
+          { schoolId: String(school._id) },
+          { $set: { schoolCode: code } }
+        ),
+        Student.updateMany(
+          { schoolId: String(school._id) },
+          { $set: { schoolCode: code } }
+        ),
+        ClassModel.updateMany(
+          { schoolId: String(school._id) },
+          { $set: { schoolCode: code } }
+        ),
+        Subject.updateMany(
+          { schoolId: String(school._id) },
+          { $set: { schoolCode: code } }
+        ),
+        ClassSubject.updateMany(
+          { schoolId: String(school._id) },
+          { $set: { schoolCode: code } }
+        ),
+        Test.updateMany(
+          { schoolId: String(school._id) },
+          { $set: { schoolCode: code } }
+        )
+      ]);
+    }
+
+    res.redirect("/platform/schools");
+  } catch (err) {
+    console.error("UPDATE SCHOOL ERROR:", err);
+
+    if (err.code === 11000) {
+      return res.status(409).send("School code already exists");
+    }
+
+    res.status(500).send("Failed to update school");
+  }
+};
+exports.deleteSchool = async (req, res) => {
+  try {
+    const schoolId = req.params.schoolId;
+
+    if (!schoolId) {
+      return res.status(400).send("Missing schoolId");
+    }
+
+    const school = await School.findById(schoolId).lean();
+
+    if (!school) {
+      return res.status(404).send("School not found");
+    }
+
+    const schoolFilter = {
+      schoolId: String(school._id)
+    };
+
+    const [
+      userCount,
+      studentCount,
+      classCount,
+      subjectCount,
+      mappingCount,
+      testCount
+    ] = await Promise.all([
+      User.countDocuments(schoolFilter),
+      Student.countDocuments(schoolFilter),
+      ClassModel.countDocuments(schoolFilter),
+      Subject.countDocuments(schoolFilter),
+      ClassSubject.countDocuments(schoolFilter),
+      Test.countDocuments(schoolFilter)
+    ]);
+
+    const totalLinkedRecords =
+      userCount +
+      studentCount +
+      classCount +
+      subjectCount +
+      mappingCount +
+      testCount;
+
+    if (totalLinkedRecords > 0) {
+      return res.status(400).send(
+        "Cannot delete school because it still has linked data. Delete school admins, teachers, students, classes, subjects, mappings, and tests first."
+      );
+    }
+
+    await School.deleteOne({
+      _id: school._id
+    });
+
+    res.redirect("/platform/schools");
+  } catch (err) {
+    console.error("DELETE SCHOOL ERROR:", err);
+    res.status(500).send("Failed to delete school");
   }
 };
 exports.createAdminForSchool = async (req, res) => {
