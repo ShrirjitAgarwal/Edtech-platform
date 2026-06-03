@@ -182,6 +182,18 @@ window.location.replace("/");
 }
 const teacherId = user._id || user.id;
 let questions = [];
+function escapeHtml(value){
+const div = document.createElement("div");
+div.textContent = String(value || "");
+return div.innerHTML;
+}
+function jsString(value){
+return JSON.stringify(String(value || ""));
+}
+function safeText(value, fallback){
+const text = String(value || "").trim();
+return text || fallback;
+}
 document.getElementById("libraryList").innerHTML =
 "<p style='color:#64748b;'>Loading questions...</p>";
 fetch("/api/library-data", {
@@ -208,7 +220,6 @@ document.getElementById("libraryList").innerHTML =
 function getVisibleQuestions(){
 return questions.filter(q => {
 const scope = String(q.scope || "").trim();
-
 return (
 scope === "public" ||
 scope === "" ||
@@ -251,50 +262,60 @@ const sourceLabel =
 q.scope === "teacher"
 ? "My Question"
 : "Platform Question";
-return \`
-<div
-onclick="previewQuestion('\${q._id}')"
-style="
-background:#f8fafc;
-padding:18px;
-margin:12px 0;
-border-radius:12px;
-border:1px solid #e5e7eb;
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:16px;
-cursor:pointer;
-">
-<div>
-<p style="margin:0 0 8px 0;font-weight:600;">
-\${q.question || "Untitled Question"}
-</p>
-<p style="margin:0;color:#666;font-size:14px;">
-\${q.subject || q.category || "No Subject"} |
-\${q.board || "Other"} |
-\${q.difficulty ? q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1) : "No Difficulty"} |
-\${sourceLabel}
-</p>
-<p style="margin:6px 0 0 0;color:#64748b;font-size:13px;">
-Attempted: \${q.analytics?.attempted || 0} |
-Completed: \${q.analytics?.correct || 0} |
-Incomplete: \${q.analytics?.incorrect || 0}
-</p>
-</div>
-<button onclick="event.stopPropagation(); addToTest('\${q._id}')" style="
-padding:10px 14px;
-background:#4f46e5;
-color:white;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-">
-+ Add to Test
-</button>
-</div>
-\`;
+const questionId = jsString(q._id);
+const questionText = escapeHtml(safeText(q.question, "Untitled Question"));
+const subjectText = escapeHtml(safeText(q.subject || q.category, "No Subject"));
+const boardText = escapeHtml(safeText(q.board, "Other"));
+const difficultyText = escapeHtml(
+q.difficulty
+? String(q.difficulty).charAt(0).toUpperCase() + String(q.difficulty).slice(1)
+: "No Difficulty"
+);
+const attempted = Number(q.analytics?.attempted || 0);
+const completed = Number(q.analytics?.correct || 0);
+const incomplete = Number(q.analytics?.incorrect || 0);
+
+return "" +
+"<div onclick='previewQuestion(" + questionId + ")' style='" +
+"background:#f8fafc;" +
+"padding:18px;" +
+"margin:12px 0;" +
+"border-radius:12px;" +
+"border:1px solid #e5e7eb;" +
+"display:flex;" +
+"justify-content:space-between;" +
+"align-items:center;" +
+"gap:16px;" +
+"cursor:pointer;" +
+"'>" +
+"<div>" +
+"<p style='margin:0 0 8px 0;font-weight:600;'>" +
+questionText +
+"</p>" +
+"<p style='margin:0;color:#666;font-size:14px;'>" +
+subjectText + " | " +
+boardText + " | " +
+difficultyText + " | " +
+escapeHtml(sourceLabel) +
+"</p>" +
+"<p style='margin:6px 0 0 0;color:#64748b;font-size:13px;'>" +
+"Attempted: " + attempted + " | " +
+"Completed: " + completed + " | " +
+"Incomplete: " + incomplete +
+"</p>" +
+"</div>" +
+"<button onclick='event.stopPropagation(); addToTest(" + questionId + ")' style='" +
+"padding:10px 14px;" +
+"background:#4f46e5;" +
+"color:white;" +
+"border:none;" +
+"border-radius:8px;" +
+"font-weight:600;" +
+"cursor:pointer;" +
+"'>" +
+"+ Add to Test" +
+"</button>" +
+"</div>";
 }
 function previewQuestion(id){
 const q = questions.find(item =>
@@ -307,7 +328,7 @@ const optionsHtml =
 q.options && q.options.length
 ? q.options.map((opt, index) =>
 "<div style='background:#f8fafc;padding:10px;margin:8px 0;border-radius:8px;'>" +
-"<b>Option " + (index + 1) + ":</b> " + opt +
+"<b>Option " + (index + 1) + ":</b> " + escapeHtml(opt) +
 "</div>"
 ).join("")
 : "<p style='color:#64748b;'>No options found. This may be a coding or written question.</p>";
@@ -315,38 +336,42 @@ const sourceLabel =
 q.scope === "teacher"
 ? "My Question"
 : "Platform Question";
+const questionId = jsString(q._id);
+const difficultyText = q.difficulty
+? String(q.difficulty).charAt(0).toUpperCase() + String(q.difficulty).slice(1)
+: "N/A";
 document.getElementById("questionPreview").innerHTML =
 "<h2 style='margin-top:0;'>Question Preview</h2>" +
 "<div style='background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:15px;'>" +
 "<b>Question:</b><br>" +
-"<div style='margin-top:8px;line-height:1.5;'>" + (q.question || "No question text") + "</div>" +
+"<div style='margin-top:8px;line-height:1.5;'>" + escapeHtml(q.question || "No question text") + "</div>" +
 "</div>" +
 "<div style='margin-bottom:15px;'>" +
 optionsHtml +
 "</div>" +
 "<div style='background:#ecfdf5;padding:12px;border-radius:10px;margin-bottom:12px;'>" +
-"<b>Correct Answer:</b> " + (q.correct || "N/A") +
+"<b>Correct Answer:</b> " + escapeHtml(q.correct || "N/A") +
 "</div>" +
-"<p><b>Subject:</b> " + (q.subject || q.category || "N/A") + "</p>" +
-"<p><b>Board:</b> " + (q.board || "N/A") + "</p>" +
-"<p><b>Difficulty:</b> " + (q.difficulty ? q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1) : "N/A") + "</p>" +
-"<p><b>Library Type:</b> " + sourceLabel + "</p>" +
+"<p><b>Subject:</b> " + escapeHtml(q.subject || q.category || "N/A") + "</p>" +
+"<p><b>Board:</b> " + escapeHtml(q.board || "N/A") + "</p>" +
+"<p><b>Difficulty:</b> " + escapeHtml(difficultyText) + "</p>" +
+"<p><b>Library Type:</b> " + escapeHtml(sourceLabel) + "</p>" +
 "<div style='background:#eef2ff;padding:12px;border-radius:10px;margin-top:12px;'>" +
 "<b>Analytics</b><br>" +
-"Attempted: " + (q.analytics?.attempted || 0) + "<br>" +
-"Completed: " + (q.analytics?.correct || 0) + "<br>" +
-"Incomplete: " + (q.analytics?.incorrect || 0) +
+"Attempted: " + Number(q.analytics?.attempted || 0) + "<br>" +
+"Completed: " + Number(q.analytics?.correct || 0) + "<br>" +
+"Incomplete: " + Number(q.analytics?.incorrect || 0) +
 "</div>" +
-"<button onclick=\\"addToTest('" + q._id + "')\\" style=\\"" +
-"margin-top:18px;" +
-"padding:10px 14px;" +
-"background:#4f46e5;" +
-"color:white;" +
-"border:none;" +
-"border-radius:8px;" +
-"font-weight:600;" +
-"cursor:pointer;" +
-"\\">+ Add to Test</button>";
+ "<button onclick='addToTest(" + questionId + ")' style='" +
+ "margin-top:18px;" +
+ "padding:10px 14px;" +
+ "background:#4f46e5;" +
+ "color:white;" +
+ "border:none;" +
+ "border-radius:8px;" +
+ "font-weight:600;" +
+ "cursor:pointer;" +
+ "'>+ Add to Test</button>";
 }
 function renderLibrary(){
 const subject = document.getElementById("subjectFilter").value;
@@ -367,8 +392,14 @@ const subjectMatch =
 subject === "all" || qSubject === subject;
 const boardMatch =
 board === "all" || qBoard === board;
+const qScope = String(q.scope || "").trim();
+const normalizedScope =
+qScope === ""
+  ? "public"
+  : qScope;
+
 const scopeMatch =
-scope === "all" || q.scope === scope;
+scope === "all" || normalizedScope === scope;
 const searchMatch =
 !searchValue || questionText.includes(searchValue);
 const difficultyMatch =
@@ -384,7 +415,7 @@ return subjectMatch && boardMatch && scopeMatch && searchMatch && difficultyMatc
 document.getElementById("libraryList").innerHTML =
 visibleQuestions.length
 ? visibleQuestions.map(q => buildQuestionCard(q)).join("")
-: "<p>No questions found</p>";
+: "<p style='color:#64748b;'>No questions found</p>";
 }
 function addToTest(id){
 let selected = JSON.parse(localStorage.getItem("selectedQuestions") || "[]");
@@ -424,7 +455,6 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
      { scope: "" }
    ]
  };
-
  const teacherQuestionQuery = schoolId
    ? {
        scope: "teacher",
@@ -435,7 +465,6 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
        scope: "teacher",
        teacherId
      };
-
  const query = {
    $or: [
      publicQuestionQuery,

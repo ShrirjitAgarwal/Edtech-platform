@@ -3,12 +3,10 @@ exports.schoolDashboardPage = async (req, res) => {
     if (req.user.role !== "admin") {
       return res.send("Access denied");
     }
-
     const schoolId = req.user.schoolId || null;
     const schoolScopedFilter = schoolId
       ? { schoolId }
       : {};
-
     const School = require("../models/School");
     const User = require("../models/User");
     const Student = require("../models/Student");
@@ -19,7 +17,6 @@ exports.schoolDashboardPage = async (req, res) => {
     const Assignment = require("../models/Assignment");
     const Result = require("../models/Result");
     const Question = require("../models/Question");
-
     const [
       school,
       admins,
@@ -84,7 +81,6 @@ Question.find({
   .select("scope schoolId teacherId createdAt")
   .lean()
     ]);
-
     function escapeHtml(value) {
       return String(value || "")
         .replace(/&/g, "&amp;")
@@ -93,64 +89,54 @@ Question.find({
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
-
     function jsString(value) {
       return JSON.stringify(String(value || ""));
     }
-
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, "&#096;");
+    }
+    function jsAttributeString(value) {
+      return escapeAttribute(jsString(value));
+    }
     function formatDate(value) {
       if (!value) {
         return "-";
       }
-
       return new Date(value).toLocaleString();
     }
-
     function percent(score, total) {
       if (!total || Number(total) <= 0) {
         return 0;
       }
-
       return Math.round((Number(score || 0) / Number(total)) * 100);
     }
-
     const teacherById = {};
-
     teachers.forEach(teacher => {
       teacherById[String(teacher._id)] = teacher;
     });
-
     const assignmentsByClass = {};
-
     assignments.forEach(assignment => {
       const className = assignment.className || assignment.class || "Unknown";
-
       if (!assignmentsByClass[className]) {
         assignmentsByClass[className] = new Set();
       }
-
       students
         .filter(student => String(student.class || "") === String(className || ""))
         .forEach(student => {
           assignmentsByClass[className].add(String(student.studentId));
         });
-
       if (Array.isArray(assignment.studentIds)) {
         assignment.studentIds.forEach(studentId => {
           assignmentsByClass[className].add(String(studentId));
         });
       }
-
       if (assignment.studentId) {
         assignmentsByClass[className].add(String(assignment.studentId));
       }
     });
-
     const classPerformanceMap = {};
-
     results.forEach(result => {
       const className = result.className || result.class || "Unknown";
-
       if (!classPerformanceMap[className]) {
         classPerformanceMap[className] = {
           students: new Set(),
@@ -159,16 +145,13 @@ Question.find({
           attempts: 0
         };
       }
-
       if (result.studentId) {
         classPerformanceMap[className].students.add(String(result.studentId));
       }
-
       classPerformanceMap[className].totalScore += Number(result.score || 0);
       classPerformanceMap[className].totalMarks += Number(result.total || 0);
       classPerformanceMap[className].attempts += 1;
     });
-
     const classOverviewRows = classes.map(classItem => {
       const className = classItem.name || "Unknown";
       const classStudents = students.filter(student =>
@@ -194,9 +177,8 @@ Question.find({
       const completion = assignedCount > 0
         ? Math.round((attemptedCount / assignedCount) * 100)
         : 0;
-
       return `
-        <tr onclick="goToClass(${jsString(className)})" style="cursor:pointer;">
+        <tr onclick="goToClass(${jsAttributeString(className)})" style="cursor:pointer;">
           <td style="font-weight:700;color:#4f46e5;">${escapeHtml(className)}</td>
           <td>${classStudents.length}</td>
           <td>${classMappings.length}</td>
@@ -207,7 +189,6 @@ Question.find({
         </tr>
       `;
     }).join("");
-
     const teacherWorkloadRows = teachers.map(teacher => {
       const teacherMappings = mappings.filter(mapping =>
         String(mapping.teacherId || "") === String(teacher._id || "")
@@ -224,7 +205,6 @@ Question.find({
       const teacherTests = tests.filter(test =>
         String(test.teacherId || "") === String(teacher._id || "")
       );
-
       return `
         <tr>
           <td><b>${escapeHtml(teacher.name || teacher.email || "Unnamed Teacher")}</b><br><span style="color:#64748b;font-size:13px;">${escapeHtml(teacher.email || "")}</span></td>
@@ -235,7 +215,6 @@ Question.find({
         </tr>
       `;
     }).join("");
-
     const recentItems = [
       ...teachers.slice(0, 3).map(item => ({
         label: "Teacher",
@@ -266,59 +245,47 @@ Question.find({
       .filter(item => item.title)
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
       .slice(0, 8);
-
     const recentActivityHtml = recentItems.map(item => `
       <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e5e7eb;">
         <div>
           <b>${escapeHtml(item.title)}</b><br>
           <span style="color:#64748b;font-size:13px;">${escapeHtml(item.label)}</span>
         </div>
-        <span style="color:#64748b;font-size:13px;white-space:nowrap;">${formatDate(item.date)}</span>
+        <span style="color:#64748b;font-size:13px;white-space:nowrap;">${escapeHtml(formatDate(item.date))}</span>
       </div>
     `).join("");
-
     const assignedStudents = new Set();
-
     assignments.forEach(assignment => {
       const className = assignment.className || assignment.class || "Unknown";
-
       students
         .filter(student => String(student.class || "") === String(className || ""))
         .forEach(student => {
           assignedStudents.add(String(student.studentId));
         });
-
       if (Array.isArray(assignment.studentIds)) {
         assignment.studentIds.forEach(studentId => {
           assignedStudents.add(String(studentId));
         });
       }
-
       if (assignment.studentId) {
         assignedStudents.add(String(assignment.studentId));
       }
     });
-
     const attemptedStudents = new Set();
-
     results.forEach(result => {
       if (result.studentId) {
         attemptedStudents.add(String(result.studentId));
       }
     });
-
     let low = 0;
     let mid = 0;
     let high = 0;
     let totalScore = 0;
     let totalMarks = 0;
-
     results.forEach(result => {
       const resultPercent = percent(result.score, result.total);
-
       totalScore += Number(result.score || 0);
       totalMarks += Number(result.total || 0);
-
       if (resultPercent < 50) {
         low++;
       } else if (resultPercent <= 80) {
@@ -327,11 +294,9 @@ Question.find({
         high++;
       }
     });
-
     const averageScore = totalMarks > 0
       ? Math.round((totalScore / totalMarks) * 100)
       : 0;
-
     const setupItems = [
       {
         label: "School admin created",
@@ -369,14 +334,12 @@ Question.find({
         href: "/create-test"
       }
     ];
-
     const setupHtml = setupItems.map(item => `
-      <div onclick="go(${jsString(item.href)})" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:10px;cursor:pointer;background:${item.done ? "#ecfdf5" : "#fff7ed"};">
+      <div onclick="go(${jsAttributeString(item.href)})" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:10px;cursor:pointer;background:${item.done ? "#ecfdf5" : "#fff7ed"};">
         <span style="font-weight:700;">${escapeHtml(item.label)}</span>
         <span style="font-weight:800;color:${item.done ? "#16a34a" : "#ea580c"};">${item.done ? "Done" : "Pending"}</span>
       </div>
     `).join("");
-
     const cardData = [
       {
         label: "Students",
@@ -429,14 +392,12 @@ Question.find({
         href: "/library"
       }
     ];
-
     const cardHtml = cardData.map(card => `
       <div style="background:white;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
         <div style="color:#64748b;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;">${escapeHtml(card.label)}</div>
         <div style="font-size:34px;font-weight:900;margin-top:10px;color:#0f172a;">${card.value}</div>
       </div>
     `).join("");
-
     res.send(`
 <body style="margin:0;font-family:Arial;background:#eef2ff;">
 <script>
@@ -466,7 +427,6 @@ if(!user || user.role !== "admin"){
     </div>
     <div onclick="logout()" style="padding:12px 14px;border-radius:8px;cursor:pointer;color:#f87171;">Logout</div>
   </aside>
-
   <main style="
     flex:1;
     height:100vh;
@@ -493,7 +453,6 @@ if(!user || user.role !== "admin"){
   ">
     ← Previous Page
   </button>
-
   <button onclick="go('/admin-settings')" style="
     padding:12px 16px;
     background:#4f46e5;
@@ -507,17 +466,14 @@ if(!user || user.role !== "admin"){
   </button>
 </div>
     </div>
-
     <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:22px;">
       ${cardHtml}
     </section>
-
     <section style="display:grid;grid-template-columns:minmax(280px,420px) minmax(0,1fr);gap:20px;margin-bottom:22px;align-items:start;">
       <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
         <h2 style="margin-top:0;">Setup Checklist</h2>
         ${setupHtml}
       </div>
-
       <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
         <h2 style="margin-top:0;">Performance Summary</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;">
@@ -531,7 +487,6 @@ if(!user || user.role !== "admin"){
         </div>
       </div>
     </section>
-
     <section style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;align-items:start;">
       <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;overflow:auto;">
         <h2 style="margin-top:0;">Teacher Workload</h2>
@@ -546,13 +501,11 @@ if(!user || user.role !== "admin"){
           ${teacherWorkloadRows || "<tr><td colspan='5'>No teachers found</td></tr>"}
         </table>
       </div>
-
       <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
         <h2 style="margin-top:0;">Recent Activity</h2>
         ${recentActivityHtml || "<p style='color:#64748b;'>No recent activity yet.</p>"}
       </div>
     </section>
-
     <section style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;overflow:auto;">
       <h2 style="margin-top:0;">Class Overview</h2>
       <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;text-align:center;background:white;">
@@ -574,7 +527,6 @@ if(!user || user.role !== "admin"){
 function go(path){
   window.location.replace(path);
 }
-
 function logout(){
   fetch("/logout", {
     method: "POST"
@@ -583,7 +535,6 @@ function logout(){
     window.location.href = "/";
   });
 }
-
 function goToClass(cls){
   window.location.replace("/admin-class?class=" + encodeURIComponent(cls));
 }

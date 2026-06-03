@@ -3,6 +3,17 @@ exports.adminSettingsPage = async (req, res) => {
     if (req.user.role !== "admin") {
       return res.send("Access denied");
     }
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, "&#096;");
+    }
     const School = require("../models/School");
     const User = require("../models/User");
     const Student = require("../models/Student");
@@ -61,22 +72,27 @@ Subject.find(schoolScopedFilter)
   .sort({ name: 1 })
   .lean()
     ]);
-    const teacherOptions = teachers.map(t => `
-      <option value="${t._id}">
-        ${t.name || t.email || "Unnamed Teacher"} - ${t.email || ""}
+    const teacherOptions = teachers.map(t => {
+      const teacherId = escapeAttribute(t._id);
+      const teacherName = escapeHtml(t.name || t.email || "Unnamed Teacher");
+      const teacherEmail = escapeHtml(t.email || "");
+      return `
+      <option value="${teacherId}">
+        ${teacherName} - ${teacherEmail}
       </option>
-    `).join("");
+    `;
+    }).join("");
     const subjectRows = subjects.map(s => `
 <tr>
-  <td>${s.name || "-"}</td>
+  <td>${escapeHtml(s.name || "-")}</td>
   <td>${
     s.createdAt
-      ? new Date(s.createdAt).toLocaleString()
+      ? escapeHtml(new Date(s.createdAt).toLocaleString())
       : "-"
   }</td>
   <td>
     <button
-      onclick="deleteSubject('${s._id}')"
+      onclick="deleteSubject('${escapeAttribute(s._id)}')"
       style="
         background:#dc2626;
         color:white;
@@ -92,20 +108,23 @@ Subject.find(schoolScopedFilter)
 </tr>
 `).join("");
 const subjectOptions = subjects.map(s => `
-  <option value="${s.name}">${s.name}</option>
+  <option value="${escapeAttribute(s.name)}">${escapeHtml(s.name)}</option>
 `).join("");
     const mappingRows = mappings.map(m => {
   const teacher = teachers.find(t =>
     String(t._id) === String(m.teacherId)
   );
+  const teacherDisplay = teacher
+    ? teacher.name || teacher.email || "Unknown"
+    : "Unknown";
   return `
 <tr>
-  <td>${m.className || "-"}</td>
-  <td>${m.subject || "-"}</td>
-  <td>${teacher ? teacher.name || teacher.email : "Unknown"}</td>
+  <td>${escapeHtml(m.className || "-")}</td>
+  <td>${escapeHtml(m.subject || "-")}</td>
+  <td>${escapeHtml(teacherDisplay)}</td>
   <td>
     <button
-      onclick="deleteMapping('${m._id}')"
+      onclick="deleteMapping('${escapeAttribute(m._id)}')"
       style="
         background:#dc2626;
         color:white;
@@ -123,13 +142,13 @@ const subjectOptions = subjects.map(s => `
 }).join("");
 const teacherRows = teachers.map(t => `
 <tr>
-  <td>${t.name || "-"}</td>
-  <td>${t.email || "-"}</td>
-  <td>${t.role || "-"}</td>
-  <td>${t.createdByName || "-"}</td>
+  <td>${escapeHtml(t.name || "-")}</td>
+  <td>${escapeHtml(t.email || "-")}</td>
+  <td>${escapeHtml(t.role || "-")}</td>
+  <td>${escapeHtml(t.createdByName || "-")}</td>
   <td>${
     t.createdAt
-      ? new Date(t.createdAt).toLocaleString()
+      ? escapeHtml(new Date(t.createdAt).toLocaleString())
       : "-"
   }</td>
   <td>
@@ -138,7 +157,7 @@ const teacherRows = teachers.map(t => `
         ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
         : `
           <button
-            onclick="deleteUser('${t._id}')"
+            onclick="deleteUser('${escapeAttribute(t._id)}')"
             style="
               background:#dc2626;
               color:white;
@@ -159,35 +178,38 @@ const studentRows = students.map(s => {
   const assignedTeacher = teachers.find(t =>
     String(t._id) === String(s.teacherId)
   );
+  const assignedTeacherDisplay = assignedTeacher
+    ? assignedTeacher.name || assignedTeacher.email || "-"
+    : "-";
   return `
 <tr>
-  <td>${s.name || s.fullName || "-"}</td>
-  <td>${s.studentId || "-"}</td>
-  <td>${s.class || "-"}</td>
-  <td>${assignedTeacher ? assignedTeacher.name || assignedTeacher.email : "-"}</td>
+  <td>${escapeHtml(s.name || s.fullName || "-")}</td>
+  <td>${escapeHtml(s.studentId || "-")}</td>
+  <td>${escapeHtml(s.class || "-")}</td>
+  <td>${escapeHtml(assignedTeacherDisplay)}</td>
   <td>
-    <select id="studentClass-${s._id}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
+    <select id="studentClass-${escapeAttribute(s._id)}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
       <option value="">Select Class</option>
       ${classes.map(c => `
-        <option value="${c.name}" ${String(c.name) === String(s.class) ? "selected" : ""}>
-          ${c.name}
+        <option value="${escapeAttribute(c.name)}" ${String(c.name) === String(s.class) ? "selected" : ""}>
+          ${escapeHtml(c.name)}
         </option>
       `).join("")}
     </select>
   </td>
   <td>
-    <select id="studentTeacher-${s._id}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
+    <select id="studentTeacher-${escapeAttribute(s._id)}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
       <option value="">Select Teacher</option>
       ${teachers.map(t => `
-        <option value="${t._id}" ${String(t._id) === String(s.teacherId) ? "selected" : ""}>
-          ${t.name || t.email}
+        <option value="${escapeAttribute(t._id)}" ${String(t._id) === String(s.teacherId) ? "selected" : ""}>
+          ${escapeHtml(t.name || t.email)}
         </option>
       `).join("")}
     </select>
   </td>
   <td>
     <button
-      onclick="updateStudentClass('${s._id}')"
+      onclick="updateStudentClass('${escapeAttribute(s._id)}')"
       style="
         background:#4f46e5;
         color:white;
@@ -201,7 +223,7 @@ const studentRows = students.map(s => {
       Save
     </button>
     <button
-      onclick="deleteStudent('${s._id}')"
+      onclick="deleteStudent('${escapeAttribute(s._id)}')"
       style="
         background:#dc2626;
         color:white;
@@ -219,16 +241,16 @@ const studentRows = students.map(s => {
 }).join("");
 const classRows = classes.map(c => `
 <tr>
-  <td>${c.name || "-"}</td>
+  <td>${escapeHtml(c.name || "-")}</td>
   <td>${Array.isArray(c.studentIds) ? c.studentIds.length : 0}</td>
   <td>${
     c.createdAt
-      ? new Date(c.createdAt).toLocaleString()
+      ? escapeHtml(new Date(c.createdAt).toLocaleString())
       : "-"
   }</td>
   <td>
     <button
-      onclick="deleteClass('${c._id}')"
+      onclick="deleteClass('${escapeAttribute(c._id)}')"
       style="
         background:#dc2626;
         color:white;
@@ -245,13 +267,13 @@ const classRows = classes.map(c => `
 `).join("");
 const adminRows = admins.map(a => `
 <tr>
-  <td>${a.name || "-"}</td>
-  <td>${a.email || "-"}</td>
-  <td>${a.role || "-"}</td>
-  <td>${a.createdByName || "-"}</td>
+  <td>${escapeHtml(a.name || "-")}</td>
+  <td>${escapeHtml(a.email || "-")}</td>
+  <td>${escapeHtml(a.role || "-")}</td>
+  <td>${escapeHtml(a.createdByName || "-")}</td>
   <td>${
     a.createdAt
-      ? new Date(a.createdAt).toLocaleString()
+      ? escapeHtml(new Date(a.createdAt).toLocaleString())
       : "-"
   }</td>
   <td>
@@ -260,7 +282,7 @@ const adminRows = admins.map(a => `
         ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
         : `
           <button
-            onclick="deleteUser('${a._id}')"
+            onclick="deleteUser('${escapeAttribute(a._id)}')"
             style="
               background:#dc2626;
               color:white;
@@ -280,7 +302,7 @@ const adminRows = admins.map(a => `
 const classOptions = [...new Set(
   classes.map(c => c.name).filter(Boolean)
 )].map(className => `
-  <option value="${className}">${className}</option>
+  <option value="${escapeAttribute(className)}">${escapeHtml(className)}</option>
 `).join("");
     res.send(`
 <body style="margin:0;font-family:Arial;background:#eef2ff;">
@@ -328,7 +350,6 @@ const classOptions = [...new Set(
   margin-bottom:20px;
 ">
   <h1 style="margin:0;">Admin Settings</h1>
-
   <button onclick="go('/school-dashboard')" style="
     padding:12px 16px;
     background:#f59e0b;
@@ -394,8 +415,8 @@ const classOptions = [...new Set(
       ">
     <div id="panel-overview" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;width:100%;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
       <h2>School Overview</h2>
-      <p><b>School Name:</b> ${school?.name || "N/A"}</p>
-      <p><b>School Code:</b> ${school?.code || req.user.schoolCode || "N/A"}</p>
+      <p><b>School Name:</b> ${escapeHtml(school?.name || "N/A")}</p>
+      <p><b>School Code:</b> ${escapeHtml(school?.code || req.user.schoolCode || "N/A")}</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:24px;width:100%;">
         <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${admins.length}</b><br>Admins</div>
         <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${teachers.length}</b><br>Teachers</div>
