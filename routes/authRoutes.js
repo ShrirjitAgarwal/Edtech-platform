@@ -19,65 +19,24 @@ const loginLimiter = rateLimit({
   }
 });
 // ---------- REGISTER ----------
+// Public self-registration is disabled.
+// Teachers/admins must be created by an authorized school admin.
+// Platform admins must be created through the platform admin setup flow.
 router.post("/register", async (req, res) => {
-  const {
-  name,
-  email,
-  password,
-  role,
-  class: studentClass,
-  teacherId,
-  schoolCode
-} = req.body;
-  try {
-    const normalizedEmail = String(email || "").trim().toLowerCase();
-    const normalizedRole = String(role || "teacher").trim().toLowerCase();
-    if (!name || !normalizedEmail || !password) {
-      return res.status(400).json({ error: "Name, email, and password are required" });
-    }
-    if (normalizedRole === "admin") {
-      return res.status(403).json({
-        error: "Admin accounts must be created by an existing admin"
-      });
-    }
-    if (!["teacher", "student"].includes(normalizedRole)) {
-      return res.status(400).json({ error: "Invalid role" });
-    }
-    const existing = await User.findOne({ email: normalizedEmail });
-if(existing){
-  return res.json({ error: "User already exists" });
-}
-let school = null;
-if (schoolCode) {
-  school = await School.findOne({
-    code: String(schoolCode).trim().toUpperCase()
+  await logAuditEvent(req, {
+    event: "public_registration_blocked",
+    status: "blocked",
+    metadata: {
+      email: String(req.body.email || "").trim().toLowerCase(),
+      requestedRole: String(req.body.role || "").trim().toLowerCase(),
+      schoolCode: String(req.body.schoolCode || "").trim().toUpperCase()
+    },
+    error: "Public registration disabled"
   });
-}
-if (!school) {
-  return res.status(400).json({
-    error: "Valid school code required"
+
+  return res.status(403).json({
+    error: "Public registration is disabled. Please contact your school admin."
   });
-}
-// 🔐 HASH PASSWORD
-const hashedPassword = await bcrypt.hash(password, 10);
-const user = await User.create({
-  name: String(name || "").trim(),
-  email: normalizedEmail,
-  password: hashedPassword,
-  role: normalizedRole,
-  class: studentClass,
-  teacherId,
-  schoolId: String(school._id),
-  schoolCode: school.code
-});
-    res.json({
-  status: "created",
-  user,
-  school
-});
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
 // ---------- LOGIN ----------
 router.post("/login", loginLimiter, async (req, res) => {
