@@ -7,6 +7,18 @@ const backButton = require("../views/backButton");
 const {
   logAuditEvent
 } = require("../services/auditLogger");
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
 // ---------- TEACHER TEST LIST ----------
 router.get("/teacher-tests", authMiddleware, async (req, res) => {
   const content = `
@@ -102,6 +114,16 @@ box-sizing:border-box;
       let myAssignments = [];
       let myStudents = [];
       let myResults = [];
+
+      function escapeHtml(value){
+        const div = document.createElement("div");
+        div.textContent = String(value || "");
+        return div.innerHTML;
+      }
+
+      function jsString(value){
+        return JSON.stringify(String(value || ""));
+      }
       window.onload = function(){
         const user = JSON.parse(localStorage.getItem("user") || "null");
         const token = localStorage.getItem("token");
@@ -126,9 +148,17 @@ box-sizing:border-box;
           myAssignments = data.assignments || [];
           myStudents = data.students || [];
           myResults = data.results || [];
-        const html = myTests.map(t => \`
+          const html = myTests.map(t => {
+          const testId = jsString(t._id);
+          const testName = escapeHtml(t.name || "Untitled Test");
+          const testSubject = escapeHtml(t.subject || "No Subject");
+          const testClassName = escapeHtml(t.className || "No Class");
+          const testStatus = t.status === "published" ? "Published" : "Draft";
+          const editUrl = "/create-test?id=" + encodeURIComponent(String(t._id || ""));
+
+          return \`
           <div
-            onclick="previewTest('\${t._id}')"
+            onclick="previewTest(\${testId})"
             style="
               background:#f8fafc;
               padding:18px 20px;
@@ -145,12 +175,12 @@ box-sizing:border-box;
               <input
                 type="checkbox"
                 class="testCheckbox"
-                value="\${t._id}"
+                value="\${escapeHtml(t._id)}"
                 onclick="event.stopPropagation()"
               >
               <div>
                 <div style="font-size:18px;font-weight:700;">
-                  \${t.name || "Untitled Test"}
+                  \${testName}
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
   <span style="
@@ -161,7 +191,7 @@ box-sizing:border-box;
     border-radius:999px;
     font-weight:700;
   ">
-    \${t.subject || "No Subject"}
+    \${testSubject}
   </span>
   <span style="
     font-size:12px;
@@ -171,7 +201,7 @@ box-sizing:border-box;
     border-radius:999px;
     font-weight:700;
   ">
-    \${t.className || "No Class"}
+    \${testClassName}
   </span>
   <span style="
     font-size:12px;
@@ -181,25 +211,26 @@ box-sizing:border-box;
     background:\${t.status === "published" ? "#16a34a" : "#7c3aed"};
     color:white;
   ">
-    \${t.status === "published" ? "Published" : "Draft"}
+    \${testStatus}
   </span>
 </div>
               </div>
             </div>
 <div style="display:flex;gap:10px;align-items:center;">
   \${t.status !== "published" ? \`
-    <button onclick="event.stopPropagation(); go('/create-test?id=\${t._id}')"
+    <button onclick="event.stopPropagation(); go('\${editUrl}')"
       style="padding:10px 16px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
       Edit
     </button>
   \` : ""}
-  <button onclick="event.stopPropagation(); assignTest('\${t._id}')"
+  <button onclick="event.stopPropagation(); assignTest(\${testId})"
     style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
     \${t.status === "published" ? "Published" : "Publish"}
   </button>
 </div>
-          </div>
-        \`).join("");
+      </div>
+        \`;
+        }).join("");
         document.getElementById("testList").innerHTML =
           html || "<p>No tests found</p>";
           window.previewTest = function(testId){
@@ -250,7 +281,7 @@ box-sizing:border-box;
             ? new Date(assignment.createdAt).toLocaleString()
             : "N/A";
           document.getElementById("testPreview").innerHTML = \`
-            <h2 style="margin-top:0;">\${test.name || "Untitled Test"}</h2>
+            <h2 style="margin-top:0;">\${escapeHtml(test.name || "Untitled Test")}</h2>
             <div style="
               background:#f8fafc;
               padding:14px;
@@ -258,14 +289,14 @@ box-sizing:border-box;
               margin-bottom:14px;
               border:1px solid #e5e7eb;
             ">
-              <p><b>Assigned Class:</b> \${className}</p>
-              <p><b>Subject:</b> \${test.subject || "N/A"}</p>
+              <p><b>Assigned Class:</b> \${escapeHtml(className)}</p>
+              <p><b>Subject:</b> \${escapeHtml(test.subject || "N/A")}</p>
               <p><b>Status:</b> \${test.status === "published" ? "Published" : "Draft"}</p>
-<p><b>Test Type:</b> \${test.testType || "practice"}</p>
+<p><b>Test Type:</b> \${escapeHtml(test.testType || "practice")}</p>
 <p><b>Duration:</b> \${test.durationMinutes || 60} minutes</p>
-<p><b>Scheduled At:</b> \${test.scheduledAt ? new Date(test.scheduledAt).toLocaleString() : "Not scheduled"}</p>
-<p><b>Date Created:</b> \${createdDate}</p>
-              <p><b>Date Assigned:</b> \${assignedDate}</p>
+<p><b>Scheduled At:</b> \${escapeHtml(test.scheduledAt ? new Date(test.scheduledAt).toLocaleString() : "Not scheduled")}</p>
+<p><b>Date Created:</b> \${escapeHtml(createdDate)}</p>
+<p><b>Date Assigned:</b> \${escapeHtml(assignedDate)}</p>
             </div>
             <div style="
               display:grid;
@@ -521,12 +552,12 @@ const assignedSubjects = [...new Set(
 )];
 const classOptionsHtml = assignedClasses.length
   ? assignedClasses.map(className => `
-<option value="${className}" ${editTest?.className === className ? "selected" : ""}>${className}</option>
+<option value="${escapeAttribute(className)}" ${editTest?.className === className ? "selected" : ""}>${escapeHtml(className)}</option>
 `).join("")
   : `<option value="">No assigned classes</option>`;
 const subjectOptionsHtml = assignedSubjects.length
   ? assignedSubjects.map(subject => `
-<option value="${subject}" ${editTest?.subject === subject ? "selected" : ""}>${subject}</option>
+<option value="${escapeAttribute(subject)}" ${editTest?.subject === subject ? "selected" : ""}>${escapeHtml(subject)}</option>
 `).join("")
   : `<option value="">No assigned subjects</option>`;
 const noMappingsNotice = classSubjectMappings.length
@@ -578,7 +609,7 @@ ${noMappingsNotice}
       <label style="display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:8px;">
         Test Name
       </label>
-      <input id="testName" value="${editTest?.name || ""}" placeholder="Example: Fractions Unit Test" style="
+      <input id="testName" value="${escapeAttribute(editTest?.name || "")}" placeholder="Example: Fractions Unit Test" style="
         width:100%;
         padding:13px 14px;
         border-radius:12px;
@@ -782,11 +813,20 @@ if(editingTestId){
 const allQuestions = ${JSON.stringify(questions)};
 const questions = allQuestions.filter(q =>
  q.scope === "public" ||
+ String(q.scope || "").trim() === "" ||
  (
    q.scope === "teacher" &&
    String(q.teacherId) === String(teacherId)
  )
 );
+function escapeHtml(value){
+ const div = document.createElement("div");
+ div.textContent = String(value || "");
+ return div.innerHTML;
+}
+function jsString(value){
+ return JSON.stringify(String(value || ""));
+}
 function getQuestionId(q){
  return String(q._id);
 }
@@ -816,10 +856,13 @@ function getBadge(label, background, color){
     "background:" + background + ";" +
     "color:" + color + ";" +
     "border:1px solid rgba(15,23,42,0.08);" +
-  "'>" + label + "</span>";
+  "'>" + escapeHtml(label) + "</span>";
 }
 function buildQuestionRow(q){
   const id = getQuestionId(q);
+  const idForJs = jsString(id);
+  const idForAttribute = escapeHtml(id);
+  const questionText = escapeHtml(q.question || "Untitled question");
   const type = getQuestionType(q);
   const subject = getQuestionSubject(q);
   const board = getQuestionBoard(q);
@@ -836,7 +879,7 @@ function buildQuestionRow(q){
       : "MCQ";
   return \`
     <label
-      onclick="previewQuestion('\${id}')"
+      onclick="previewQuestion(\${idForJs})"
       style="
         display:block;
         padding:14px;
@@ -852,7 +895,7 @@ function buildQuestionRow(q){
       <div style="display:flex;gap:12px;align-items:flex-start;">
         <input
           type="checkbox"
-          value="\${id}"
+          value="\${idForAttribute}"
           class="qbox"
           \${selected ? "checked" : ""}
           onclick="event.stopPropagation()"
@@ -866,7 +909,7 @@ function buildQuestionRow(q){
             line-height:1.35;
             margin-bottom:10px;
           ">
-            \${q.question || "Untitled question"}
+            \${questionText}
           </div>
           <div style="display:flex;gap:7px;flex-wrap:wrap;">
             \${getBadge(typeLabel, "#eef2ff", "#3730a3")}
@@ -1022,7 +1065,7 @@ function previewQuestion(id){
     q.options && q.options.length
       ? q.options.map((opt, index) =>
         "<div style='background:#f8fafc;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #e5e7eb;'>" +
-        "<b>Option " + (index + 1) + ":</b> " + opt +
+        "<b>Option " + (index + 1) + ":</b> " + escapeHtml(opt) +
         "</div>"
       ).join("")
       : "<p style='color:#64748b;'>No options found. This may be a coding or written question.</p>";
@@ -1033,8 +1076,8 @@ function previewQuestion(id){
         q.testCases.map((testCase, index) =>
           "<div style='background:#f8fafc;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #e5e7eb;'>" +
           "<b>Case " + (index + 1) + "</b><br>" +
-          "<span style='color:#64748b;'>Input:</span> " + JSON.stringify(testCase.input || "") + "<br>" +
-          "<span style='color:#64748b;'>Expected:</span> " + JSON.stringify(testCase.expected || "") +
+          "<span style='color:#64748b;'>Input:</span> " + escapeHtml(JSON.stringify(testCase.input || "")) + "<br>" +
+          "<span style='color:#64748b;'>Expected:</span> " + escapeHtml(JSON.stringify(testCase.expected || "")) +
           "</div>"
         ).join("") +
         "</div>"
@@ -1050,7 +1093,7 @@ function previewQuestion(id){
     "<div style='background:#f8fafc;padding:18px;border-radius:14px;margin-bottom:16px;border:1px solid #e5e7eb;'>" +
       "<b style='color:#0f172a;'>Question</b><br>" +
       "<div style='margin-top:10px;line-height:1.55;color:#1e293b;font-size:15px;'>" +
-        (q.question || "No question text") +
+        escapeHtml(q.question || "No question text") +
       "</div>" +
     "</div>" +
     "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;'>" +
@@ -1063,7 +1106,7 @@ function previewQuestion(id){
       optionsHtml +
     "</div>" +
     "<div style='background:#ecfdf5;padding:14px;border-radius:12px;margin-bottom:14px;border:1px solid #bbf7d0;'>" +
-      "<b>Correct Answer:</b> " + (q.correct || q.correctAnswers || "N/A") +
+      "<b>Correct Answer:</b> " + escapeHtml(Array.isArray(q.correctAnswers) ? q.correctAnswers.join(", ") : (q.correct || q.correctAnswers || "N/A")) +
     "</div>" +
     testCasesHtml;
 }
@@ -1279,8 +1322,8 @@ const tests = await Test.find({
     >
       <option value="">Choose a test</option>
       ${tests.map(t => `
-        <option value="${t._id}" ${String(t._id) === String(selectedTestId) ? "selected" : ""}>
-          ${t.name || "Untitled Test"} - ${t.className || "No Class"} - ${t.status === "published" ? "Published" : "Draft"}
+        <option value="${escapeAttribute(t._id)}" ${String(t._id) === String(selectedTestId) ? "selected" : ""}>
+          ${escapeHtml(t.name || "Untitled Test")} - ${escapeHtml(t.className || "No Class")} - ${t.status === "published" ? "Published" : "Draft"}
         </option>
       `).join("")}
     </select>
@@ -1304,6 +1347,11 @@ const tests = allTests.filter(t =>
   String(t.teacherId) === String(teacherId)
 );
 let selectedTestId = "${selectedTestId}";
+function escapeHtml(value){
+  const div = document.createElement("div");
+  div.textContent = String(value || "");
+  return div.innerHTML;
+}
 function formatDateForInput(value){
   if(!value) return "";
   const date = new Date(value);
@@ -1326,7 +1374,7 @@ function loadSelectedTest(){
     return;
   }
   document.getElementById("settingsPanel").innerHTML = \`
-    <h2 style="margin-top:0;">\${test.name || "Untitled Test"}</h2>
+    <h2 style="margin-top:0;">\${escapeHtml(test.name || "Untitled Test")}</h2>
     <div style="
       background:#f8fafc;
       padding:14px;
@@ -1334,8 +1382,8 @@ function loadSelectedTest(){
       margin-bottom:20px;
       border:1px solid #e5e7eb;
     ">
-      <p><b>Class:</b> \${test.className || "N/A"}</p>
-      <p><b>Subject:</b> \${test.subject || "N/A"}</p>
+      <p><b>Class:</b> \${escapeHtml(test.className || "N/A")}</p>
+      <p><b>Subject:</b> \${escapeHtml(test.subject || "N/A")}</p>
       <p><b>Status:</b> \${test.status === "published" ? "Published" : "Draft"}</p>
     </div>
     <div style="margin-bottom:16px;">
