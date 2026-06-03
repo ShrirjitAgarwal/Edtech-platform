@@ -21,6 +21,7 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
 const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
@@ -91,6 +92,25 @@ app.use(cookieParser());
 app.use(express.json({
   limit: "2mb"
 }));
+app.use(express.urlencoded({
+  extended: true,
+  limit: "2mb"
+}));
+app.use((req, res, next) => {
+  if (req.body) {
+    mongoSanitize.sanitize(req.body, {
+      replaceWith: "_"
+    });
+  }
+
+  if (req.params) {
+    mongoSanitize.sanitize(req.params, {
+      replaceWith: "_"
+    });
+  }
+
+  next();
+});
 app.use(globalLimiter);
 app.use(logger.requestLogger);
 const staticDir = path.join(__dirname, "public");
