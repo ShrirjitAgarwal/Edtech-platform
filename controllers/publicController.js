@@ -149,7 +149,7 @@ if(data.student){
 localStorage.setItem("student", JSON.stringify(data.student));
 }
 if(data.user.role === "admin"){
-window.location.replace("/school-dashboard?token=" + data.token);
+window.location.replace("/school-dashboard");
 }
 else if(data.user.role === "teacher"){
 window.location.replace("/teacher");
@@ -283,7 +283,7 @@ return;
 }
 localStorage.setItem("user", JSON.stringify(data.user));
 localStorage.setItem("token", data.token);
-window.location.replace("/school-dashboard?token=" + data.token);
+window.location.replace("/school-dashboard");
 });
 }
 </script>
