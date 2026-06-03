@@ -284,22 +284,24 @@ const classOptions = [...new Set(
 `).join("");
     res.send(`
 <body style="margin:0;font-family:Arial;background:#eef2ff;">
-<div style="display:flex;min-height:100vh;">
-  <div style="
-    width:240px;
-    background:#1e293b;
-    color:white;
-    padding:20px 16px;
-    box-sizing:border-box;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    min-height:100vh;
-  ">
+<div style="display:flex;height:100vh;overflow:hidden;">
+<aside style="
+ width:150px;
+ min-width:150px;
+ height:100vh;
+ background:#1e293b;
+ color:white;
+ padding:20px 16px;
+ box-sizing:border-box;
+ display:flex;
+ flex-direction:column;
+ justify-content:space-between;
+ flex-shrink:0;
+">
     <div>
       <h2>Admin</h2>
       <div onclick="go('/admin-dashboard')" style="padding:12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">
-        Admin Dashboard
+        Dashboard
       </div>
       <div onclick="go('/admin-settings')" style="padding:12px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">
         Settings
@@ -308,15 +310,16 @@ const classOptions = [...new Set(
     <div onclick="logout()" style="padding:12px;border-radius:8px;cursor:pointer;color:#f87171;">
       Logout
     </div>
-  </div>
-  <div style="
-    flex:1;
-    padding:30px 36px;
-    overflow:auto;
-    box-sizing:border-box;
-    min-height:100vh;
-    background:#eef2ff;
-  ">
+</aside>
+<div style="
+ flex:1;
+ height:100vh;
+ padding:30px 36px;
+ overflow-y:auto;
+ overflow-x:hidden;
+ box-sizing:border-box;
+ background:#eef2ff;
+">
     <h1>Admin Settings</h1>
     <div style="
       display:grid;
