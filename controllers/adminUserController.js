@@ -85,7 +85,6 @@ await logAdminAction(req, {
     createdUserName: user.name
   }
 });
-
 res.json({
  status: "created",
  user: {
@@ -108,101 +107,165 @@ res.json({
   }
 };
   exports.deleteUserFromAdmin =
-  async (req, res) => {
-    try {
-      if (req.user.role !== "admin") {
-        return res.status(403).json({
-          error: "Not allowed"
-        });
-      }
-      const User =
-        require("../models/User");
-      const { userId } =
-        req.body;
-      if (!userId) {
-        return res.status(400).json({
-          error: "Missing userId"
-        });
-      }
-      if (
-        String(userId) ===
-        String(req.user.id)
-      ) {
-        return res.status(400).json({
-          error:
-            "You cannot delete your own account"
-        });
-      }
-      const targetUser =
-        await User.findOne({
-          _id: userId,
-          ...(req.user.schoolId
-            ? {
-                schoolId:
-                  req.user.schoolId
-              }
-            : {})
-        });
-      if (!targetUser) {
-        return res.status(404).json({
-          error: "User not found"
-        });
-      }
-      if (
-        targetUser.role !== "teacher" &&
-        targetUser.role !== "admin"
-      ) {
-        return res.status(400).json({
-          error:
-            "Only teachers and admins can be deleted"
-        });
-      }
-      if (
-        targetUser.role === "admin"
-      ) {
-        const adminCount =
-          await User.countDocuments({
-            role: "admin",
-            ...(req.user.schoolId
-              ? {
-                  schoolId:
-                    req.user.schoolId
-                }
-              : {})
-          });
-        if (adminCount <= 1) {
-          return res.status(400).json({
-            error:
-              "Cannot delete the last admin"
-          });
-        }
-      }
-await User.deleteOne({
- _id: userId
- });
-
-await logAdminAction(req, {
-  action: "admin_user_deleted",
-  status: "success",
-  targetType: "User",
-  targetId: userId,
-  metadata: {
-    deletedUserEmail: targetUser.email,
-    deletedUserRole: targetUser.role,
-    deletedUserName: targetUser.name
-  }
-});
-
- res.json({
- status: "deleted"
- });
-    } catch (err) {
-      console.error(
-        "DELETE USER ERROR:",
-        err
-      );
-      res.status(500).json({
-        error: "Failed to delete user"
+async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        error: "Not allowed"
       });
     }
-  };
+
+    const User =
+      require("../models/User");
+    const Student =
+      require("../models/Student");
+    const ClassSubject =
+      require("../models/ClassSubject");
+    const Test =
+      require("../models/Test");
+    const Assignment =
+      require("../models/Assignment");
+    const Result =
+      require("../models/Result");
+
+    const { userId } =
+      req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: "Missing userId"
+      });
+    }
+
+    if (
+      String(userId) ===
+      String(req.user.id)
+    ) {
+      return res.status(400).json({
+        error:
+          "You cannot delete your own account"
+      });
+    }
+
+    const schoolFilter =
+      req.user.schoolId
+        ? {
+            schoolId:
+              req.user.schoolId
+          }
+        : {};
+
+    const targetUser =
+      await User.findOne({
+        _id: userId,
+        ...schoolFilter
+      });
+
+    if (!targetUser) {
+      return res.status(404).json({
+        error: "User not found"
+      });
+    }
+
+    if (
+      targetUser.role !== "teacher" &&
+      targetUser.role !== "admin"
+    ) {
+      return res.status(400).json({
+        error:
+          "Only teachers and admins can be deleted"
+      });
+    }
+
+    if (
+      targetUser.role === "admin"
+    ) {
+      const adminCount =
+        await User.countDocuments({
+          role: "admin",
+          ...schoolFilter
+        });
+
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          error:
+            "Cannot delete the last admin"
+        });
+      }
+    }
+
+    if (
+      targetUser.role === "teacher"
+    ) {
+      const teacherFilter = {
+        teacherId: String(targetUser._id),
+        ...schoolFilter
+      };
+
+      const [
+        studentCount,
+        mappingCount,
+        testCount,
+        assignmentCount,
+        resultCount
+      ] = await Promise.all([
+        Student.countDocuments(teacherFilter),
+        ClassSubject.countDocuments(teacherFilter),
+        Test.countDocuments(teacherFilter),
+        Assignment.countDocuments(teacherFilter),
+        Result.countDocuments(teacherFilter)
+      ]);
+
+      const totalLinkedRecords =
+        studentCount +
+        mappingCount +
+        testCount +
+        assignmentCount +
+        resultCount;
+
+      if (totalLinkedRecords > 0) {
+        return res.status(400).json({
+          error:
+            "Cannot delete this teacher because they still have linked students, mappings, tests, assignments, or results. Reassign or delete the linked data first.",
+          linkedData: {
+            students: studentCount,
+            mappings: mappingCount,
+            tests: testCount,
+            assignments: assignmentCount,
+            results: resultCount
+          }
+        });
+      }
+    }
+
+    await User.deleteOne({
+      _id: userId,
+      ...schoolFilter
+    });
+
+    await logAdminAction(req, {
+      action: "admin_user_deleted",
+      status: "success",
+      targetType: "User",
+      targetId: userId,
+      metadata: {
+        deletedUserEmail: targetUser.email,
+        deletedUserRole: targetUser.role,
+        deletedUserName: targetUser.name
+      }
+    });
+
+    res.json({
+      status: "deleted"
+    });
+  } catch (err) {
+    console.error(
+      "DELETE USER ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: "Failed to delete user"
+    });
+  }
+};
