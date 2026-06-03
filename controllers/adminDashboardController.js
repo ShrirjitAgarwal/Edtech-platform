@@ -433,10 +433,9 @@ exports.schoolDashboardPage = async (req, res) => {
     ];
 
     const cardHtml = cardData.map(card => `
-      <div onclick="go(${jsString(card.href)})" style="background:white;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,0.06);cursor:pointer;border:1px solid #e5e7eb;">
+      <div style="background:white;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
         <div style="color:#64748b;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;">${escapeHtml(card.label)}</div>
         <div style="font-size:34px;font-weight:900;margin-top:10px;color:#0f172a;">${card.value}</div>
-        <div style="margin-top:10px;color:#4f46e5;font-weight:700;font-size:13px;">Open</div>
       </div>
     `).join("");
 
@@ -484,7 +483,31 @@ if(!user || user.role !== "admin"){
         <h1 style="margin:0 0 8px 0;">Dashboard</h1>
         <p style="margin:0;color:#64748b;">${escapeHtml(school?.name || "School")} ${school?.code ? "(" + escapeHtml(school.code) + ")" : ""}</p>
       </div>
-      <button onclick="go('/admin-settings')" style="padding:12px 16px;background:#4f46e5;color:white;border:none;border-radius:10px;font-weight:800;cursor:pointer;">Open Settings</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+ <button onclick="go('/school-dashboard')" style="
+    padding:12px 16px;
+    background:#f59e0b;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-weight:800;
+    cursor:pointer;
+  ">
+    ← Previous Page
+  </button>
+
+  <button onclick="go('/admin-settings')" style="
+    padding:12px 16px;
+    background:#4f46e5;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-weight:800;
+    cursor:pointer;
+  ">
+    Open Settings
+  </button>
+</div>
     </div>
 
     <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:22px;">

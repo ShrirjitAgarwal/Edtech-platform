@@ -320,7 +320,27 @@ const classOptions = [...new Set(
  box-sizing:border-box;
  background:#eef2ff;
 ">
-    <h1>Admin Settings</h1>
+    <div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+">
+  <h1 style="margin:0;">Admin Settings</h1>
+
+  <button onclick="go('/school-dashboard')" style="
+    padding:12px 16px;
+    background:#f59e0b;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-weight:800;
+    cursor:pointer;
+  ">
+    ← Previous Page
+  </button>
+</div>
     <div style="
       display:grid;
       grid-template-columns:220px minmax(0, 1fr);
