@@ -197,17 +197,28 @@ exports.listSchoolsPage = async (req, res) => {
     ">
       <h1 style="margin:0;">School Onboarding</h1>
       <div style="display:flex;gap:10px;">
-        <button onclick="window.location.replace('/platform-import')" style="
-          padding:10px 14px;
-          background:#4f46e5;
-          color:white;
-          border:none;
-          border-radius:8px;
-          cursor:pointer;
-          font-weight:700;
-        ">
-          Question Import
-        </button>
+ <button onclick="window.location.replace('/platform-import')" style="
+ padding:10px 14px;
+ background:#4f46e5;
+ color:white;
+ border:none;
+ border-radius:8px;
+ cursor:pointer;
+ font-weight:700;
+ ">
+ Question Import
+ </button>
+ <button onclick="togglePlatformAdminForm()" style="
+ padding:10px 14px;
+ background:#111827;
+ color:white;
+ border:none;
+ border-radius:8px;
+ cursor:pointer;
+ font-weight:700;
+ ">
+ New Platform Admin
+ </button>
         <button onclick="window.location.replace('/school-dashboard')" style="
           padding:10px 14px;
           background:#64748b;
@@ -221,14 +232,57 @@ exports.listSchoolsPage = async (req, res) => {
         </button>
       </div>
     </div>
-    <div style="
-      background:#f8fafc;
-      border:1px solid #e5e7eb;
-      padding:18px;
-      border-radius:12px;
-      margin-bottom:24px;
-    ">
-      <h2 style="margin-top:0;">Create School</h2>
+ <div
+ id="platformAdminForm"
+ style="
+ display:none;
+ background:#f8fafc;
+ border:1px solid #e5e7eb;
+ padding:18px;
+ border-radius:12px;
+ margin-bottom:24px;
+ "
+ >
+ <h2 style="margin-top:0;">Create Platform Admin</h2>
+ <input
+ id="platformAdminName"
+ placeholder="Platform admin name"
+ style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+ />
+ <input
+ id="platformAdminEmail"
+ type="email"
+ placeholder="Platform admin email"
+ style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+ />
+ <input
+ id="platformAdminPassword"
+ type="password"
+ placeholder="Temporary password"
+ style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+ />
+ <button onclick="createPlatformAdmin()" style="
+ padding:12px 18px;
+ background:#111827;
+ color:white;
+ border:none;
+ border-radius:8px;
+ cursor:pointer;
+ font-weight:700;
+ ">
+ Create Platform Admin
+ </button>
+ <p id="platformAdminMessage" style="font-weight:700;"></p>
+ </div>
+
+ <div style="
+ background:#f8fafc;
+ border:1px solid #e5e7eb;
+ padding:18px;
+ border-radius:12px;
+ margin-bottom:24px;
+ ">
+ <h2 style="margin-top:0;">Create School</h2>
       <form method="POST" action="/platform/schools">
         <input
           name="name"
@@ -260,7 +314,63 @@ exports.listSchoolsPage = async (req, res) => {
       schoolRows ||
       `<p style="color:#64748b;">No schools created yet.</p>`
     }
-  </div>
+</div>
+<script>
+function togglePlatformAdminForm(){
+  const form = document.getElementById("platformAdminForm");
+
+  if(!form){
+    return;
+  }
+
+  form.style.display =
+    form.style.display === "none" ? "block" : "none";
+}
+
+function createPlatformAdmin(){
+  const name = document.getElementById("platformAdminName").value.trim();
+  const email = document.getElementById("platformAdminEmail").value.trim();
+  const password = document.getElementById("platformAdminPassword").value.trim();
+  const message = document.getElementById("platformAdminMessage");
+
+  message.style.color = "#dc2626";
+  message.textContent = "";
+
+  if(!name || !email || !password){
+    message.textContent = "Name, email, and temporary password are required";
+    return;
+  }
+
+  fetch("/platform-admins", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({
+      name,
+      email,
+      password
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.error){
+      message.textContent = data.error;
+      return;
+    }
+
+    message.style.color = "#16a34a";
+    message.textContent = "Platform admin created. They must change password after first login.";
+
+    document.getElementById("platformAdminName").value = "";
+    document.getElementById("platformAdminEmail").value = "";
+    document.getElementById("platformAdminPassword").value = "";
+  })
+  .catch(() => {
+    message.textContent = "Failed to create platform admin";
+  });
+}
+</script>
 </body>
 `);
   } catch (err) {
@@ -414,7 +524,6 @@ exports.createAdminForSchool = async (req, res) => {
       return res.status(400).send("Admin name, email, and password are required");
     }
  const passwordPolicyError = validatePasswordPolicy(password);
-
  if (passwordPolicyError) {
    return res.status(400).send(passwordPolicyError);
  }

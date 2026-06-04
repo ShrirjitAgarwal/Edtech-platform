@@ -106,17 +106,6 @@ margin-bottom:10px;
 ">
 Login
 </button>
-<button onclick="goRegister()" style="
-width:100%;
-padding:10px;
-background:#10b981;
-color:white;
-border:none;
-border-radius:8px;
-cursor:pointer;
-">
-Create Account
-</button>
 </div>
 <script>
 localStorage.clear();
@@ -157,9 +146,6 @@ else{
 window.location.replace("/my-tests");
 }
 });
-}
-function goRegister(){
-window.location.replace("/register");
 }
 </script>
 </body>
