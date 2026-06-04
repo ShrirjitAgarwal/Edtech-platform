@@ -4,7 +4,6 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
-
 const platformLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -14,7 +13,6 @@ const platformLoginLimiter = rateLimit({
     error: "Too many platform login attempts. Please try again after 15 minutes."
   }
 });
-
 router.get("/platform-login", (req, res) => {
   res.send(`
 <body style="margin:0;font-family:Arial;background:#eef2ff;">
@@ -38,7 +36,6 @@ router.get("/platform-login", (req, res) => {
       <p style="color:#64748b;">
         Use this only for platform-level school setup and administration.
       </p>
-
       <input
         id="email"
         placeholder="Email"
@@ -52,7 +49,6 @@ router.get("/platform-login", (req, res) => {
           box-sizing:border-box;
         "
       />
-
       <input
         id="password"
         placeholder="Password"
@@ -66,7 +62,6 @@ router.get("/platform-login", (req, res) => {
           box-sizing:border-box;
         "
       />
-
       <button
         onclick="platformLogin()"
         style="
@@ -82,21 +77,17 @@ router.get("/platform-login", (req, res) => {
       >
         Login
       </button>
-
       <p id="error" style="color:#dc2626;font-weight:600;"></p>
     </div>
   </div>
-
 <script>
 function platformLogin(){
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
-
   if(!email || !password){
     document.getElementById("error").textContent = "Email and password are required";
     return;
   }
-
   fetch("/platform-login", {
     method:"POST",
     headers:{
@@ -113,10 +104,7 @@ function platformLogin(){
       document.getElementById("error").textContent = data.error;
       return;
     }
-
-    localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
-
     window.location.replace("/platform/schools");
   })
   .catch(() => {
@@ -127,44 +115,36 @@ function platformLogin(){
 </body>
 `);
 });
-
 router.post("/platform-login", platformLoginLimiter, async (req, res) => {
   try {
     const emailInput = String(req.body.email || "").trim().toLowerCase();
     const passwordInput = String(req.body.password || "").trim();
-
     if (!emailInput || !passwordInput) {
       return res.status(400).json({
         error: "Email and password are required"
       });
     }
-
     const user = await User.findOne({
       email: emailInput,
       role: "platform_admin"
     });
-
     if (!user) {
       return res.status(401).json({
         error: "Invalid platform admin credentials"
       });
     }
-
     const isMatch = String(user.password || "").startsWith("$2")
       ? await bcrypt.compare(passwordInput, user.password)
       : passwordInput === user.password;
-
     if (!isMatch) {
       return res.status(401).json({
         error: "Invalid platform admin credentials"
       });
     }
-
     if (!String(user.password || "").startsWith("$2")) {
       user.password = await bcrypt.hash(passwordInput, 10);
       await user.save();
     }
-
     const token = jwt.sign(
       {
         id: user._id,
@@ -178,7 +158,6 @@ router.post("/platform-login", platformLoginLimiter, async (req, res) => {
         expiresIn: "7d"
       }
     );
-
     const safeUser = {
       _id: user._id,
       name: user.name,
@@ -187,14 +166,12 @@ router.post("/platform-login", platformLoginLimiter, async (req, res) => {
       schoolId: null,
       schoolCode: null
     };
-
     res.cookie("authToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
-
     res.json({
       status: "success",
       token,
@@ -202,11 +179,9 @@ router.post("/platform-login", platformLoginLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error("PLATFORM LOGIN ERROR:", err);
-
     res.status(500).json({
       error: "Platform login failed"
     });
   }
 });
-
 module.exports = router;

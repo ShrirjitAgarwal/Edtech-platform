@@ -196,11 +196,7 @@ return text || fallback;
 }
 document.getElementById("libraryList").innerHTML =
 "<p style='color:#64748b;'>Loading questions...</p>";
-fetch("/api/library-data", {
-headers:{
-"Authorization": "Bearer " + localStorage.getItem("token")
-}
-})
+fetch("/api/library-data")
 .then(res => {
 if(!res.ok){
 throw new Error("Failed to load library");
@@ -274,7 +270,6 @@ q.difficulty
 const attempted = Number(q.analytics?.attempted || 0);
 const completed = Number(q.analytics?.correct || 0);
 const incomplete = Number(q.analytics?.incorrect || 0);
-
 return "" +
 "<div onclick='previewQuestion(" + questionId + ")' style='" +
 "background:#f8fafc;" +
@@ -397,7 +392,6 @@ const normalizedScope =
 qScope === ""
   ? "public"
   : qScope;
-
 const scopeMatch =
 scope === "all" || normalizedScope === scope;
 const searchMatch =

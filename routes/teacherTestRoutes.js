@@ -15,7 +15,6 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, "&#096;");
 }
@@ -114,29 +113,22 @@ box-sizing:border-box;
       let myAssignments = [];
       let myStudents = [];
       let myResults = [];
-
       function escapeHtml(value){
         const div = document.createElement("div");
         div.textContent = String(value || "");
         return div.innerHTML;
       }
-
       function jsString(value){
         return JSON.stringify(String(value || ""));
       }
       window.onload = function(){
         const user = JSON.parse(localStorage.getItem("user") || "null");
-        const token = localStorage.getItem("token");
-        if(!user || !token){
+        if(!user){
           return window.location.replace("/");
         }
         document.getElementById("testList").innerHTML =
           "<p style='color:#64748b;'>Loading tests...</p>";
-        fetch("/api/teacher-tests-data", {
-          headers:{
-            "Authorization": "Bearer " + token
-          }
-        })
+        fetch("/api/teacher-tests-data")
         .then(res => {
           if(!res.ok){
             throw new Error("Failed to load tests data");
@@ -155,10 +147,9 @@ box-sizing:border-box;
           const testClassName = escapeHtml(t.className || "No Class");
           const testStatus = t.status === "published" ? "Published" : "Draft";
           const editUrl = "/create-test?id=" + encodeURIComponent(String(t._id || ""));
-
           return \`
           <div
-            onclick="previewTest(\${testId})"
+          onclick='previewTest(\${testId})'
             style="
               background:#f8fafc;
               padding:18px 20px;
@@ -223,7 +214,7 @@ box-sizing:border-box;
       Edit
     </button>
   \` : ""}
-  <button onclick="event.stopPropagation(); assignTest(\${testId})"
+    <button onclick='event.stopPropagation(); assignTest(\${testId})'
     style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
     \${t.status === "published" ? "Published" : "Publish"}
   </button>
@@ -356,10 +347,9 @@ box-sizing:border-box;
       function assignTest(testId){
         fetch("/assign-test", {
           method:"POST",
-          headers:{
-            "Content-Type":"application/json",
-            "Authorization": "Bearer " + localStorage.getItem("token")
-          },
+headers:{
+  "Content-Type":"application/json"
+},
           body: JSON.stringify({ testId })
         })
         .then(res => res.json())
@@ -377,10 +367,9 @@ box-sizing:border-box;
         if(!confirm("Delete test?")) return;
         fetch("/delete-test", {
           method:"POST",
-          headers:{
-            "Content-Type":"application/json",
-            "Authorization": "Bearer " + localStorage.getItem("token")
-          },
+headers:{
+  "Content-Type":"application/json"
+},
           body: JSON.stringify({ id })
         })
         .then(res => res.json())
@@ -408,10 +397,9 @@ function openSelectedSettings(){
         if(!confirm("Delete selected tests?")) return;
         fetch("/delete-multiple-tests", {
           method:"POST",
-          headers:{
-            "Content-Type":"application/json",
-            "Authorization": "Bearer " + localStorage.getItem("token")
-          },
+headers:{
+  "Content-Type":"application/json"
+},
           body: JSON.stringify({ ids: selected })
         })
         .then(res => res.json())
@@ -879,7 +867,7 @@ function buildQuestionRow(q){
       : "MCQ";
   return \`
     <label
-      onclick="previewQuestion(\${idForJs})"
+    onclick='previewQuestion(\${idForJs})'
       style="
         display:block;
         padding:14px;
@@ -1146,10 +1134,9 @@ function saveTest(){
  if(selected.length === 0) return alert("Select at least one question");
  fetch("/save-test", {
  method:"POST",
- headers:{
- "Content-Type":"application/json",
- "Authorization": "Bearer " + localStorage.getItem("token")
- },
+headers:{
+ "Content-Type":"application/json"
+},
 body: JSON.stringify({
  testId: editingTestId,
  name,
@@ -1513,10 +1500,9 @@ function saveSettings(){
   }
   fetch("/save-test-settings", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       testId: selectedTestId,
       scheduledAt,
@@ -1671,7 +1657,6 @@ router.post("/delete-multiple-tests", authMiddleware, async (req, res) => {
     }
     const Test = require("../models/Test");
     const Assignment = require("../models/Assignment");
-    
  const testsToDelete = await Test.find({
  _id: { $in: ids },
  teacherId: req.user.id,

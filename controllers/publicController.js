@@ -144,7 +144,6 @@ alert(data.error);
 return;
 }
 localStorage.setItem("user", JSON.stringify(data.user));
-localStorage.setItem("token", data.token);
 if(data.student){
 localStorage.setItem("student", JSON.stringify(data.student));
 }
@@ -282,7 +281,6 @@ alert("Not an admin account");
 return;
 }
 localStorage.setItem("user", JSON.stringify(data.user));
-localStorage.setItem("token", data.token);
 window.location.replace("/school-dashboard");
 });
 }

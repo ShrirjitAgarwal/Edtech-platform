@@ -134,14 +134,13 @@ function viewResult(testId){
 function downloadReport(){
   const params = new URLSearchParams(window.location.search);
   const studentId = params.get("studentId");
-  fetch("/download-report", {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify({ studentId })
-  })
+fetch("/download-report", {
+  method:"POST",
+  headers:{
+    "Content-Type":"application/json"
+  },
+  body: JSON.stringify({ studentId })
+})
   .then(res => res.blob())
   .then(blob => {
     const url = URL.createObjectURL(blob);
@@ -600,15 +599,12 @@ fetch(
 router.get("/get-subjects", async (req, res) => {
   try {
     const studentToken = req.cookies && req.cookies.studentSessionToken;
-
     if (!studentToken) {
       return res.status(401).json({
         error: "Student session expired"
       });
     }
-
     let decodedStudent;
-
     try {
       decodedStudent = jwt.verify(
         studentToken,
@@ -619,13 +615,11 @@ router.get("/get-subjects", async (req, res) => {
         error: "Student session expired"
       });
     }
-
     if (!decodedStudent || decodedStudent.role !== "student") {
       return res.status(401).json({
         error: "Invalid student session"
       });
     }
-
     const student = await Student.findOne({
       _id: decodedStudent.studentRecordId,
       studentId: decodedStudent.studentId,
@@ -633,23 +627,19 @@ router.get("/get-subjects", async (req, res) => {
     })
       .select("studentId class teacherId schoolId schoolCode status")
       .lean();
-
     if (!student) {
       return res.status(401).json({
         error: "Invalid student session"
       });
     }
-
     const className = String(student.class || "").trim().toUpperCase();
     const teacherId = String(student.teacherId || "").trim();
     const schoolCode = String(student.schoolCode || "").trim();
-
     if (!className || !teacherId || !schoolCode) {
       return res.status(400).json({
         error: "Student is missing class, teacher, or school data"
       });
     }
-
     const rows = await ClassSubject.find({
       className,
       teacherId,
@@ -657,13 +647,11 @@ router.get("/get-subjects", async (req, res) => {
     })
       .select("subject")
       .lean();
-
     const subjects = [...new Set(
       rows
         .map(row => row.subject)
         .filter(Boolean)
     )];
-
     res.json(subjects);
   } catch (err) {
     console.error("GET STUDENT SUBJECTS ERROR:", err);

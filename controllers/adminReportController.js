@@ -103,10 +103,7 @@ params.get("studentId");
 fetch("/download-report",{
 method:"POST",
 headers:{
-"Content-Type":"application/json",
-"Authorization":
-"Bearer " +
-localStorage.getItem("token")
+"Content-Type":"application/json"
 },
 body:JSON.stringify({
 studentId
@@ -388,10 +385,7 @@ fetch(
 method:"POST",
 headers:{
 "Content-Type":
-"application/json",
-"Authorization":
-"Bearer " +
-localStorage.getItem("token")
+"application/json"
 },
 body:JSON.stringify({
 className:

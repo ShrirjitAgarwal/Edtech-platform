@@ -1,10 +1,8 @@
 const express = require("express");
 const router = express.Router();
-
 const authMiddleware = require("../middleware/auth");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
-
 // ---------- CREATE QUESTION PAGE ----------
 router.get("/create-question", authMiddleware, async (req, res) => {
   try {
@@ -38,11 +36,9 @@ const dropdownQuestions = await Question.find({
 function normalizeSubjectOption(value){
   const raw = String(value || "").trim();
   const lower = raw.toLowerCase();
-
   if(!raw){
     return "";
   }
-
   if(
     lower === "math" ||
     lower === "maths" ||
@@ -50,7 +46,6 @@ function normalizeSubjectOption(value){
   ){
     return "Maths";
   }
-
   if(
     lower === "cs" ||
     lower === "computer science" ||
@@ -58,30 +53,24 @@ function normalizeSubjectOption(value){
   ){
     return "Computer Science";
   }
-
   if(lower === "physics"){
     return "Physics";
   }
-
   if(lower === "science"){
     return "Science";
   }
-
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
-
 const subjectOptionsForQuestionBuilder = [...new Set(
   dropdownQuestions
     .map(q => normalizeSubjectOption(q.subject || q.category))
     .filter(Boolean)
 )].sort();
-
 const boardOptionsForQuestionBuilder = [...new Set(
   dropdownQuestions
     .map(q => String(q.board || "General").trim() || "General")
     .filter(Boolean)
 )].sort();
-
 if(!boardOptionsForQuestionBuilder.includes("General")){
   boardOptionsForQuestionBuilder.unshift("General");
 }
@@ -393,10 +382,9 @@ function saveQuestion(){
   }
   fetch("/save-question", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify(payload)
   })
   .then(res => res.json())
@@ -700,10 +688,9 @@ function deleteQuestion(id){
   }
   fetch("/delete-question", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({ id })
   })
   .then(res => res.json())
@@ -771,5 +758,4 @@ await Question.deleteOne({
     });
   }
 });
-
 module.exports = router;

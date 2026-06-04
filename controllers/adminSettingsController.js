@@ -839,10 +839,9 @@ function logout(){
   }
   fetch("/admin/create-subject", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       name
     })
@@ -866,10 +865,9 @@ function deleteSubject(subjectId){
   }
   fetch("/admin/delete-subject", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       subjectId
     })
@@ -899,10 +897,9 @@ function deleteSubject(subjectId){
   }
   fetch("/admin/create-class", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       name
     })
@@ -926,10 +923,9 @@ function deleteClass(classId){
   }
   fetch("/admin/delete-class", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       classId
     })
@@ -974,10 +970,9 @@ function deleteClass(classId){
   }
   fetch("/admin/create-student", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       name,
       studentId,
@@ -1015,10 +1010,9 @@ function updateStudentClass(studentMongoId){
   }
   fetch("/admin/update-student-class", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       studentMongoId,
       className,
@@ -1044,10 +1038,9 @@ function deleteStudent(studentMongoId){
   }
   fetch("/admin/delete-student", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       studentMongoId
     })
@@ -1110,10 +1103,9 @@ function saveBulkStudents(){
   }
   fetch("/admin/bulk-create-students", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       className,
       teacherId,
@@ -1150,10 +1142,9 @@ function saveMapping(){
   }
   fetch("/admin/map-class-subject", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    },
+headers:{
+  "Content-Type":"application/json"
+},
     body: JSON.stringify({
       className,
       subject,
@@ -1184,11 +1175,7 @@ function deleteMapping(mappingId){
     {
       method:"POST",
       headers:{
-        "Content-Type":
-          "application/json",
-        "Authorization":
-          "Bearer " +
-          localStorage.getItem("token")
+        "Content-Type":"application/json",
       },
       body: JSON.stringify({
         mappingId
@@ -1223,11 +1210,7 @@ function deleteMapping(mappingId){
     {
       method:"POST",
       headers:{
-        "Content-Type":
-          "application/json",
-        "Authorization":
-          "Bearer " +
-          localStorage.getItem("token")
+        "Content-Type":"application/json",
       },
       body: JSON.stringify({
         userId
@@ -1277,9 +1260,6 @@ function addUserWithRole(role, prefix){
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "Authorization":
-        "Bearer " +
-        localStorage.getItem("token")
     },
     body: JSON.stringify({
       name,

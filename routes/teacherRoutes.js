@@ -41,17 +41,9 @@ window.onload = function(){
     return window.location.replace("/");
   }
   const teacherId = user._id || user.id;
-  const token = localStorage.getItem("token");
-  if(!token){
-    return window.location.replace("/");
-  }
   document.getElementById("dashboard").innerHTML =
     "<p style='color:#64748b;'>Loading dashboard...</p>";
-  fetch("/api/teacher-dashboard-data", {
-    headers:{
-      "Authorization":"Bearer " + token
-    }
-  })
+fetch("/api/teacher-dashboard-data")
   .then(res => {
     if(!res.ok){
       throw new Error("Failed to load dashboard");
@@ -407,6 +399,25 @@ const schoolId = req.user.schoolId || null;
 const schoolScopedFilter = schoolId
   ? { teacherId, schoolId }
   : { teacherId };
+const classSubjects = await ClassSubject.find(schoolScopedFilter)
+  .select("className subject teacherId")
+  .lean();
+const assignedClassNames = [...new Set(
+  classSubjects
+    .map(m => String(m.className || "").trim())
+    .filter(Boolean)
+)];
+const classLookupFilter = {
+  name: { $in: assignedClassNames },
+  ...(schoolId ? { schoolId } : {})
+};
+const mappedClassDocs = assignedClassNames.map(className => ({
+  _id: className,
+  name: className,
+  teacherId,
+  studentIds: [],
+  createdAt: null
+}));
     const tests = await Test.find(schoolScopedFilter)
       .select("name subject className teacherId createdAt")
       .sort({ createdAt: -1 })
@@ -415,16 +426,24 @@ const schoolScopedFilter = schoolId
     const students = await Student.find(schoolScopedFilter)
       .select("studentId name class teacherId")
       .lean();
-    const classes = await ClassModel.find(schoolScopedFilter)
+const classesRaw = assignedClassNames.length
+  ? await ClassModel.find(classLookupFilter)
       .select("name teacherId studentIds createdAt")
-      .lean();
+      .sort({ name: 1 })
+      .lean()
+  : [];
+const classDocMap = {};
+classesRaw.forEach(c => {
+  classDocMap[String(c.name || "").trim()] = c;
+});
+const classes = mappedClassDocs.map(mappedClass => ({
+  ...(classDocMap[mappedClass.name] || mappedClass),
+  teacherId
+}));
     const results = await Result.find(schoolScopedFilter)
       .select("studentId testId testName teacherId score total date")
       .sort({ date: -1 })
       .limit(5000)
-      .lean();
-    const classSubjects = await ClassSubject.find(schoolScopedFilter)
-      .select("className subject teacherId")
       .lean();
     res.json({
       tests,
@@ -570,11 +589,7 @@ window.onload = function(){
   let resultsData = [];
   document.getElementById("classContainer").innerHTML =
     "<p style='color:#64748b;'>Loading classes...</p>";
-  fetch("/api/classes-data", {
-    headers:{
-      "Authorization":"Bearer " + localStorage.getItem("token")
-    }
-  })
+  fetch("/api/classes-data")
   .then(res => {
     if(!res.ok){
       throw new Error("Failed to load classes");
@@ -590,15 +605,13 @@ window.onload = function(){
   teachersData.forEach(t => {
     teacherMap[t._id] = t.name;
   });
-  const teacherClasses = classesData.filter(c =>
-    String(c.teacherId) === String(teacherId)
-  );
+  const teacherClasses = classesData;
   const teacherResults = resultsData.filter(r =>
     String(r.teacherId) === String(teacherId)
   );
   const classFilter = document.getElementById("classFilter");
   const uniqueNames = [...new Set(
-    teacherClasses.map(c => c.name)
+    teacherClasses.map(c => c.name).filter(Boolean)
   )];
   uniqueNames.forEach(name => {
     const option = document.createElement("option");
@@ -606,8 +619,12 @@ window.onload = function(){
     option.textContent = name;
     classFilter.appendChild(option);
   });
-  const selected =
+  let selected =
     localStorage.getItem("selectedClass") || "all";
+  if(selected !== "all" && !uniqueNames.includes(selected)){
+    selected = "all";
+    localStorage.setItem("selectedClass", "all");
+  }
   classFilter.value = selected;
   const visibleClasses = teacherClasses.filter(c => {
     if(selected === "all") return true;
@@ -737,6 +754,10 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
     localStorage.setItem("selectedClass", e.target.value);
     location.reload();
   });
+  if(!teacherClasses.length){
+    document.getElementById("classContainer").innerHTML =
+      "<p style='color:#64748b;'>No classes mapped to this teacher.</p>";
+  }
     document.getElementById("studentSearch")
     .addEventListener("input", function(){
       renderClasses();
@@ -831,10 +852,9 @@ margin-bottom:15px;
   window.downloadStudentReport = function(studentId){
     fetch("/download-report", {
       method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":"Bearer " + localStorage.getItem("token")
-      },
+headers:{
+  "Content-Type":"application/json"
+},
       body: JSON.stringify({ studentId })
     })
     .then(res => {
@@ -905,35 +925,52 @@ margin-bottom:15px;
 // ---------- CLASSES DATA API ----------
 router.get("/api/classes-data", authMiddleware, async (req, res) => {
   try {
+    const ClassSubject = require("../models/ClassSubject");
     const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
 const schoolScopedFilter = schoolId
   ? { teacherId, schoolId }
   : { teacherId };
-
+const classSubjects = await ClassSubject.find(schoolScopedFilter)
+  .select("className teacherId schoolId")
+  .lean();
+const assignedClassNames = [...new Set(
+  classSubjects
+    .map(m => String(m.className || "").trim())
+    .filter(Boolean)
+)];
+const classLookupFilter = {
+  name: { $in: assignedClassNames },
+  ...(schoolId ? { schoolId } : {})
+};
+const mappedClassDocs = assignedClassNames.map(className => ({
+  _id: className,
+  name: className,
+  teacherId,
+  studentIds: [],
+  createdAt: null
+}));
     const studentPage = Math.max(parseInt(req.query.studentPage || "1"), 1);
     const studentLimit = Math.min(
       Math.max(parseInt(req.query.studentLimit || "100"), 1),
       500
     );
     const studentSkip = (studentPage - 1) * studentLimit;
-
     const [classes, students, totalStudents, teachers, results] =
       await Promise.all([
-        ClassModel.find(schoolScopedFilter)
-          .select("name teacherId studentIds createdAt")
-          .sort({ name: 1 })
-          .lean(),
-
+        assignedClassNames.length
+          ? ClassModel.find(classLookupFilter)
+              .select("name teacherId studentIds createdAt")
+              .sort({ name: 1 })
+              .lean()
+          : [],
         Student.find(schoolScopedFilter)
           .select("studentId name class teacherId")
           .sort({ class: 1, name: 1 })
           .skip(studentSkip)
           .limit(studentLimit)
           .lean(),
-
         Student.countDocuments(schoolScopedFilter),
-
 User.find({
   _id: teacherId,
   role: "teacher",
@@ -941,16 +978,22 @@ User.find({
 })
           .select("name role")
           .lean(),
-
         Result.find(schoolScopedFilter)
           .select("studentId testId testName teacherId score total date")
           .sort({ date: -1 })
           .limit(500)
           .lean()
       ]);
-
+const classDocMap = {};
+classes.forEach(c => {
+  classDocMap[String(c.name || "").trim()] = c;
+});
+const mappedClasses = mappedClassDocs.map(mappedClass => ({
+  ...(classDocMap[mappedClass.name] || mappedClass),
+  teacherId
+}));
     res.json({
-      classes,
+      classes: mappedClasses,
       students,
       teachers,
       results,
@@ -977,10 +1020,8 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
   try {
     const School = require("../models/School");
     const ClassSubject = require("../models/ClassSubject");
-
     const teacherId = String(req.user.id);
     const schoolId = req.user.schoolId || null;
-
     const [teacher, school, mappings, students, tests, results] =
       await Promise.all([
         User.findOne({
@@ -990,11 +1031,9 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
         })
           .select("name email role schoolId schoolCode")
           .lean(),
-
         schoolId
           ? School.findById(schoolId).lean()
           : null,
-
         ClassSubject.find({
           teacherId,
           ...(schoolId ? { schoolId } : {})
@@ -1002,14 +1041,12 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
           .select("className subject teacherId schoolId schoolCode")
           .sort({ className: 1, subject: 1 })
           .lean(),
-
         Student.find({
           teacherId,
           ...(schoolId ? { schoolId } : {})
         })
           .select("studentId name class teacherId")
           .lean(),
-
         Test.find({
           teacherId,
           ...(schoolId ? { schoolId } : {})
@@ -1018,7 +1055,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
           .sort({ createdAt: -1 })
           .limit(100)
           .lean(),
-
         Result.find({
           teacherId,
           ...(schoolId ? { schoolId } : {})
@@ -1028,22 +1064,18 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
           .limit(500)
           .lean()
       ]);
-
     const mappingRows = mappings.map(m => `
 <tr>
   <td style="padding:10px;border:1px solid #e5e7eb;">${m.className || "-"}</td>
   <td style="padding:10px;border:1px solid #e5e7eb;">${m.subject || "-"}</td>
 </tr>
 `).join("");
-
     const uniqueClasses = [...new Set(
       mappings.map(m => m.className).filter(Boolean)
     )];
-
     const uniqueSubjects = [...new Set(
       mappings.map(m => m.subject).filter(Boolean)
     )];
-
     const content = `
 <div style="
   display:flex;
@@ -1055,7 +1087,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
   <h1 style="margin:0;">Teacher Settings</h1>
   ${backButton("/teacher")}
 </div>
-
 <div style="
   background:white;
   padding:22px;
@@ -1068,7 +1099,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
   <p><b>Email:</b> ${teacher?.email || "N/A"}</p>
   <p><b>Role:</b> ${teacher?.role || "N/A"}</p>
 </div>
-
 <div style="
   background:white;
   padding:22px;
@@ -1079,7 +1109,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
   <h2 style="margin-top:0;">School Info</h2>
   <p><b>School Name:</b> ${school?.name || "N/A"}</p>
   <p><b>School Code:</b> ${school?.code || req.user.schoolCode || "N/A"}</p>
-
   <div style="
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -1103,7 +1132,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
     </div>
   </div>
 </div>
-
 <div style="
   background:white;
   padding:22px;
@@ -1113,7 +1141,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
 ">
   <h2 style="margin-top:0;">My Class and Subject Mappings</h2>
   <p style="color:#64748b;">This is read-only. Contact your school admin to change mappings.</p>
-
   <table style="width:100%;border-collapse:collapse;margin-top:12px;">
     <tr style="background:#f8fafc;">
       <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Class</th>
@@ -1122,7 +1149,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
     ${mappingRows || "<tr><td colspan='2' style='padding:10px;border:1px solid #e5e7eb;'>No mappings found</td></tr>"}
   </table>
 </div>
-
 <div style="
   background:white;
   padding:22px;
@@ -1133,7 +1159,6 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
   <p style="color:#64748b;">Change password, notifications, default test duration, and default timer settings can be added later.</p>
 </div>
 `;
-
     res.send(layout(content, "settings"));
   } catch (err) {
     console.error("TEACHER SETTINGS ERROR:", err);
