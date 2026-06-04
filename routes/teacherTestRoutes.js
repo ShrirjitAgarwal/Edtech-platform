@@ -519,35 +519,6 @@ const classSubjectMappings = await ClassSubject.find({
   .select("className subject teacherId schoolId schoolCode")
   .sort({ className: 1, subject: 1 })
   .lean();
-const assignedClasses = [...new Set(
-  classSubjectMappings
-    .map(mapping => String(mapping.className || "").trim().toUpperCase())
-    .filter(Boolean)
-)];
-const assignedSubjects = [...new Set(
-  classSubjectMappings
-    .filter(mapping => {
-      if (!editTest?.className) {
-        return true;
-      }
-      return (
-        String(mapping.className || "").trim().toUpperCase() ===
-        String(editTest.className || "").trim().toUpperCase()
-      );
-    })
-    .map(mapping => String(mapping.subject || "").trim())
-    .filter(Boolean)
-)];
-const classOptionsHtml = assignedClasses.length
-  ? assignedClasses.map(className => `
-<option value="${escapeAttribute(className)}" ${editTest?.className === className ? "selected" : ""}>${escapeHtml(className)}</option>
-`).join("")
-  : `<option value="">No assigned classes</option>`;
-const subjectOptionsHtml = assignedSubjects.length
-  ? assignedSubjects.map(subject => `
-<option value="${escapeAttribute(subject)}" ${editTest?.subject === subject ? "selected" : ""}>${escapeHtml(subject)}</option>
-`).join("")
-  : `<option value="">No assigned subjects</option>`;
 const noMappingsNotice = classSubjectMappings.length
   ? ""
   : `
@@ -611,37 +582,97 @@ ${noMappingsNotice}
       <label style="display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:8px;">
         Class
       </label>
-      <select id="className" onchange="updateSubjectOptions()" style="
-        width:100%;
-        padding:13px 14px;
-        border-radius:12px;
-        border:1px solid #cbd5e1;
-        box-sizing:border-box;
-        outline:none;
-        font-size:14px;
-        background:white;
-      ">
-        <option value="">Select Class</option>
-        ${classOptionsHtml}
-      </select>
+      <div style="position:relative;width:100%;">
+        <button
+          id="classNameButton"
+          type="button"
+          onclick="toggleCustomDropdown('className')"
+          style="
+            width:100%;
+            padding:13px 14px;
+            border-radius:12px;
+            border:1px solid #cbd5e1;
+            box-sizing:border-box;
+            outline:none;
+            font-size:14px;
+            background:white;
+            cursor:pointer;
+            text-align:left;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+          "
+        >
+          <span id="classNameLabel">Select Class</span>
+          <span>▾</span>
+        </button>
+        <div
+          id="classNameMenu"
+          style="
+            display:none;
+            position:absolute;
+            top:calc(100% + 6px);
+            left:0;
+            right:0;
+            background:white;
+            border:1px solid #cbd5e1;
+            border-radius:12px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.16);
+            max-height:220px;
+            overflow-y:auto;
+            z-index:120;
+          "
+        ></div>
+        <input id="className" type="hidden" value="${escapeAttribute(editTest?.className || "")}">
+      </div>
     </div>
     <div>
       <label style="display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:8px;">
         Subject
       </label>
-      <select id="subject" style="
-        width:100%;
-        padding:13px 14px;
-        border-radius:12px;
-        border:1px solid #cbd5e1;
-        box-sizing:border-box;
-        outline:none;
-        font-size:14px;
-        background:white;
-      ">
-        <option value="">Select Subject</option>
-        ${subjectOptionsHtml}
-      </select>
+      <div style="position:relative;width:100%;">
+        <button
+          id="subjectButton"
+          type="button"
+          onclick="toggleCustomDropdown('subject')"
+          style="
+            width:100%;
+            padding:13px 14px;
+            border-radius:12px;
+            border:1px solid #cbd5e1;
+            box-sizing:border-box;
+            outline:none;
+            font-size:14px;
+            background:white;
+            cursor:pointer;
+            text-align:left;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+          "
+        >
+          <span id="subjectLabel">Select Subject</span>
+          <span>▾</span>
+        </button>
+        <div
+          id="subjectMenu"
+          style="
+            display:none;
+            position:absolute;
+            top:calc(100% + 6px);
+            left:0;
+            right:0;
+            background:white;
+            border:1px solid #cbd5e1;
+            border-radius:12px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.16);
+            max-height:220px;
+            overflow-y:auto;
+            z-index:120;
+          "
+        ></div>
+        <input id="subject" type="hidden" value="${escapeAttribute(editTest?.subject || "")}">
+      </div>
     </div>
   </div>
 </div>
@@ -709,15 +740,30 @@ ${noMappingsNotice}
       gap:10px;
       margin-bottom:10px;
     ">
-      <select id="questionSubjectFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
-        <option value="all">All Subjects</option>
-      </select>
-      <select id="questionBoardFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
-        <option value="all">All Boards</option>
-      </select>
-      <select id="questionDifficultyFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
-        <option value="all">All Difficulty</option>
-      </select>
+      <div style="position:relative;width:100%;">
+        <button id="questionSubjectFilterButton" type="button" onclick="toggleCustomDropdown('questionSubjectFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+          <span id="questionSubjectFilterLabel">All Subjects</span>
+          <span>▾</span>
+        </button>
+        <div id="questionSubjectFilterMenu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,0.16);max-height:220px;overflow-y:auto;z-index:120;"></div>
+        <input id="questionSubjectFilter" type="hidden" value="all">
+      </div>
+      <div style="position:relative;width:100%;">
+        <button id="questionBoardFilterButton" type="button" onclick="toggleCustomDropdown('questionBoardFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+          <span id="questionBoardFilterLabel">All Boards</span>
+          <span>▾</span>
+        </button>
+        <div id="questionBoardFilterMenu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,0.16);max-height:220px;overflow-y:auto;z-index:120;"></div>
+        <input id="questionBoardFilter" type="hidden" value="all">
+      </div>
+      <div style="position:relative;width:100%;">
+        <button id="questionDifficultyFilterButton" type="button" onclick="toggleCustomDropdown('questionDifficultyFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+          <span id="questionDifficultyFilterLabel">All Difficulty</span>
+          <span>▾</span>
+        </button>
+        <div id="questionDifficultyFilterMenu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,0.16);max-height:220px;overflow-y:auto;z-index:120;"></div>
+        <input id="questionDifficultyFilter" type="hidden" value="all">
+      </div>
     </div>
     <div style="
       display:grid;
@@ -725,14 +771,22 @@ ${noMappingsNotice}
       gap:10px;
       margin-bottom:14px;
     ">
-      <select id="questionTypeFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
-        <option value="all">All Types</option>
-      </select>
-      <select id="questionScopeFilter" onchange="filterQuestions()" style="padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;">
-        <option value="all">All Sources</option>
-        <option value="public">Public</option>
-        <option value="teacher">My Questions</option>
-      </select>
+      <div style="position:relative;width:100%;">
+        <button id="questionTypeFilterButton" type="button" onclick="toggleCustomDropdown('questionTypeFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+          <span id="questionTypeFilterLabel">All Types</span>
+          <span>▾</span>
+        </button>
+        <div id="questionTypeFilterMenu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,0.16);max-height:220px;overflow-y:auto;z-index:120;"></div>
+        <input id="questionTypeFilter" type="hidden" value="all">
+      </div>
+      <div style="position:relative;width:100%;">
+        <button id="questionScopeFilterButton" type="button" onclick="toggleCustomDropdown('questionScopeFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+          <span id="questionScopeFilterLabel">All Sources</span>
+          <span>▾</span>
+        </button>
+        <div id="questionScopeFilterMenu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,0.16);max-height:220px;overflow-y:auto;z-index:120;"></div>
+        <input id="questionScopeFilter" type="hidden" value="all">
+      </div>
     </div>
     <div
       id="questionList"
@@ -911,15 +965,76 @@ function buildQuestionRow(q){
     </label>
   \`;
 }
-function addOptions(selectId, values){
-  const select = document.getElementById(selectId);
-  values.forEach(value => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = value;
-    select.appendChild(option);
+function closeCustomDropdowns(){
+  document.querySelectorAll("[id$='Menu']").forEach(menu => {
+    menu.style.display = "none";
   });
 }
+function toggleCustomDropdown(inputId){
+  const menu = document.getElementById(inputId + "Menu");
+  if(!menu){
+    return;
+  }
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  menu.style.display = isOpen ? "none" : "block";
+}
+function setCustomDropdownOptions(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(inputId + "Menu");
+  const label = document.getElementById(inputId + "Label");
+  if(!input || !menu || !label){
+    return;
+  }
+  const currentValue = input.value || options[0]?.value || "";
+  menu.innerHTML = "";
+  options.forEach(optionData => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = optionData.label;
+    option.style.width = "100%";
+    option.style.padding = "10px 12px";
+    option.style.border = "none";
+    option.style.background = "white";
+    option.style.textAlign = "left";
+    option.style.cursor = "pointer";
+    option.style.fontSize = "13px";
+    option.style.boxSizing = "border-box";
+    option.onmouseenter = function(){
+      option.style.background = "#eef2ff";
+    };
+    option.onmouseleave = function(){
+      option.style.background = "white";
+    };
+    option.onclick = function(){
+      input.value = optionData.value;
+      label.textContent = optionData.label;
+      closeCustomDropdowns();
+      if(typeof onSelect === "function"){
+        onSelect(optionData.value);
+      }
+    };
+    menu.appendChild(option);
+  });
+  const selectedOption = options.find(optionData =>
+    String(optionData.value) === String(currentValue)
+  );
+  if(selectedOption){
+    input.value = selectedOption.value;
+    label.textContent = selectedOption.label;
+  } else {
+    input.value = options[0]?.value || "";
+    label.textContent = options[0]?.label || "Select";
+  }
+}
+document.addEventListener("click", function(event){
+  const clickedInsideDropdown =
+    event.target.closest("[id$='Button']") ||
+    event.target.closest("[id$='Menu']");
+  if(!clickedInsideDropdown){
+    closeCustomDropdowns();
+  }
+});
 function populateQuestionFilters(){
   const subjects = [...new Set(
     questions.map(q => getQuestionSubject(q)).filter(Boolean)
@@ -933,21 +1048,50 @@ function populateQuestionFilters(){
   const types = [...new Set(
     questions.map(q => getQuestionType(q)).filter(Boolean)
   )].sort();
-  addOptions("questionSubjectFilter", subjects);
-  addOptions("questionBoardFilter", boards);
-  addOptions("questionDifficultyFilter", difficulties);
-  const typeSelect = document.getElementById("questionTypeFilter");
-  types.forEach(type => {
-    const option = document.createElement("option");
-    option.value = type;
-    option.textContent =
-      type === "coding"
-        ? "Coding"
-        : type === "written"
-        ? "Written"
-        : "MCQ";
-    typeSelect.appendChild(option);
-  });
+  setCustomDropdownOptions(
+    "questionSubjectFilter",
+    [
+      { value: "all", label: "All Subjects" },
+      ...subjects.map(subject => ({ value: subject, label: subject }))
+    ],
+    filterQuestions
+  );
+  setCustomDropdownOptions(
+    "questionBoardFilter",
+    [
+      { value: "all", label: "All Boards" },
+      ...boards.map(board => ({ value: board, label: board }))
+    ],
+    filterQuestions
+  );
+  setCustomDropdownOptions(
+    "questionDifficultyFilter",
+    [
+      { value: "all", label: "All Difficulty" },
+      ...difficulties.map(difficulty => ({ value: difficulty, label: difficulty }))
+    ],
+    filterQuestions
+  );
+  setCustomDropdownOptions(
+    "questionTypeFilter",
+    [
+      { value: "all", label: "All Types" },
+      ...types.map(type => ({
+        value: type,
+        label: type === "coding" ? "Coding" : type === "written" ? "Written" : "MCQ"
+      }))
+    ],
+    filterQuestions
+  );
+  setCustomDropdownOptions(
+    "questionScopeFilter",
+    [
+      { value: "all", label: "All Sources" },
+      { value: "public", label: "Public" },
+      { value: "teacher", label: "My Questions" }
+    ],
+    filterQuestions
+  );
 }
 function updateSelectedQuestionCount(){
   const selected = JSON.parse(
@@ -1099,27 +1243,35 @@ function previewQuestion(id){
     testCasesHtml;
 }
 function updateSubjectOptions(){
- const subjectSelect = document.getElementById("subject");
- const currentSubject = subjectSelect.value;
- const subjects = [...new Set(
- assignedClassSubjects
- .map(mapping => String(mapping.subject || "").trim())
- .filter(Boolean)
- )];
- subjectSelect.innerHTML = "<option value=''>Select Subject</option>";
- if(!subjects.length){
- subjectSelect.innerHTML += "<option value=''>No assigned subjects</option>";
- return;
- }
- subjects.forEach(subject => {
- const option = document.createElement("option");
- option.value = subject;
- option.textContent = subject;
- if(subject === currentSubject){
- option.selected = true;
- }
- subjectSelect.appendChild(option);
- });
+  const className = document.getElementById("className").value;
+  const currentSubject = document.getElementById("subject").value;
+  const subjects = [...new Set(
+    assignedClassSubjects
+      .filter(mapping => {
+        if(!className){
+          return true;
+        }
+        return (
+          String(mapping.className || "").trim().toUpperCase() ===
+          String(className || "").trim().toUpperCase()
+        );
+      })
+      .map(mapping => String(mapping.subject || "").trim())
+      .filter(Boolean)
+  )].sort();
+  setCustomDropdownOptions(
+    "subject",
+    subjects.length
+      ? [
+          { value: "", label: "Select Subject" },
+          ...subjects.map(subject => ({ value: subject, label: subject }))
+        ]
+      : [{ value: "", label: "No assigned subjects" }]
+  );
+  if(subjects.includes(currentSubject)){
+    document.getElementById("subject").value = currentSubject;
+    document.getElementById("subjectLabel").textContent = currentSubject;
+  }
 }
 function saveTest(){
  const name = document.getElementById("testName").value;
@@ -1158,6 +1310,23 @@ function clearSelection(){
  localStorage.removeItem("selectedQuestions");
  location.reload();
 }
+setCustomDropdownOptions(
+  "className",
+  assignedClassSubjects.length
+    ? [
+        { value: "", label: "Select Class" },
+        ...[...new Set(
+          assignedClassSubjects
+            .map(mapping => String(mapping.className || "").trim().toUpperCase())
+            .filter(Boolean)
+        )].sort().map(className => ({ value: className, label: className }))
+      ]
+    : [{ value: "", label: "No assigned classes" }],
+  function(){
+    document.getElementById("subject").value = "";
+    updateSubjectOptions();
+  }
+);
 updateSubjectOptions();
 populateQuestionFilters();
 filterQuestions();
@@ -1295,25 +1464,47 @@ const tests = await Test.find({
 ">
   <div style="margin-bottom:20px;">
     <label style="font-weight:700;">Select Test</label><br>
-    <select
-      id="testSelector"
-      onchange="loadSelectedTest()"
-      style="
-        width:100%;
-        padding:12px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-        box-sizing:border-box;
-        margin-top:6px;
-      "
-    >
-      <option value="">Choose a test</option>
-      ${tests.map(t => `
-        <option value="${escapeAttribute(t._id)}" ${String(t._id) === String(selectedTestId) ? "selected" : ""}>
-          ${escapeHtml(t.name || "Untitled Test")} - ${escapeHtml(t.className || "No Class")} - ${t.status === "published" ? "Published" : "Draft"}
-        </option>
-      `).join("")}
-    </select>
+    <div style="position:relative;width:100%;margin-top:6px;">
+      <button
+        id="testSelectorButton"
+        type="button"
+        onclick="toggleCustomDropdown('testSelector')"
+        style="
+          width:100%;
+          padding:12px;
+          border-radius:8px;
+          border:1px solid #cbd5e1;
+          box-sizing:border-box;
+          background:white;
+          cursor:pointer;
+          text-align:left;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+        "
+      >
+        <span id="testSelectorLabel">Choose a test</span>
+        <span>▾</span>
+      </button>
+      <div
+        id="testSelectorMenu"
+        style="
+          display:none;
+          position:absolute;
+          top:calc(100% + 6px);
+          left:0;
+          right:0;
+          background:white;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          box-shadow:0 8px 24px rgba(15,23,42,0.16);
+          max-height:260px;
+          overflow-y:auto;
+          z-index:120;
+        "
+      ></div>
+      <input id="testSelector" type="hidden" value="${escapeAttribute(selectedTestId)}">
+    </div>
   </div>
   <div id="settingsPanel"></div>
 </div>
@@ -1339,6 +1530,76 @@ function escapeHtml(value){
   div.textContent = String(value || "");
   return div.innerHTML;
 }
+function closeCustomDropdowns(){
+  document.querySelectorAll("[id$='Menu']").forEach(menu => {
+    menu.style.display = "none";
+  });
+}
+function toggleCustomDropdown(inputId){
+  const menu = document.getElementById(inputId + "Menu");
+  if(!menu){
+    return;
+  }
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  menu.style.display = isOpen ? "none" : "block";
+}
+function setCustomDropdownOptions(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(inputId + "Menu");
+  const label = document.getElementById(inputId + "Label");
+  if(!input || !menu || !label){
+    return;
+  }
+  const currentValue = input.value || options[0]?.value || "";
+  menu.innerHTML = "";
+  options.forEach(optionData => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = optionData.label;
+    option.style.width = "100%";
+    option.style.padding = "10px 12px";
+    option.style.border = "none";
+    option.style.background = "white";
+    option.style.textAlign = "left";
+    option.style.cursor = "pointer";
+    option.style.fontSize = "13px";
+    option.style.boxSizing = "border-box";
+    option.onmouseenter = function(){
+      option.style.background = "#eef2ff";
+    };
+    option.onmouseleave = function(){
+      option.style.background = "white";
+    };
+    option.onclick = function(){
+      input.value = optionData.value;
+      label.textContent = optionData.label;
+      closeCustomDropdowns();
+      if(typeof onSelect === "function"){
+        onSelect(optionData.value);
+      }
+    };
+    menu.appendChild(option);
+  });
+  const selectedOption = options.find(optionData =>
+    String(optionData.value) === String(currentValue)
+  );
+  if(selectedOption){
+    input.value = selectedOption.value;
+    label.textContent = selectedOption.label;
+  } else {
+    input.value = options[0]?.value || "";
+    label.textContent = options[0]?.label || "Select";
+  }
+}
+document.addEventListener("click", function(event){
+  const clickedInsideDropdown =
+    event.target.closest("[id$='Button']") ||
+    event.target.closest("[id$='Menu']");
+  if(!clickedInsideDropdown){
+    closeCustomDropdowns();
+  }
+});
 function formatDateForInput(value){
   if(!value) return "";
   const date = new Date(value);
@@ -1415,21 +1676,47 @@ function loadSelectedTest(){
     </div>
     <div style="margin-bottom:16px;">
       <label style="font-weight:700;">Test Type</label><br>
-      <select
-        id="testType"
-        style="
-          width:100%;
-          padding:12px;
-          border-radius:8px;
-          border:1px solid #cbd5e1;
-          box-sizing:border-box;
-          margin-top:6px;
-        "
-      >
-        <option value="practice" \${test.testType === "practice" ? "selected" : ""}>Practice</option>
-        <option value="unit" \${test.testType === "unit" ? "selected" : ""}>Unit</option>
-        <option value="exam" \${test.testType === "exam" ? "selected" : ""}>Exam</option>
-      </select>
+      <div style="position:relative;width:100%;margin-top:6px;">
+        <button
+          id="testTypeButton"
+          type="button"
+          onclick="toggleCustomDropdown('testType')"
+          style="
+            width:100%;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #cbd5e1;
+            box-sizing:border-box;
+            background:white;
+            cursor:pointer;
+            text-align:left;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+          "
+        >
+          <span id="testTypeLabel">Practice</span>
+          <span>▾</span>
+        </button>
+        <div
+          id="testTypeMenu"
+          style="
+            display:none;
+            position:absolute;
+            top:calc(100% + 6px);
+            left:0;
+            right:0;
+            background:white;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.16);
+            max-height:220px;
+            overflow-y:auto;
+            z-index:120;
+          "
+        ></div>
+        <input id="testType" type="hidden" value="\${test.testType || "practice"}">
+      </div>
     </div>
     <div style="
       margin-bottom:22px;
@@ -1482,6 +1769,14 @@ function loadSelectedTest(){
       </button>
     </div>
   \`;
+  setCustomDropdownOptions(
+    "testType",
+    [
+      { value: "practice", label: "Practice" },
+      { value: "unit", label: "Unit" },
+      { value: "exam", label: "Exam" }
+    ]
+  );
 }
 function saveSettings(){
   if(!selectedTestId){
@@ -1528,6 +1823,24 @@ headers:{
 })
   .catch(() => alert("Failed to save settings"));
 }
+setCustomDropdownOptions(
+  "testSelector",
+  [
+    { value: "", label: "Choose a test" },
+    ...tests.map(test => ({
+      value: String(test._id),
+      label:
+        (test.name || "Untitled Test") +
+        " - " +
+        (test.className || "No Class") +
+        " - " +
+        (test.status === "published" ? "Published" : "Draft")
+    }))
+  ],
+  function(){
+    loadSelectedTest();
+  }
+);
 loadSelectedTest();
 </script>
 `;

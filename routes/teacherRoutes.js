@@ -36,6 +36,76 @@ ${teacherGuardScript()}
 <div id="dashboard"></div>
 <script>
 window.onload = function(){
+function closeCustomDropdowns(){
+  document.querySelectorAll("[id$='Menu']").forEach(menu => {
+    menu.style.display = "none";
+  });
+}
+window.toggleCustomDropdown = function(inputId){
+  const menu = document.getElementById(inputId + "Menu");
+  if(!menu){
+    return;
+  }
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  menu.style.display = isOpen ? "none" : "block";
+};
+function setCustomDropdownOptions(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(inputId + "Menu");
+  const label = document.getElementById(inputId + "Label");
+  if(!input || !menu || !label){
+    return;
+  }
+  const currentValue = input.value || options[0]?.value || "";
+  menu.innerHTML = "";
+  options.forEach(optionData => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = optionData.label;
+    option.style.width = "100%";
+    option.style.padding = "10px 12px";
+    option.style.border = "none";
+    option.style.background = "white";
+    option.style.textAlign = "left";
+    option.style.cursor = "pointer";
+    option.style.fontSize = "13px";
+    option.style.boxSizing = "border-box";
+    option.onmouseenter = function(){
+      option.style.background = "#eef2ff";
+    };
+    option.onmouseleave = function(){
+      option.style.background = "white";
+    };
+    option.onclick = function(){
+      input.value = optionData.value;
+      label.textContent = optionData.label;
+      closeCustomDropdowns();
+      if(typeof onSelect === "function"){
+        onSelect(optionData.value);
+      }
+    };
+    menu.appendChild(option);
+  });
+  const selectedOption = options.find(optionData =>
+    String(optionData.value) === String(currentValue)
+  );
+  if(selectedOption){
+    input.value = selectedOption.value;
+    label.textContent = selectedOption.label;
+  } else {
+    input.value = options[0]?.value || "";
+    label.textContent = options[0]?.label || "Select";
+  }
+}
+document.addEventListener("click", function(event){
+  const clickedInsideDropdown =
+    event.target.closest("[id$='Button']") ||
+    event.target.closest("[id$='Menu']");
+  if(!clickedInsideDropdown){
+    closeCustomDropdowns();
+  }
+});
   const user = JSON.parse(localStorage.getItem("user") || "null");
   if(!user){
     return window.location.replace("/");
@@ -199,13 +269,6 @@ fetch("/api/teacher-dashboard-data")
       </table>
     \`;
   }
-  const testOptions = myTests.length
-    ? myTests.map(t => \`
-      <option value="\${t._id}">
-        \${t.name || "Untitled Test"} - \${t.className || "No Class"}
-      </option>
-    \`).join("")
-    : "";
   document.getElementById("dashboard").innerHTML = \`
 <div style="
       display:flex;
@@ -347,15 +410,47 @@ fetch("/api/teacher-dashboard-data")
             Select a test to view performance details.
           </p>
         </div>
-        <select id="testFilter" onchange="selectTest(this.value)" style="
-          padding:10px 12px;
-          border-radius:10px;
-          border:1px solid #cbd5e1;
-          min-width:260px;
-        ">
-          <option value="all">All Tests</option>
-          \${testOptions}
-        </select>
+        <div style="position:relative;min-width:260px;">
+          <button
+            id="testFilterButton"
+            type="button"
+            onclick="toggleCustomDropdown('testFilter')"
+            style="
+              width:100%;
+              padding:10px 12px;
+              border-radius:10px;
+              border:1px solid #cbd5e1;
+              background:white;
+              cursor:pointer;
+              text-align:left;
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              box-sizing:border-box;
+            "
+          >
+            <span id="testFilterLabel">All Tests</span>
+            <span>▾</span>
+          </button>
+          <div
+            id="testFilterMenu"
+            style="
+              display:none;
+              position:absolute;
+              top:calc(100% + 6px);
+              left:0;
+              right:0;
+              background:white;
+              border:1px solid #cbd5e1;
+              border-radius:10px;
+              box-shadow:0 8px 24px rgba(15,23,42,0.16);
+              max-height:240px;
+              overflow-y:auto;
+              z-index:120;
+            "
+          ></div>
+          <input id="testFilter" type="hidden" value="all">
+        </div>
       </div>
       <div id="analyticsTable" style="
         flex:1;
@@ -371,10 +466,30 @@ fetch("/api/teacher-dashboard-data")
     const table = document.getElementById("analyticsTable");
     table.innerHTML = buildAnalyticsTable(testId);
     const filter = document.getElementById("testFilter");
+    const label = document.getElementById("testFilterLabel");
     if(filter){
       filter.value = testId;
     }
+    if(label){
+      const selectedTest = myTests.find(t =>
+        String(t._id) === String(testId)
+      );
+      label.textContent = selectedTest
+        ? (selectedTest.name || "Untitled Test") + " - " + (selectedTest.className || "No Class")
+        : "All Tests";
+    }
   };
+  setCustomDropdownOptions(
+    "testFilter",
+    [
+      { value: "all", label: "All Tests" },
+      ...myTests.map(test => ({
+        value: String(test._id),
+        label: (test.name || "Untitled Test") + " - " + (test.className || "No Class")
+      }))
+    ],
+    selectTest
+  );
   })
   .catch(err => {
     console.error("DASHBOARD LOAD ERROR:", err);
@@ -554,16 +669,47 @@ align-items:center;
 margin-bottom:20px;
 flex-wrap:wrap;
 ">
-  <select
-  id="classFilter"
-  style="
-  padding:10px;
-  border-radius:8px;
-  border:1px solid #cbd5e1;
-  "
-  >
-  <option value="all">All Classes</option>
-  </select>
+  <div style="position:relative;min-width:180px;">
+    <button
+      id="classFilterButton"
+      type="button"
+      onclick="toggleCustomDropdown('classFilter')"
+      style="
+        width:100%;
+        padding:10px;
+        border-radius:8px;
+        border:1px solid #cbd5e1;
+        background:white;
+        cursor:pointer;
+        text-align:left;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        box-sizing:border-box;
+      "
+    >
+      <span id="classFilterLabel">All Classes</span>
+      <span>▾</span>
+    </button>
+    <div
+      id="classFilterMenu"
+      style="
+        display:none;
+        position:absolute;
+        top:calc(100% + 6px);
+        left:0;
+        right:0;
+        background:white;
+        border:1px solid #cbd5e1;
+        border-radius:10px;
+        box-shadow:0 8px 24px rgba(15,23,42,0.16);
+        max-height:220px;
+        overflow-y:auto;
+        z-index:120;
+      "
+    ></div>
+    <input id="classFilter" type="hidden" value="all">
+  </div>
   <input
   id="studentSearch"
   placeholder="Search student name or ID"
@@ -578,6 +724,76 @@ flex-wrap:wrap;
 <div id="classContainer"></div>
 <script>
 window.onload = function(){
+function closeCustomDropdowns(){
+  document.querySelectorAll("[id$='Menu']").forEach(menu => {
+    menu.style.display = "none";
+  });
+}
+window.toggleCustomDropdown = function(inputId){
+  const menu = document.getElementById(inputId + "Menu");
+  if(!menu){
+    return;
+  }
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  menu.style.display = isOpen ? "none" : "block";
+};
+function setCustomDropdownOptions(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(inputId + "Menu");
+  const label = document.getElementById(inputId + "Label");
+  if(!input || !menu || !label){
+    return;
+  }
+  const currentValue = input.value || options[0]?.value || "";
+  menu.innerHTML = "";
+  options.forEach(optionData => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = optionData.label;
+    option.style.width = "100%";
+    option.style.padding = "10px 12px";
+    option.style.border = "none";
+    option.style.background = "white";
+    option.style.textAlign = "left";
+    option.style.cursor = "pointer";
+    option.style.fontSize = "13px";
+    option.style.boxSizing = "border-box";
+    option.onmouseenter = function(){
+      option.style.background = "#eef2ff";
+    };
+    option.onmouseleave = function(){
+      option.style.background = "white";
+    };
+    option.onclick = function(){
+      input.value = optionData.value;
+      label.textContent = optionData.label;
+      closeCustomDropdowns();
+      if(typeof onSelect === "function"){
+        onSelect(optionData.value);
+      }
+    };
+    menu.appendChild(option);
+  });
+  const selectedOption = options.find(optionData =>
+    String(optionData.value) === String(currentValue)
+  );
+  if(selectedOption){
+    input.value = selectedOption.value;
+    label.textContent = selectedOption.label;
+  } else {
+    input.value = options[0]?.value || "";
+    label.textContent = options[0]?.label || "Select";
+  }
+}
+document.addEventListener("click", function(event){
+  const clickedInsideDropdown =
+    event.target.closest("[id$='Button']") ||
+    event.target.closest("[id$='Menu']");
+  if(!clickedInsideDropdown){
+    closeCustomDropdowns();
+  }
+});
   const user = JSON.parse(localStorage.getItem("user") || "null");
   if(!user){
     return window.location.replace("/");
@@ -610,15 +826,10 @@ window.onload = function(){
     String(r.teacherId) === String(teacherId)
   );
   const classFilter = document.getElementById("classFilter");
+  const classFilterLabel = document.getElementById("classFilterLabel");
   const uniqueNames = [...new Set(
     teacherClasses.map(c => c.name).filter(Boolean)
   )];
-  uniqueNames.forEach(name => {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name;
-    classFilter.appendChild(option);
-  });
   let selected =
     localStorage.getItem("selectedClass") || "all";
   if(selected !== "all" && !uniqueNames.includes(selected)){
@@ -626,6 +837,22 @@ window.onload = function(){
     localStorage.setItem("selectedClass", "all");
   }
   classFilter.value = selected;
+  classFilterLabel.textContent =
+    selected === "all" ? "All Classes" : selected;
+  setCustomDropdownOptions(
+    "classFilter",
+    [
+      { value: "all", label: "All Classes" },
+      ...uniqueNames.map(name => ({
+        value: name,
+        label: name
+      }))
+    ],
+    function(value){
+      localStorage.setItem("selectedClass", value);
+      location.reload();
+    }
+  );
   const visibleClasses = teacherClasses.filter(c => {
     if(selected === "all") return true;
     return c.name === selected;
@@ -750,10 +977,6 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
       html || "<p>No matching students found</p>";
   }
   renderClasses();
-  classFilter.addEventListener("change", function(e){
-    localStorage.setItem("selectedClass", e.target.value);
-    location.reload();
-  });
   if(!teacherClasses.length){
     document.getElementById("classContainer").innerHTML =
       "<p style='color:#64748b;'>No classes mapped to this teacher.</p>";

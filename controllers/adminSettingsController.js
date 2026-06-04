@@ -11,9 +11,63 @@ exports.adminSettingsPage = async (req, res) => {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
-    function escapeAttribute(value) {
-      return escapeHtml(value).replace(/`/g, "&#096;");
-    }
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
+
+function safeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+    function customDropdownHtml(id, label, value, minWidth = "160px") {
+  return `
+<div style="position:relative;min-width:${minWidth};width:${minWidth === "100%" ? "100%" : "auto"};">
+  <button
+    id="${escapeAttribute(id)}Button"
+    type="button"
+    onclick="toggleCustomDropdown('${escapeAttribute(id)}')"
+    style="
+      width:100%;
+      padding:8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:white;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="${escapeAttribute(id)}Label">${escapeHtml(label)}</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="${escapeAttribute(id)}Menu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:9999;
+    "
+  ></div>
+  <input id="${escapeAttribute(id)}" type="hidden" value="${escapeAttribute(value)}">
+</div>
+`;
+}
     const School = require("../models/School");
     const User = require("../models/User");
     const Student = require("../models/Student");
@@ -37,41 +91,69 @@ const [
   mappings,
   subjects
 ] = await Promise.all([
-      schoolId
-        ? School.findById(schoolId).lean()
-        : null,
-      User.find({
-        role: "admin",
-        ...schoolScopedFilter
-      })
-        .select("name email role schoolId schoolCode createdBy createdByName createdAt")
-        .lean(),
-      User.find({
-        role: "teacher",
-        ...schoolScopedFilter
-      })
-        .select("name email role schoolId schoolCode createdBy createdByName createdAt")
-        .lean(),
-      Student.find(schoolScopedFilter)
-        .select("studentId name class teacherId schoolId schoolCode")
-        .lean(),
-      ClassModel.find(schoolScopedFilter)
-        .select("name teacherId studentIds schoolId schoolCode")
-        .lean(),
-      Test.find(schoolScopedFilter)
-        .select("name subject className teacherId status schoolId schoolCode")
-        .lean(),
-      Result.find(schoolScopedFilter)
-        .select("studentId testId score total schoolId schoolCode")
-        .lean(),
-ClassSubject.find(schoolScopedFilter)
-  .select("className subject teacherId schoolId schoolCode")
-  .lean(),
-Subject.find(schoolScopedFilter)
-  .select("name schoolId schoolCode createdAt")
-  .sort({ name: 1 })
-  .lean()
-    ]);
+  schoolId
+    ? School.findById(schoolId).lean()
+    : null,
+  User.find({
+    role: "admin",
+    ...schoolScopedFilter
+  })
+    .select("name email role schoolId schoolCode createdBy createdByName createdAt")
+    .lean(),
+  User.find({
+    role: "teacher",
+    ...schoolScopedFilter
+  })
+    .select("name email role schoolId schoolCode createdBy createdByName createdAt")
+    .lean(),
+  Student.find(schoolScopedFilter)
+    .select("studentId name class teacherId schoolId schoolCode")
+    .lean(),
+  ClassModel.find(schoolScopedFilter)
+    .select("name teacherId studentIds schoolId schoolCode createdAt")
+    .lean(),
+  Test.find(schoolScopedFilter)
+    .select("name subject className teacherId status schoolId schoolCode")
+    .lean(),
+  Result.find(schoolScopedFilter)
+    .select("studentId testId score total schoolId schoolCode")
+    .lean(),
+  ClassSubject.find(schoolScopedFilter)
+    .select("className subject teacherId schoolId schoolCode")
+    .lean(),
+  Subject.find(schoolScopedFilter)
+    .select("name schoolId schoolCode createdAt")
+    .sort({ name: 1 })
+    .lean()
+]);
+const adminClassOptionsData = [...new Set(
+  classes.map(c => c.name).filter(Boolean)
+)].map(className => ({
+  value: String(className),
+  label: String(className)
+}));
+const adminSubjectOptionsData = subjects.map(s => ({
+  value: String(s.name || ""),
+  label: String(s.name || "")
+})).filter(option => option.value);
+const adminTeacherOptionsData = teachers.map(t => ({
+  value: String(t._id),
+  label: String(t.name || t.email || "Unnamed Teacher")
+}));
+const studentDropdownData = students.map(s => {
+  const assignedTeacher = teachers.find(t =>
+    String(t._id) === String(s.teacherId)
+  );
+  return {
+    studentId: String(s._id),
+    classValue: String(s.class || ""),
+    classLabel: String(s.class || "Select Class"),
+    teacherValue: String(s.teacherId || ""),
+    teacherLabel: assignedTeacher
+      ? String(assignedTeacher.name || assignedTeacher.email || "Select Teacher")
+      : "Select Teacher"
+  };
+});
     const teacherOptions = teachers.map(t => {
       const teacherId = escapeAttribute(t._id);
       const teacherName = escapeHtml(t.name || t.email || "Unnamed Teacher");
@@ -188,24 +270,20 @@ const studentRows = students.map(s => {
   <td>${escapeHtml(s.class || "-")}</td>
   <td>${escapeHtml(assignedTeacherDisplay)}</td>
   <td>
-    <select id="studentClass-${escapeAttribute(s._id)}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
-      <option value="">Select Class</option>
-      ${classes.map(c => `
-        <option value="${escapeAttribute(c.name)}" ${String(c.name) === String(s.class) ? "selected" : ""}>
-          ${escapeHtml(c.name)}
-        </option>
-      `).join("")}
-    </select>
+    ${customDropdownHtml(
+      "studentClass-" + String(s._id),
+      s.class || "Select Class",
+      s.class || "",
+      "150px"
+    )}
   </td>
   <td>
-    <select id="studentTeacher-${escapeAttribute(s._id)}" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
-      <option value="">Select Teacher</option>
-      ${teachers.map(t => `
-        <option value="${escapeAttribute(t._id)}" ${String(t._id) === String(s.teacherId) ? "selected" : ""}>
-          ${escapeHtml(t.name || t.email)}
-        </option>
-      `).join("")}
-    </select>
+    ${customDropdownHtml(
+      "studentTeacher-" + String(s._id),
+      assignedTeacherDisplay === "-" ? "Select Teacher" : assignedTeacherDisplay,
+      s.teacherId || "",
+      "190px"
+    )}
   </td>
   <td>
     <button
@@ -430,18 +508,9 @@ const classOptions = [...new Set(
     <div id="panel-mappings" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
       <h2>Map Teacher to Class and Subject</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;">
-        <select id="mapClassName" style="padding:10px;">
-          <option value="">Select Class</option>
-          ${classOptions}
-        </select>
-<select id="mapSubject" style="padding:10px;">
-  <option value="">Select Subject</option>
-  ${subjectOptions}
-</select>
-        <select id="mapTeacherId" style="padding:10px;">
-          <option value="">Select Teacher</option>
-          ${teacherOptions}
-        </select>
+        ${customDropdownHtml("mapClassName", "Select Class", "", "180px")}
+        ${customDropdownHtml("mapSubject", "Select Subject", "", "180px")}
+        ${customDropdownHtml("mapTeacherId", "Select Teacher", "", "220px")}
         <button onclick="saveMapping()" style="
           padding:10px 16px;
           background:#4f46e5;
@@ -748,14 +817,8 @@ const classOptions = [...new Set(
           gap:14px;
           margin-bottom:18px;
         ">
-          <select id="bulkStudentClass" style="padding:12px;border:1px solid #cbd5e1;border-radius:8px;">
-            <option value="">Select Class</option>
-            ${classOptions}
-          </select>
-          <select id="bulkStudentTeacherId" style="padding:12px;border:1px solid #cbd5e1;border-radius:8px;">
-            <option value="">Select Teacher</option>
-            ${teacherOptions}
-          </select>
+          ${customDropdownHtml("bulkStudentClass", "Select Class", "", "100%")}
+          ${customDropdownHtml("bulkStudentTeacherId", "Select Teacher", "", "100%")}
         </div>
         <div id="bulkStudentRows"></div>
         <div style="
@@ -797,6 +860,131 @@ const classOptions = [...new Set(
   </div>
 </div>
 <script>
+const adminClassOptions = ${safeJsonForScript(adminClassOptionsData)};
+const adminSubjectOptions = ${safeJsonForScript(adminSubjectOptionsData)};
+const adminTeacherOptions = ${safeJsonForScript(adminTeacherOptionsData)};
+const studentDropdowns = ${safeJsonForScript(studentDropdownData)};
+function closeCustomDropdowns(){
+  document.querySelectorAll("[id$='Menu']").forEach(menu => {
+    menu.style.display = "none";
+  });
+}
+window.toggleCustomDropdown = function(inputId){
+  const menu = document.getElementById(inputId + "Menu");
+  if(!menu){
+    return;
+  }
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  if(isOpen){
+    menu.style.display = "none";
+    return;
+  }
+  menu.style.display = "block";
+};
+function setCustomDropdownOptions(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(inputId + "Menu");
+  const label = document.getElementById(inputId + "Label");
+  if(!input || !menu || !label){
+    return;
+  }
+  const currentValue = input.value || options[0]?.value || "";
+  menu.innerHTML = "";
+  options.forEach(optionData => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = optionData.label;
+    option.style.width = "100%";
+    option.style.padding = "10px 12px";
+    option.style.border = "none";
+    option.style.background = "white";
+    option.style.textAlign = "left";
+    option.style.cursor = "pointer";
+    option.style.fontSize = "13px";
+    option.style.boxSizing = "border-box";
+    option.onmouseenter = function(){
+      option.style.background = "#eef2ff";
+    };
+    option.onmouseleave = function(){
+      option.style.background = "white";
+    };
+    option.onclick = function(){
+      input.value = optionData.value;
+      label.textContent = optionData.label;
+      closeCustomDropdowns();
+      if(typeof onSelect === "function"){
+        onSelect(optionData.value);
+      }
+    };
+    menu.appendChild(option);
+  });
+  const selectedOption = options.find(optionData =>
+    String(optionData.value) === String(currentValue)
+  );
+  if(selectedOption){
+    input.value = selectedOption.value;
+    label.textContent = selectedOption.label;
+  } else if(currentValue){
+    input.value = currentValue;
+    label.textContent = label.textContent || "Select";
+  } else {
+    input.value = options[0]?.value || "";
+    label.textContent = options[0]?.label || "Select";
+  }
+}
+document.addEventListener("click", function(event){
+  const clickedInsideDropdown =
+    event.target.closest("[id$='Button']") ||
+    event.target.closest("[id$='Menu']");
+  if(!clickedInsideDropdown){
+    closeCustomDropdowns();
+  }
+});
+function initializeAdminDropdowns(){
+  const classOptions = [
+    { value: "", label: "Select Class" },
+    ...adminClassOptions
+  ];
+  const subjectOptions = [
+    { value: "", label: "Select Subject" },
+    ...adminSubjectOptions
+  ];
+  const teacherOptions = [
+    { value: "", label: "Select Teacher" },
+    ...adminTeacherOptions
+  ];
+  setCustomDropdownOptions("mapClassName", classOptions);
+  setCustomDropdownOptions("mapSubject", subjectOptions);
+  setCustomDropdownOptions("mapTeacherId", teacherOptions);
+  setCustomDropdownOptions("bulkStudentClass", classOptions);
+  setCustomDropdownOptions("bulkStudentTeacherId", teacherOptions);
+  studentDropdowns.forEach(student => {
+    setCustomDropdownOptions(
+      "studentClass-" + student.studentId,
+      classOptions
+    );
+    const studentClassInput = document.getElementById("studentClass-" + student.studentId);
+    const studentClassLabel = document.getElementById("studentClass-" + student.studentId + "Label");
+    if(student.classValue && studentClassInput && studentClassLabel){
+      studentClassInput.value = student.classValue;
+      studentClassLabel.textContent = student.classLabel;
+    }
+    setCustomDropdownOptions(
+      "studentTeacher-" + student.studentId,
+      teacherOptions
+    );
+    const studentTeacherInput = document.getElementById("studentTeacher-" + student.studentId);
+    const studentTeacherLabel = document.getElementById("studentTeacher-" + student.studentId + "Label");
+    if(student.teacherValue && studentTeacherInput && studentTeacherLabel){
+      studentTeacherInput.value = student.teacherValue;
+      studentTeacherLabel.textContent = student.teacherLabel;
+    }
+  });
+}
+setTimeout(function(){
+  initializeAdminDropdowns();
+}, 0);
 function showAdminPanel(panelName, button){
   document.querySelectorAll(".adminPanel").forEach(panel => {
     panel.style.display = "none";

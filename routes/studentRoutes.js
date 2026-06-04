@@ -486,9 +486,55 @@ res.send(`
   <h1 style="margin:0;">My Tests</h1>
   ${backButton("/student-entry")}
 </div>
-<select id="subjectSelect" style="padding:10px;margin-bottom:20px;width:100%;">
-  <option value="">Select Subject</option>
-</select>
+<div
+  id="subjectDropdown"
+  style="
+    position:relative;
+    width:100%;
+    margin-bottom:20px;
+  "
+>
+  <button
+    id="subjectDropdownButton"
+    type="button"
+    onclick="toggleSubjectDropdown()"
+    style="
+      width:100%;
+      padding:12px 14px;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      background:white;
+      cursor:pointer;
+      text-align:left;
+      font-weight:700;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="selectedSubjectLabel">Select Subject</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="subjectDropdownMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:50;
+    "
+  ></div>
+  <input id="subjectSelect" type="hidden" value="">
+</div>
 <div id="testList"></div>
   </div>
 </div>
@@ -532,26 +578,17 @@ window.addEventListener("pageshow", function (event) {
 window.onload = function(){
   const subjectSelect = document.getElementById("subjectSelect");
   const testList = document.getElementById("testList");
-  // LOAD SUBJECTS
-  fetch("/get-subjects")
-    .then(res => res.json())
-    .then(subjects => {
-      subjectSelect.innerHTML = '<option value="">Select Subject</option>';
-      subjects.forEach(sub => {
-        const opt = document.createElement("option");
-        opt.value = sub;
-        opt.textContent = sub;
-        subjectSelect.appendChild(opt);
-      });
-    });
-  // SUBJECT CHANGE → LOAD TESTS
-  subjectSelect.addEventListener("change", function(){
-    const subject = this.value;
-    if (!subject) return;
-fetch(
-  "/get-tests?subject=" +
-  encodeURIComponent(subject)
-)
+  const subjectDropdownMenu = document.getElementById("subjectDropdownMenu");
+  const selectedSubjectLabel = document.getElementById("selectedSubjectLabel");
+  function loadTestsForSubject(subject){
+    if (!subject) {
+      testList.innerHTML = "";
+      return;
+    }
+    fetch(
+      "/get-tests?subject=" +
+      encodeURIComponent(subject)
+    )
       .then(res => {
         if (!res.ok) throw new Error("API error");
         return res.json();
@@ -587,7 +624,61 @@ fetch(
         testList.innerHTML =
           "<p style='color:red;'>Failed to load tests</p>";
       });
+  }
+  window.toggleSubjectDropdown = function(){
+    subjectDropdownMenu.style.display =
+      subjectDropdownMenu.style.display === "block"
+        ? "none"
+        : "block";
+  };
+  window.selectSubjectOption = function(subject){
+    subjectSelect.value = subject;
+    selectedSubjectLabel.innerText = subject || "Select Subject";
+    subjectDropdownMenu.style.display = "none";
+    loadTestsForSubject(subject);
+  };
+  document.addEventListener("click", function(event){
+    const dropdown = document.getElementById("subjectDropdown");
+    if (
+      dropdown &&
+      !dropdown.contains(event.target)
+    ) {
+      subjectDropdownMenu.style.display = "none";
+    }
   });
+  fetch("/get-subjects")
+    .then(res => res.json())
+    .then(subjects => {
+      subjectDropdownMenu.innerHTML = "";
+      if (!subjects.length) {
+        subjectDropdownMenu.innerHTML =
+          "<div style='padding:12px;color:#64748b;'>No subjects found</div>";
+        return;
+      }
+      subjects.forEach(sub => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.innerText = sub;
+        option.onclick = function(){
+          selectSubjectOption(sub);
+        };
+        option.style.width = "100%";
+        option.style.padding = "12px 14px";
+        option.style.border = "none";
+        option.style.background = "white";
+        option.style.textAlign = "left";
+        option.style.cursor = "pointer";
+        option.style.fontWeight = "700";
+        option.style.boxSizing = "border-box";
+        option.onmouseenter = function(){
+          option.style.background = "#eef2ff";
+        };
+        option.onmouseleave = function(){
+          option.style.background = "white";
+        };
+        subjectDropdownMenu.appendChild(option);
+      });
+    });
 };
 </script>
 </body>
@@ -884,22 +975,26 @@ return `
         >
           Run Code
         </button>
-        <select
-          class="language-select"
+        <span
+          class="language-badge"
           data-question-id="${qid}"
           style="
             background:#1e293b;
             color:#e2e8f0;
             border:1px solid #334155;
             border-radius:6px;
-            padding:4px 8px;
+            padding:5px 9px;
             font-size:12px;
-            outline:none;
+            font-weight:700;
+            line-height:1;
+            display:inline-flex;
+            align-items:center;
+            min-height:24px;
+            box-sizing:border-box;
           "
         >
-        <option value="javascript" ${q.codingMeta?.language === "javascript" || !q.codingMeta?.language ? "selected" : ""}>JavaScript</option>
-<option value="python" ${q.codingMeta?.language === "python" ? "selected" : ""}>Python</option>
-        </select>
+          ${(q.codingMeta?.language === "python") ? "Python" : "JavaScript"}
+        </span>
         <div style="
           width:10px;
           height:10px;
@@ -1620,13 +1715,13 @@ const savedLanguage = question?.codingMeta?.language || "javascript";
   if(textarea){
     textarea.style.display = "none";
   }
-  const languageSelect = document.querySelector(
-    '.language-select[data-question-id="' + questionId + '"]'
+  const languageBadge = document.querySelector(
+    '.language-badge[data-question-id="' + questionId + '"]'
   );
-  if(languageSelect){
-languageSelect.value = savedLanguage;
-languageSelect.disabled = true;
-languageSelect.title = "Language is set by the question";
+  if(languageBadge){
+    languageBadge.textContent =
+      savedLanguage === "python" ? "Python" : "JavaScript";
+    languageBadge.title = "Language is set by the question";
   }
 });
 window.getCodeAnswer = function(qid){

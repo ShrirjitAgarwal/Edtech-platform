@@ -40,7 +40,6 @@ function navbar(){
   function go(path){
     window.location.href = path;
   }
-
   function logout(){
     fetch("/logout", {
       method: "POST"
@@ -113,16 +112,47 @@ const tests = await Test.find()
     <div style="max-width:1100px;margin:30px auto;padding:0 10px;">
     <div style="background:white;padding:25px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,0.08);">
     <h1>Dashboard</h1>
-    <form style="margin:15px 0;">
-      <select name="test" onchange="this.form.submit()">
-        <option value="all">All Tests</option>
-        ${tests.map(t => `
-          <option value="${t._id}" ${String(t._id) === selectedTest ? "selected" : ""}>
-            ${t.name}
-          </option>
-        `).join("")}
-      </select>
-    </form>
+    <div style="margin:15px 0;position:relative;width:260px;">
+      <button
+        id="testFilterButton"
+        type="button"
+        onclick="toggleCustomDropdown('testFilter')"
+        style="
+          width:100%;
+          padding:10px 12px;
+          border-radius:10px;
+          border:1px solid #cbd5e1;
+          background:white;
+          cursor:pointer;
+          text-align:left;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          box-sizing:border-box;
+        "
+      >
+        <span id="testFilterLabel">All Tests</span>
+        <span>▾</span>
+      </button>
+      <div
+        id="testFilterMenu"
+        style="
+          display:none;
+          position:absolute;
+          top:calc(100% + 6px);
+          left:0;
+          right:0;
+          background:white;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          box-shadow:0 8px 24px rgba(15,23,42,0.16);
+          max-height:240px;
+          overflow-y:auto;
+          z-index:120;
+        "
+      ></div>
+      <input id="testFilter" type="hidden" value="${selectedTest}">
+    </div>
     <!-- SUMMARY -->
     <div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;">
       <div style="flex:1;padding:18px;background:#eef2ff;border-radius:12px;text-align:center;">
@@ -179,6 +209,90 @@ const teacherId = user._id;
 const allResults = ${JSON.stringify(allResults)};
 const tests = ${JSON.stringify(tests)};
 const selectedTest = "${selectedTest}";
+function closeCustomDropdowns(){
+  document.querySelectorAll("[id$='Menu']").forEach(menu => {
+    menu.style.display = "none";
+  });
+}
+window.toggleCustomDropdown = function(inputId){
+  const menu = document.getElementById(inputId + "Menu");
+  if(!menu){
+    return;
+  }
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  menu.style.display = isOpen ? "none" : "block";
+};
+function setCustomDropdownOptions(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(inputId + "Menu");
+  const label = document.getElementById(inputId + "Label");
+  if(!input || !menu || !label){
+    return;
+  }
+  const currentValue = input.value || options[0]?.value || "";
+  menu.innerHTML = "";
+  options.forEach(optionData => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = optionData.label;
+    option.style.width = "100%";
+    option.style.padding = "10px 12px";
+    option.style.border = "none";
+    option.style.background = "white";
+    option.style.textAlign = "left";
+    option.style.cursor = "pointer";
+    option.style.fontSize = "13px";
+    option.style.boxSizing = "border-box";
+    option.onmouseenter = function(){
+      option.style.background = "#eef2ff";
+    };
+    option.onmouseleave = function(){
+      option.style.background = "white";
+    };
+    option.onclick = function(){
+      input.value = optionData.value;
+      label.textContent = optionData.label;
+      closeCustomDropdowns();
+      if(typeof onSelect === "function"){
+        onSelect(optionData.value);
+      }
+    };
+    menu.appendChild(option);
+  });
+  const selectedOption = options.find(optionData =>
+    String(optionData.value) === String(currentValue)
+  );
+  if(selectedOption){
+    input.value = selectedOption.value;
+    label.textContent = selectedOption.label;
+  } else {
+    input.value = options[0]?.value || "";
+    label.textContent = options[0]?.label || "Select";
+  }
+}
+document.addEventListener("click", function(event){
+  const clickedInsideDropdown =
+    event.target.closest("[id$='Button']") ||
+    event.target.closest("[id$='Menu']");
+  if(!clickedInsideDropdown){
+    closeCustomDropdowns();
+  }
+});
+setCustomDropdownOptions(
+  "testFilter",
+  [
+    { value: "all", label: "All Tests" },
+    ...tests.map(test => ({
+      value: String(test._id),
+      label: test.name || "Untitled Test"
+    }))
+  ],
+  function(value){
+    window.location.href =
+      "/dashboard?test=" + encodeURIComponent(value);
+  }
+);
 // FILTER
 let filtered = allResults.filter(r => r.teacherId === teacherId);
 if(selectedTest !== "all"){

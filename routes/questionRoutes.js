@@ -106,30 +106,91 @@ if(!pageUser || pageUser.role !== "teacher"){
   ">
     <div>
       <label style="font-weight:600;">Question Type</label><br>
-      <select id="questionType" onchange="toggleQuestionType()" style="
-        width:100%;
-        padding:12px;
-        margin-top:6px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-      ">
-                <option value="mcq" ${editQuestion?.type === "mcq" ? "selected" : ""}>MCQ</option>
-        <option value="coding" ${editQuestion?.type === "coding" ? "selected" : ""}>Coding</option>
-      </select>
+      <div style="position:relative;width:100%;margin-top:6px;">
+        <button
+          id="questionTypeButton"
+          type="button"
+          onclick="toggleCustomDropdown('questionType')"
+          style="
+            width:100%;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #cbd5e1;
+            background:white;
+            cursor:pointer;
+            text-align:left;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            box-sizing:border-box;
+          "
+        >
+          <span id="questionTypeLabel">MCQ</span>
+          <span>▾</span>
+        </button>
+        <div
+          id="questionTypeMenu"
+          style="
+            display:none;
+            position:absolute;
+            top:calc(100% + 6px);
+            left:0;
+            right:0;
+            background:white;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.16);
+            max-height:220px;
+            overflow-y:auto;
+            z-index:120;
+          "
+        ></div>
+        <input id="questionType" type="hidden" value="${editQuestion?.type || "mcq"}">
+      </div>
     </div>
     <div>
       <label style="font-weight:600;">Difficulty</label><br>
-      <select id="difficulty" style="
-        width:100%;
-        padding:12px;
-        margin-top:6px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-      ">
-                <option value="easy" ${editQuestion?.difficulty === "easy" ? "selected" : ""}>Easy</option>
-        <option value="medium" ${editQuestion?.difficulty === "medium" ? "selected" : ""}>Medium</option>
-        <option value="hard" ${editQuestion?.difficulty === "hard" ? "selected" : ""}>Hard</option>
-      </select>
+      <div style="position:relative;width:100%;margin-top:6px;">
+        <button
+          id="difficultyButton"
+          type="button"
+          onclick="toggleCustomDropdown('difficulty')"
+          style="
+            width:100%;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #cbd5e1;
+            background:white;
+            cursor:pointer;
+            text-align:left;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            box-sizing:border-box;
+          "
+        >
+          <span id="difficultyLabel">Easy</span>
+          <span>▾</span>
+        </button>
+        <div
+          id="difficultyMenu"
+          style="
+            display:none;
+            position:absolute;
+            top:calc(100% + 6px);
+            left:0;
+            right:0;
+            background:white;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.16);
+            max-height:220px;
+            overflow-y:auto;
+            z-index:120;
+          "
+        ></div>
+        <input id="difficulty" type="hidden" value="${editQuestion?.difficulty || "easy"}">
+      </div>
     </div>
   </div>
   <div style="margin-bottom:20px;">
@@ -157,35 +218,91 @@ if(!pageUser || pageUser.role !== "teacher"){
   ">
     <div>
       <label style="font-weight:600;">Subject</label><br>
-      <select id="subject" style="
-        width:100%;
-        padding:12px;
-        margin-top:6px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-        box-sizing:border-box;
-      ">
-        <option value="">Select Subject</option>
-        ${subjectOptionsForQuestionBuilder.map(subject => `
-          <option value="${subject}" ${editQuestion?.subject === subject ? "selected" : ""}>${subject}</option>
-        `).join("")}
-      </select>
+      <div style="position:relative;width:100%;margin-top:6px;">
+        <button
+          id="subjectButton"
+          type="button"
+          onclick="toggleCustomDropdown('subject')"
+          style="
+            width:100%;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #cbd5e1;
+            background:white;
+            cursor:pointer;
+            text-align:left;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            box-sizing:border-box;
+          "
+        >
+          <span id="subjectLabel">Select Subject</span>
+          <span>▾</span>
+        </button>
+        <div
+          id="subjectMenu"
+          style="
+            display:none;
+            position:absolute;
+            top:calc(100% + 6px);
+            left:0;
+            right:0;
+            background:white;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.16);
+            max-height:220px;
+            overflow-y:auto;
+            z-index:120;
+          "
+        ></div>
+        <input id="subject" type="hidden" value="${editQuestion?.subject || ""}">
+      </div>
     </div>
     <div>
       <label style="font-weight:600;">Board</label><br>
-      <select id="board" style="
-        width:100%;
-        padding:12px;
-        margin-top:6px;
-        border-radius:8px;
-        border:1px solid #cbd5e1;
-        box-sizing:border-box;
-      ">
-        <option value="">Select Board</option>
-        ${boardOptionsForQuestionBuilder.map(board => `
-          <option value="${board}" ${editQuestion?.board === board ? "selected" : ""}>${board}</option>
-        `).join("")}
-      </select>
+      <div style="position:relative;width:100%;margin-top:6px;">
+        <button
+          id="boardButton"
+          type="button"
+          onclick="toggleCustomDropdown('board')"
+          style="
+            width:100%;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid #cbd5e1;
+            background:white;
+            cursor:pointer;
+            text-align:left;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            box-sizing:border-box;
+          "
+        >
+          <span id="boardLabel">Select Board</span>
+          <span>▾</span>
+        </button>
+        <div
+          id="boardMenu"
+          style="
+            display:none;
+            position:absolute;
+            top:calc(100% + 6px);
+            left:0;
+            right:0;
+            background:white;
+            border:1px solid #cbd5e1;
+            border-radius:10px;
+            box-shadow:0 8px 24px rgba(15,23,42,0.16);
+            max-height:220px;
+            overflow-y:auto;
+            z-index:120;
+          "
+        ></div>
+        <input id="board" type="hidden" value="${editQuestion?.board || ""}">
+      </div>
     </div>
   </div>
   <div id="mcqSection">
@@ -250,14 +367,47 @@ if(!pageUser || pageUser.role !== "teacher"){
           border:1px solid #cbd5e1;
         "
       >
-<select id="language" style="
-  padding:12px;
-  border-radius:8px;
-  border:1px solid #cbd5e1;
-">
-  <option value="javascript" ${editQuestion?.codingMeta?.language === "javascript" ? "selected" : ""}>JavaScript</option>
-  <option value="python" ${editQuestion?.codingMeta?.language === "python" ? "selected" : ""}>Python</option>
-</select>
+<div style="position:relative;width:100%;">
+  <button
+    id="languageButton"
+    type="button"
+    onclick="toggleCustomDropdown('language')"
+    style="
+      width:100%;
+      padding:12px;
+      border-radius:8px;
+      border:1px solid #cbd5e1;
+      background:white;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="languageLabel">JavaScript</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="languageMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:120;
+    "
+  ></div>
+  <input id="language" type="hidden" value="${editQuestion?.codingMeta?.language || "javascript"}">
+</div>
     </div>
     <textarea
       id="starterCode"
@@ -300,6 +450,123 @@ if(!pageUser || pageUser.role !== "teacher"){
   </button>
 </div>
 <script>
+const subjectOptionsForQuestionBuilder = ${JSON.stringify(subjectOptionsForQuestionBuilder)};
+const boardOptionsForQuestionBuilder = ${JSON.stringify(boardOptionsForQuestionBuilder)};
+function closeCustomDropdowns(){
+  document.querySelectorAll("[id$='Menu']").forEach(menu => {
+    menu.style.display = "none";
+  });
+}
+function toggleCustomDropdown(inputId){
+  const menu = document.getElementById(inputId + "Menu");
+  if(!menu){
+    return;
+  }
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  menu.style.display = isOpen ? "none" : "block";
+}
+function setCustomDropdownOptions(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(inputId + "Menu");
+  const label = document.getElementById(inputId + "Label");
+  if(!input || !menu || !label){
+    return;
+  }
+  const currentValue = input.value || options[0]?.value || "";
+  menu.innerHTML = "";
+  options.forEach(optionData => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = optionData.label;
+    option.style.width = "100%";
+    option.style.padding = "10px 12px";
+    option.style.border = "none";
+    option.style.background = "white";
+    option.style.textAlign = "left";
+    option.style.cursor = "pointer";
+    option.style.fontSize = "13px";
+    option.style.boxSizing = "border-box";
+    option.onmouseenter = function(){
+      option.style.background = "#eef2ff";
+    };
+    option.onmouseleave = function(){
+      option.style.background = "white";
+    };
+    option.onclick = function(){
+      input.value = optionData.value;
+      label.textContent = optionData.label;
+      closeCustomDropdowns();
+      if(typeof onSelect === "function"){
+        onSelect(optionData.value);
+      }
+    };
+    menu.appendChild(option);
+  });
+  const selectedOption = options.find(optionData =>
+    String(optionData.value) === String(currentValue)
+  );
+  if(selectedOption){
+    input.value = selectedOption.value;
+    label.textContent = selectedOption.label;
+  } else {
+    input.value = options[0]?.value || "";
+    label.textContent = options[0]?.label || "Select";
+  }
+}
+document.addEventListener("click", function(event){
+  const clickedInsideDropdown =
+    event.target.closest("[id$='Button']") ||
+    event.target.closest("[id$='Menu']");
+  if(!clickedInsideDropdown){
+    closeCustomDropdowns();
+  }
+});
+function initializeCustomDropdowns(){
+  setCustomDropdownOptions(
+    "questionType",
+    [
+      { value: "mcq", label: "MCQ" },
+      { value: "coding", label: "Coding" }
+    ],
+    toggleQuestionType
+  );
+  setCustomDropdownOptions(
+    "difficulty",
+    [
+      { value: "easy", label: "Easy" },
+      { value: "medium", label: "Medium" },
+      { value: "hard", label: "Hard" }
+    ]
+  );
+  setCustomDropdownOptions(
+    "subject",
+    [
+      { value: "", label: "Select Subject" },
+      ...subjectOptionsForQuestionBuilder.map(subject => ({
+        value: subject,
+        label: subject
+      }))
+    ]
+  );
+  setCustomDropdownOptions(
+    "board",
+    [
+      { value: "", label: "Select Board" },
+      ...boardOptionsForQuestionBuilder.map(board => ({
+        value: board,
+        label: board
+      }))
+    ]
+  );
+  setCustomDropdownOptions(
+    "language",
+    [
+      { value: "javascript", label: "JavaScript" },
+      { value: "python", label: "Python" }
+    ]
+  );
+}
 function toggleQuestionType(){
   const type = document.getElementById("questionType").value;
   document.getElementById("mcqSection").style.display =
@@ -400,6 +667,7 @@ headers:{
     alert("Failed to save question");
   });
 }
+initializeCustomDropdowns();
 toggleQuestionType();
 </script>
 `;
