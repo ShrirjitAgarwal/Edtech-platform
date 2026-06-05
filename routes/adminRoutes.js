@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const adminController = require("../controllers/adminController");
+const adminSubjectController = require("../controllers/adminSubjectController");
 router.get(
   "/admin-student",
   authMiddleware,
@@ -50,12 +51,12 @@ router.post(
 router.post(
   "/admin/create-subject",
   authMiddleware,
-  adminController.createSubjectFromAdmin
+  adminSubjectController.createSubjectFromAdmin
 );
 router.post(
   "/admin/delete-subject",
   authMiddleware,
-  adminController.deleteSubjectFromAdmin
+  adminSubjectController.deleteSubjectFromAdmin
 );
 router.post(
   "/admin/create-student",
