@@ -75,65 +75,228 @@ box-sizing:border-box;
 </div>
 <div>
 <label style="font-size:13px;">Subject</label><br>
-<select id="subjectFilter" onchange="renderLibrary()" style="
-width:100%;
-padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-">
-<option value="all">All</option>
-</select>
+<div style="position:relative;width:100%;">
+  <button
+    id="subjectFilterButton"
+    type="button"
+    onclick="toggleCustomDropdown('subjectFilter')"
+    style="
+      width:100%;
+      padding:7px 8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:white;
+      font-size:13px;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="subjectFilterLabel">All</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="subjectFilterMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:100;
+    "
+  ></div>
+  <input id="subjectFilter" type="hidden" value="all">
+</div>
 </div>
 <div>
 <label style="font-size:13px;">Board</label><br>
-<select id="boardFilter" onchange="renderLibrary()" style="
-width:100%;
-padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-">
-<option value="all">All</option>
-</select>
+<div style="position:relative;width:100%;">
+  <button
+    id="boardFilterButton"
+    type="button"
+    onclick="toggleCustomDropdown('boardFilter')"
+    style="
+      width:100%;
+      padding:7px 8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:white;
+      font-size:13px;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="boardFilterLabel">All</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="boardFilterMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:100;
+    "
+  ></div>
+  <input id="boardFilter" type="hidden" value="all">
+</div>
 </div>
 <div>
 <label style="font-size:13px;">Difficulty</label><br>
-<select id="difficultyFilter" onchange="renderLibrary()" style="
-width:100%;
-padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-">
-<option value="all">All</option>
-<option value="easy">Easy</option>
-<option value="medium">Medium</option>
-<option value="hard">Hard</option>
-</select>
+<div style="position:relative;width:100%;">
+  <button
+    id="difficultyFilterButton"
+    type="button"
+    onclick="toggleCustomDropdown('difficultyFilter')"
+    style="
+      width:100%;
+      padding:7px 8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:white;
+      font-size:13px;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="difficultyFilterLabel">All</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="difficultyFilterMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:100;
+    "
+  ></div>
+  <input id="difficultyFilter" type="hidden" value="all">
+</div>
 </div>
 <div>
 <label style="font-size:13px;">Attempt</label><br>
-<select id="attemptFilter" onchange="renderLibrary()" style="
-width:100%;
-padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-">
-<option value="all">All</option>
-<option value="attempted">Attempted</option>
-<option value="not_attempted">Not Attempted</option>
-</select>
+<div style="position:relative;width:100%;">
+  <button
+    id="attemptFilterButton"
+    type="button"
+    onclick="toggleCustomDropdown('attemptFilter')"
+    style="
+      width:100%;
+      padding:7px 8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:white;
+      font-size:13px;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="attemptFilterLabel">All</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="attemptFilterMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:100;
+    "
+  ></div>
+  <input id="attemptFilter" type="hidden" value="all">
+</div>
 </div>
 <div>
 <label style="font-size:13px;">Library Type</label><br>
-<select id="scopeFilter" onchange="renderLibrary()" style="
-width:100%;
-padding:6px 8px;
-border:1px solid #cbd5e1;
-font-size:13px;
-">
-<option value="all">All</option>
-<option value="public">Platform Questions</option>
-<option value="teacher">My Questions</option>
-</select>
+<div style="position:relative;width:100%;">
+  <button
+    id="scopeFilterButton"
+    type="button"
+    onclick="toggleCustomDropdown('scopeFilter')"
+    style="
+      width:100%;
+      padding:7px 8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:white;
+      font-size:13px;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-sizing:border-box;
+    "
+  >
+    <span id="scopeFilterLabel">All</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="scopeFilterMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      right:0;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      max-height:220px;
+      overflow-y:auto;
+      z-index:100;
+    "
+  ></div>
+  <input id="scopeFilter" type="hidden" value="all">
+</div>
 </div>
 </div>
 </div>
@@ -194,6 +357,91 @@ function safeText(value, fallback){
 const text = String(value || "").trim();
 return text || fallback;
 }
+function closeCustomDropdowns(){
+document.querySelectorAll("[id$='Menu']").forEach(menu => {
+if(menu && menu.id.includes("FilterMenu")){
+menu.style.display = "none";
+}
+});
+}
+function toggleCustomDropdown(inputId){
+const menu = document.getElementById(inputId + "Menu");
+if(!menu){
+return;
+}
+const isOpen = menu.style.display === "block";
+closeCustomDropdowns();
+menu.style.display = isOpen ? "none" : "block";
+}
+function setCustomDropdownOptions(inputId, options){
+const input = document.getElementById(inputId);
+const menu = document.getElementById(inputId + "Menu");
+const label = document.getElementById(inputId + "Label");
+if(!input || !menu || !label){
+return;
+}
+const currentValue = input.value || "all";
+menu.innerHTML = "";
+options.forEach(optionData => {
+const option = document.createElement("button");
+option.type = "button";
+option.textContent = optionData.label;
+option.style.width = "100%";
+option.style.padding = "10px 12px";
+option.style.border = "none";
+option.style.background = "white";
+option.style.textAlign = "left";
+option.style.cursor = "pointer";
+option.style.fontSize = "13px";
+option.style.boxSizing = "border-box";
+option.onmouseenter = function(){
+option.style.background = "#eef2ff";
+};
+option.onmouseleave = function(){
+option.style.background = "white";
+};
+option.onclick = function(){
+input.value = optionData.value;
+label.textContent = optionData.label;
+closeCustomDropdowns();
+renderLibrary();
+};
+menu.appendChild(option);
+});
+const selectedOption = options.find(optionData =>
+String(optionData.value) === String(currentValue)
+);
+if(selectedOption){
+input.value = selectedOption.value;
+label.textContent = selectedOption.label;
+} else {
+input.value = options[0]?.value || "all";
+label.textContent = options[0]?.label || "All";
+}
+}
+document.addEventListener("click", function(event){
+const clickedInsideDropdown = event.target.closest("[id$='Button']") ||
+event.target.closest("[id$='Menu']");
+if(!clickedInsideDropdown){
+closeCustomDropdowns();
+}
+});
+setCustomDropdownOptions("difficultyFilter", [
+{ value: "all", label: "All" },
+{ value: "easy", label: "Easy" },
+{ value: "medium", label: "Medium" },
+{ value: "hard", label: "Hard" }
+]);
+setCustomDropdownOptions("attemptFilter", [
+{ value: "all", label: "All" },
+{ value: "attempted", label: "Attempted" },
+{ value: "not_attempted", label: "Not Attempted" }
+]);
+setCustomDropdownOptions("scopeFilter", [
+{ value: "all", label: "All" },
+{ value: "public", label: "Platform Questions" },
+{ value: "teacher", label: "My Questions" }
+]);
 document.getElementById("libraryList").innerHTML =
 "<p style='color:#64748b;'>Loading questions...</p>";
 fetch("/api/library-data")
@@ -232,26 +480,32 @@ const subjects = [...new Set(
 visibleQuestions
 .map(q => q.subject || q.category)
 .filter(Boolean)
-)];
+)].sort();
 const boards = [...new Set(
 visibleQuestions
 .map(q => q.board || "General")
 .filter(Boolean)
-)];
-const subjectFilter = document.getElementById("subjectFilter");
-const boardFilter = document.getElementById("boardFilter");
-subjects.forEach(s => {
-const option = document.createElement("option");
-option.value = s;
-option.textContent = s;
-subjectFilter.appendChild(option);
-});
-boards.forEach(b => {
-const option = document.createElement("option");
-option.value = b;
-option.textContent = b;
-boardFilter.appendChild(option);
-});
+)].sort();
+setCustomDropdownOptions(
+"subjectFilter",
+[
+{ value: "all", label: "All" },
+...subjects.map(subject => ({
+value: subject,
+label: subject
+}))
+]
+);
+setCustomDropdownOptions(
+"boardFilter",
+[
+{ value: "all", label: "All" },
+...boards.map(board => ({
+value: board,
+label: board
+}))
+]
+);
 }
 function buildQuestionCard(q){
 const sourceLabel =
