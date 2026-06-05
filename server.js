@@ -187,13 +187,80 @@ app.use((err, req, res, next) => {
     requestId: req.requestId || null
   });
 });
-const startServer = async () => {
-  await connectDB();
-  const PORT = envConfig.port;
-  app.listen(PORT, "0.0.0.0", () => {
-      logger.info("server started", {
-      port: PORT
-    });
+function getEnvStatus(name) {
+  const value = String(process.env[name] || "").trim();
+
+  return {
+    name,
+    present: Boolean(value),
+    length: value.length || 0
+  };
+}
+
+function getStartupRouteReport() {
+  return [
+    "publicRoutes",
+    "codeRoutes",
+    "libraryRoutes",
+    "questionRoutes",
+    "teacherTestRoutes",
+    "studentSubmissionRoutes",
+    "testAssignmentRoutes",
+    "platformAuthRoutes",
+    "authRoutes",
+    "dashboardRoutes",
+    "teacherRoutes",
+    "adminRoutes",
+    "studentRoutes",
+    "reportRoutes",
+    "platformRoutes"
+  ];
+}
+
+function logStartupHealthReport(port) {
+  const mongo = getMongoHealth();
+  const requiredEnv = [
+    "JWT_SECRET",
+    "MONGO_URI",
+    "JUDGE_PROVIDER",
+    "LOCAL_CODE_EXECUTION_ENABLED",
+    "PLATFORM_ADMIN_EMAIL"
+  ];
+
+  logger.info("startup health report", {
+    status: mongo.readyState === 1 ? "healthy" : "degraded",
+    port,
+    environment: process.env.NODE_ENV || "local",
+    mongo,
+    judgeProvider: getJudgeProvider(),
+    localCodeExecutionEnabled:
+      String(process.env.LOCAL_CODE_EXECUTION_ENABLED || "").toLowerCase() === "true",
+    requiredEnv: requiredEnv.map(getEnvStatus),
+    routesMounted: getStartupRouteReport()
   });
+}
+
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    const PORT = envConfig.port;
+
+    app.listen(PORT, "0.0.0.0", () => {
+      logger.info("server started", {
+        port: PORT
+      });
+
+      logStartupHealthReport(PORT);
+    });
+  } catch (err) {
+    logger.error("server startup failed", {
+      message: err.message,
+      stack: err.stack
+    });
+
+    process.exit(1);
+  }
 };
+
 startServer();
