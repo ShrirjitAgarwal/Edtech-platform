@@ -38,7 +38,6 @@ await logAdminAction(req, {
     subjectName: subject.name
   }
 });
-
 res.json({
  status: "created",
  subject
@@ -97,7 +96,6 @@ await Subject.deleteOne({
  _id: subjectId,
  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
  });
-
 await logAdminAction(req, {
   action: "admin_subject_deleted",
   status: "success",
@@ -107,7 +105,6 @@ await logAdminAction(req, {
     subjectName: subject.name
   }
 });
-
  res.json({
  status: "deleted"
  });

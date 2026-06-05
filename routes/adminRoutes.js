@@ -48,6 +48,16 @@ router.post(
   adminController.deleteClassFromAdmin
 );
 router.post(
+  "/admin/create-subject",
+  authMiddleware,
+  adminController.createSubjectFromAdmin
+);
+router.post(
+  "/admin/delete-subject",
+  authMiddleware,
+  adminController.deleteSubjectFromAdmin
+);
+router.post(
   "/admin/create-student",
   authMiddleware,
   adminController.createStudentFromAdmin

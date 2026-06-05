@@ -14,7 +14,6 @@ exports.adminSettingsPage = async (req, res) => {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, "&#096;");
 }
-
 function safeJsonForScript(value) {
   return JSON.stringify(value)
     .replace(/</g, "\\u003c")

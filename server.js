@@ -102,13 +102,11 @@ app.use((req, res, next) => {
       replaceWith: "_"
     });
   }
-
   if (req.params) {
     mongoSanitize.sanitize(req.params, {
       replaceWith: "_"
     });
   }
-
   next();
 });
 app.use(globalLimiter);
