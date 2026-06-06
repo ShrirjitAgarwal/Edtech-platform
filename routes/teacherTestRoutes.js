@@ -706,7 +706,7 @@ ${noMappingsNotice}
           0 selected
         </p>
       </div>
-      <button onclick="clearSelection()" style="
+      <button onclick="clearFilters()" style="
         padding:9px 12px;
         background:#fee2e2;
         color:#991b1b;
@@ -716,7 +716,7 @@ ${noMappingsNotice}
         font-weight:800;
         font-size:12px;
       ">
-        Clear
+        Clear Filters
       </button>
     </div>
     <input
@@ -1315,9 +1315,26 @@ body: JSON.stringify({
  })
  .catch(() => alert("Failed to create test"));
 }
-function clearSelection(){
- localStorage.removeItem("selectedQuestions");
- location.reload();
+function clearFilters(){
+  document.getElementById("questionSearch").value = "";
+
+  document.getElementById("questionSubjectFilter").value = "all";
+  document.getElementById("questionSubjectFilterLabel").textContent = "All Subjects";
+
+  document.getElementById("questionBoardFilter").value = "all";
+  document.getElementById("questionBoardFilterLabel").textContent = "All Boards";
+
+  document.getElementById("questionDifficultyFilter").value = "all";
+  document.getElementById("questionDifficultyFilterLabel").textContent = "All Difficulty";
+
+  document.getElementById("questionTypeFilter").value = "all";
+  document.getElementById("questionTypeFilterLabel").textContent = "All Types";
+
+  document.getElementById("questionScopeFilter").value = "all";
+  document.getElementById("questionScopeFilterLabel").textContent = "All Sources";
+
+  closeCustomDropdowns();
+  filterQuestions();
 }
 setCustomDropdownOptions(
   "className",
