@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
 const classSchema = new mongoose.Schema({
   name: String,
-  // ✅ OWNER
+  // Legacy field retained for old data compatibility.
+  // Class ownership should come from ClassSubject mappings, not this field.
   teacherId: String,
   schoolId: String,
 schoolCode: String,
-  // ✅ STUDENTS IN CLASS
+  // Legacy list retained for old data compatibility.
+  // Student membership should come from Student.class, not this field.
   studentIds: {
     type: [String],
     default: []
@@ -16,6 +18,5 @@ schoolCode: String,
   }
 });
 classSchema.index({ schoolId: 1 });
-classSchema.index({ schoolId: 1, teacherId: 1 });
 classSchema.index({ schoolId: 1, name: 1 });
 module.exports = mongoose.model("Class", classSchema);

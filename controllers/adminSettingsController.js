@@ -109,7 +109,7 @@ const [
     .select("studentId name class teacherId schoolId schoolCode")
     .lean(),
   ClassModel.find(schoolScopedFilter)
-    .select("name teacherId studentIds schoolId schoolCode createdAt")
+    .select("name schoolId schoolCode createdAt")
     .lean(),
   Test.find(schoolScopedFilter)
     .select("name subject className teacherId status schoolId schoolCode")

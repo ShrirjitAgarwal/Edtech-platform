@@ -543,7 +543,7 @@ const mappedClassDocs = assignedClassNames.map(className => ({
       .lean();
 const classesRaw = assignedClassNames.length
   ? await ClassModel.find(classLookupFilter)
-      .select("name teacherId studentIds createdAt")
+      .select("name createdAt")
       .sort({ name: 1 })
       .lean()
   : [];
@@ -865,7 +865,8 @@ document.addEventListener("click", function(event){
     let html = "";
     visibleClasses.forEach(c => {
       let classStudents = studentsData.filter(s =>
-        s.class === c.name &&
+        String(s.class || "").trim().toUpperCase() ===
+        String(c.name || "").trim().toUpperCase() &&
         String(s.teacherId) === String(teacherId)
       );
       if(searchValue){
@@ -1192,7 +1193,7 @@ const mappedClassDocs = assignedClassNames.map(className => ({
       await Promise.all([
         assignedClassNames.length
           ? ClassModel.find(classLookupFilter)
-              .select("name teacherId studentIds createdAt")
+              .select("name createdAt")
               .sort({ name: 1 })
               .lean()
           : [],
