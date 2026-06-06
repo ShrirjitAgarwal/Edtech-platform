@@ -882,7 +882,14 @@ function getQuestionBoard(q){
   return String(q.board || "General").trim();
 }
 function getQuestionDifficulty(q){
-  return String(q.difficulty || "Unspecified").trim();
+  return String(q.difficulty || "").trim().toLowerCase();
+}
+function getQuestionDifficultyLabel(q){
+  const difficulty = getQuestionDifficulty(q);
+  if(difficulty === "easy") return "Easy";
+  if(difficulty === "medium") return "Medium";
+  if(difficulty === "hard") return "Hard";
+  return "";
 }
 function getQuestionScope(q){
   return String(q.scope || "public").trim().toLowerCase();
@@ -908,7 +915,7 @@ function buildQuestionRow(q){
   const type = getQuestionType(q);
   const subject = getQuestionSubject(q);
   const board = getQuestionBoard(q);
-  const difficulty = getQuestionDifficulty(q);
+  const difficulty = getQuestionDifficultyLabel(q);
   const scope = getQuestionScope(q);
   const selected = JSON.parse(
     localStorage.getItem("selectedQuestions") || "[]"
@@ -1042,9 +1049,11 @@ function populateQuestionFilters(){
   const boards = [...new Set(
     questions.map(q => getQuestionBoard(q)).filter(Boolean)
   )].sort();
-  const difficulties = [...new Set(
-    questions.map(q => getQuestionDifficulty(q)).filter(Boolean)
-  )].sort();
+  const difficulties = [
+    { value: "easy", label: "Easy" },
+    { value: "medium", label: "Medium" },
+    { value: "hard", label: "Hard" }
+  ];
   const types = [...new Set(
     questions.map(q => getQuestionType(q)).filter(Boolean)
   )].sort();
@@ -1068,7 +1077,7 @@ function populateQuestionFilters(){
     "questionDifficultyFilter",
     [
       { value: "all", label: "All Difficulty" },
-      ...difficulties.map(difficulty => ({ value: difficulty, label: difficulty }))
+      ...difficulties
     ],
     filterQuestions
   );
@@ -1191,7 +1200,7 @@ function previewQuestion(id){
   const type = getQuestionType(q);
   const subject = getQuestionSubject(q);
   const board = getQuestionBoard(q);
-  const difficulty = getQuestionDifficulty(q);
+  const difficulty = getQuestionDifficultyLabel(q);
   const scope = getQuestionScope(q);
   const optionsHtml =
     q.options && q.options.length
