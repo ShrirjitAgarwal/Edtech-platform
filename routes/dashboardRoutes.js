@@ -348,22 +348,33 @@ document.getElementById("studentStats").innerHTML =
   }).join("") || "<p>No student data</p>";
 // TABLE
 const rows = filtered.map(r => \`
-<tr data-test="\${r.testId}" data-name="\${r.name}" style="cursor:pointer;">
-  <td style="padding:14px;text-align:center;">\${r.studentId || "-"}</td>
-  <td style="padding:14px;text-align:center;">\${r.name}</td>
-  <td style="padding:14px;text-align:center;">\${r.testName}</td>
-  <td style="padding:14px;text-align:center;font-weight:600;">\${r.score}/\${r.total}</td>
+<tr
+data-test="\${r.testId}"
+data-student-id="\${r.studentId || ""}"
+style="cursor:pointer;"
+>
+<td style="padding:14px;text-align:center;">\${r.studentId || "-"}</td>
+<td style="padding:14px;text-align:center;">\${r.name}</td>
+<td style="padding:14px;text-align:center;">\${r.testName}</td>
+<td style="padding:14px;text-align:center;font-weight:600;">\${r.score}/\${r.total}</td>
 </tr>
 \`).join("");
 document.getElementById("resultsBody").innerHTML = rows;
 // CLICKABLE ROWS
 document.querySelectorAll("#resultsBody tr").forEach(row => {
-  row.addEventListener("click", function(){
-    const testId = this.getAttribute("data-test");
-    const name = this.getAttribute("data-name");
-    window.location.href =
-      "/result?testId=" + testId + "&name=" + encodeURIComponent(name);
-  });
+row.addEventListener("click", function(){
+ const testId = this.getAttribute("data-test");
+ const studentId = this.getAttribute("data-student-id");
+ if(!testId || !studentId){
+   alert("Result details are missing");
+   return;
+ }
+ window.location.href =
+ "/result?testId=" +
+ encodeURIComponent(testId) +
+ "&studentId=" +
+ encodeURIComponent(studentId);
+});
 });
 // SORT
 function sortScores(){

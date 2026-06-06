@@ -91,7 +91,7 @@ Back
 </div>
 <script>
 function goBack(){
-window.history.back();
+window.location.replace("/admin-dashboard");
 }
 function downloadReport(){
 const params =
