@@ -1106,6 +1106,15 @@ headers:{
     .then(html => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
+
+      if(doc.body){
+        doc.body.querySelectorAll("button").forEach(button => {
+          if((button.textContent || "").trim() === "Back"){
+            button.remove();
+          }
+        });
+      }
+
       const body = doc.body ? doc.body.innerHTML : html;
       const box = document.getElementById("preview-" + className);
       if(box){
