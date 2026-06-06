@@ -63,7 +63,6 @@ exports.downloadClassReport = async (req, res) => {
       });
     }
 const teacherId = req.user.id;
-
 const results = await Result.find({
   class: className,
   teacherId: String(teacherId),
@@ -124,34 +123,69 @@ const results = await Result.find({
 };
 exports.resultPage = async (req, res) => {
   const { testId, studentId } = req.query;
-const Result = require("../models/Result");
-const Student = require("../models/Student");
-let result;
-try {
-  const student = await Student.findOne({
-    studentId: String(studentId)
-  })
-    .select("studentId schoolId")
-    .lean();
+  const Result = require("../models/Result");
+  const Student = require("../models/Student");
+  const Question = require("../models/Question");
 
-  if (!student) {
-    return res.send("<h2>No result found</h2>");
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
-  result = await Result.findOne({
-    testId: String(testId),
-    studentId: String(studentId),
-    ...(student.schoolId ? { schoolId: student.schoolId } : {})
-  }).lean();
+  let result;
+
+  try {
+    const student = await Student.findOne({
+      studentId: String(studentId)
+    })
+      .select("studentId schoolId")
+      .lean();
+
+    if (!student) {
+      return res.send("<h2>No result found</h2>");
+    }
+
+    result = await Result.findOne({
+      testId: String(testId),
+      studentId: String(studentId),
+      ...(student.schoolId ? { schoolId: student.schoolId } : {})
+    }).lean();
   } catch (err) {
     console.error(err);
   }
+
   if (!result) {
     return res.send("<h2>No result found</h2>");
   }
+
+  const questionIds = (result.answers || [])
+    .map(answer => String(answer.questionId || ""))
+    .filter(Boolean);
+
+  const questions = questionIds.length
+    ? await Question.find({
+        _id: { $in: questionIds }
+      })
+        .select("question")
+        .lean()
+    : [];
+
+  const questionMap = {};
+  questions.forEach(question => {
+    questionMap[String(question._id)] = question.question || "";
+  });
+
   const answersHTML = (result.answers || [])
-    .map((a) => {
+    .map((a, index) => {
       const correct = a.isCorrect;
+      const questionText =
+        questionMap[String(a.questionId)] ||
+        `Question ${index + 1}`;
+
       return `
 <div style="
 margin:12px 0;
@@ -160,16 +194,16 @@ border-radius:10px;
 background:${correct ? "#ecfdf5" : "#fef2f2"};
 border:1px solid ${correct ? "#16a34a" : "#dc2626"};
 ">
-<div style="font-weight:600;margin-bottom:6px;">
-Question ${a.questionId}
+<div style="font-weight:700;margin-bottom:8px;">
+${index + 1}. ${escapeHtml(questionText)}
 </div>
 <div style="font-size:14px;margin-bottom:4px;">
 Your Answer:
-<b>${a.selected || "N/A"}</b>
+<b>${escapeHtml(a.selected || "N/A")}</b>
 </div>
 <div style="font-size:14px;margin-bottom:4px;">
 Correct Answer:
-<b>${a.correctAnswer || "-"}</b>
+<b>${escapeHtml(a.correctAnswer || "-")}</b>
 </div>
 <div style="
 font-size:13px;
@@ -182,6 +216,7 @@ ${correct ? "Correct" : "Incorrect"}
 `;
     })
     .join("");
+
   res.send(`
 <body style="
 font-family:Arial;
@@ -199,20 +234,10 @@ margin-bottom:20px;
 ${result.score} / ${result.total}
 <br>
 <b>Percentage:</b>
-${Math.round(
-  (result.score / result.total) * 100
-)}%
+${result.total ? Math.round((result.score / result.total) * 100) : 0}%
 </div>
-<p>
-<b>Score:</b>
-${result.score} / ${result.total}
-</p>
 <h3>Answers</h3>
 ${answersHTML}
-<br>
-<button onclick="window.history.back()">
-Back
-</button>
 </body>
 `);
 };
