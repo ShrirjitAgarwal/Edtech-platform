@@ -87,88 +87,117 @@ classDoc = await ClassModel.create({
 }
 });
 // ---------- PUBLISH TEST ----------
+// ---------- PUBLISH TEST ----------
 router.post("/assign-test", authMiddleware, async (req, res) => {
   try {
     const Test = require("../models/Test");
     const Assignment = require("../models/Assignment");
     const ClassSubject = require("../models/ClassSubject");
+
     const { testId } = req.body;
+    const teacherId = String(req.user.id);
+    const schoolId = req.user.schoolId || null;
+
     if (!testId) {
-      return res.status(400).json({ error: "Missing testId" });
+      return res.status(400).json({
+        error: "Missing testId"
+      });
     }
+
     const test = await Test.findOne({
       _id: testId,
-      teacherId: String(req.user.id)
+      teacherId,
+      ...(schoolId ? { schoolId } : {})
     });
+
     if (!test) {
-      return res.status(404).json({ error: "Test not found or unauthorized" });
+      return res.status(404).json({
+        error: "Test not found or unauthorized"
+      });
     }
-    const className = String(test.className).trim().toUpperCase();
-const rawSubject = String(test.subject || "").trim();
-let subject = rawSubject;
-if (
-  rawSubject.toLowerCase() === "cs" ||
-  rawSubject.toLowerCase() === "computer science"
-) {
-  subject = "Computer Science";
-} else if (
-  rawSubject.toLowerCase() === "maths" ||
-  rawSubject.toLowerCase() === "math"
-) {
-  subject = "Maths";
-} else if (rawSubject.toLowerCase() === "physics") {
-  subject = "Physics";
-}
+
+    const className = String(test.className || "").trim().toUpperCase();
+    const subject = String(test.subject || "").trim();
+
+    if (!className || !subject) {
+      return res.status(400).json({
+        error: "Test is missing class or subject"
+      });
+    }
+
     const mapping = await ClassSubject.findOne({
       className,
       subject,
-      teacherId: String(req.user.id)
+      teacherId,
+      ...(schoolId ? { schoolId } : {})
     });
+
     if (!mapping) {
       return res.status(403).json({
         error: "You are not allowed to publish this test"
       });
     }
-    const exists = await Assignment.findOne({
+
+    const assignmentFilter = {
       testId: String(testId),
       className,
-      teacherId: String(req.user.id)
-    });
-    if (!exists) {
-await Assignment.create({
-  testId: String(testId),
-  testName: test.name,
-  className,
-  teacherId: String(req.user.id),
-  schoolId: test.schoolId || req.user.schoolId || null,
-  schoolCode: test.schoolCode || req.user.schoolCode || null
-});
+      teacherId,
+      ...(schoolId ? { schoolId } : {})
+    };
+
+    const existingAssignment = await Assignment.findOne(assignmentFilter);
+
+    let assignmentCreated = false;
+
+    if (!existingAssignment) {
+      await Assignment.create({
+        testId: String(testId),
+        testName: test.name,
+        className,
+        teacherId,
+        schoolId: test.schoolId || schoolId || null,
+        schoolCode: test.schoolCode || req.user.schoolCode || null
+      });
+
+      assignmentCreated = true;
     }
-test.status = "published";
-test.publishedAt = test.publishedAt || new Date();
-await test.save();
-await logAuditEvent(req, {
-  event: "teacher_test_published",
-  status: "success",
-  metadata: {
-    testId: test._id,
-    testName: test.name,
-    className,
-    subject,
-    assignmentCreated: !exists,
-    schoolId: test.schoolId || req.user.schoolId || null,
-    schoolCode: test.schoolCode || req.user.schoolCode || null,
-    publishedAt: test.publishedAt
-  }
-});
- res.json({
- status: "published",
- message: "Test published successfully",
- test
- });
+
+    test.className = className;
+    test.subject = subject;
+    test.schoolId = test.schoolId || schoolId || null;
+    test.schoolCode = test.schoolCode || req.user.schoolCode || null;
+    test.status = "published";
+    test.publishedAt = test.publishedAt || new Date();
+
+    await test.save();
+
+    await logAuditEvent(req, {
+      event: "teacher_test_published",
+      status: "success",
+      metadata: {
+        testId: test._id,
+        testName: test.name,
+        className,
+        subject,
+        assignmentCreated,
+        schoolId: test.schoolId || null,
+        schoolCode: test.schoolCode || null,
+        publishedAt: test.publishedAt
+      }
+    });
+
+    res.json({
+      status: "published",
+      message: assignmentCreated
+        ? "Test published successfully"
+        : "Test was already published",
+      test
+    });
   } catch (err) {
     console.error("PUBLISH ERROR:", err);
-    res.status(500).json({ error: "Failed to publish test" });
+    res.status(500).json({
+      error: "Failed to publish test"
+    });
   }
 });
 // ---------- ADD SUBJECT ----------
@@ -211,17 +240,13 @@ router.get("/get-tests", async (req, res) => {
     const Test = require("../models/Test");
     const Result = require("../models/Result");
     const Student = require("../models/Student");
-
     const studentToken = req.cookies && req.cookies.studentSessionToken;
-
     if (!studentToken) {
       return res.status(401).json({
         error: "Student session expired"
       });
     }
-
     let decodedStudent;
-
     try {
       decodedStudent = jwt.verify(
         studentToken,
@@ -232,21 +257,17 @@ router.get("/get-tests", async (req, res) => {
         error: "Student session expired"
       });
     }
-
     if (!decodedStudent || decodedStudent.role !== "student") {
       return res.status(401).json({
         error: "Invalid student session"
       });
     }
-
     const subject = String(req.query.subject || "").trim();
-
     if (!subject) {
       return res.status(400).json({
         error: "Missing subject"
       });
     }
-
     const student = await Student.findOne({
       _id: decodedStudent.studentRecordId,
       studentId: decodedStudent.studentId,
@@ -254,23 +275,19 @@ router.get("/get-tests", async (req, res) => {
     })
       .select("studentId class teacherId schoolId schoolCode status")
       .lean();
-
     if (!student) {
       return res.status(401).json({
         error: "Invalid student session"
       });
     }
-
     const className = String(student.class || "").trim().toUpperCase();
     const teacherId = String(student.teacherId || "").trim();
     const studentId = String(student.studentId || "").trim();
-
     if (!className || !teacherId || !studentId) {
       return res.status(400).json({
         error: "Student is missing class, teacher, or student ID data"
       });
     }
-
     const assignments = await Assignment.find({
       className,
       teacherId,
@@ -278,17 +295,13 @@ router.get("/get-tests", async (req, res) => {
     })
       .select("testId className teacherId schoolId schoolCode")
       .lean();
-
     const testIds = assignments
       .map(assignment => assignment.testId)
       .filter(Boolean);
-
     if (!testIds.length) {
       return res.json([]);
     }
-
     const now = new Date();
-
     const tests = await Test.find({
       _id: { $in: testIds },
       status: "published",
@@ -303,29 +316,22 @@ router.get("/get-tests", async (req, res) => {
       .select("name subject className status teacherId schoolId schoolCode scheduledAt durationMinutes testType questionTimersEnabled createdAt")
       .sort({ createdAt: -1 })
       .lean();
-
     const attempted = await Result.find({
       studentId,
       ...(student.schoolId ? { schoolId: student.schoolId } : {})
     })
       .select("testId")
       .lean();
-
     const attemptedIds = attempted.map(result => String(result.testId));
-
     const filtered = tests.filter(test => {
       const subjectMatch =
         String(test.subject || "").trim().toLowerCase() ===
         String(subject || "").trim().toLowerCase();
-
       const classMatch =
         String(test.className || "").trim().toUpperCase() === className;
-
       const notAttempted = !attemptedIds.includes(String(test._id));
-
       return subjectMatch && classMatch && notAttempted;
     });
-
     res.json(filtered);
   } catch (err) {
     console.error("GET TESTS ERROR:", err);
