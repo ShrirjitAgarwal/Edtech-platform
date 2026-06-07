@@ -662,6 +662,7 @@ margin-bottom:20px;
   <h1 style="margin:0;">Classes</h1>
   ${backButton("/teacher")}
 </div>
+
 <div style="
 display:flex;
 gap:12px;
@@ -710,25 +711,64 @@ flex-wrap:wrap;
     ></div>
     <input id="classFilter" type="hidden" value="all">
   </div>
+
   <input
-  id="studentSearch"
-  placeholder="Search student name or ID"
-  style="
-  padding:10px;
-  border-radius:8px;
-  border:1px solid #cbd5e1;
-  min-width:280px;
-  "
+    id="studentSearch"
+    placeholder="Search student name or ID"
+    style="
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #cbd5e1;
+      min-width:280px;
+    "
   />
+
+  <button onclick="loadClasses(1)" style="
+    padding:10px 14px;
+    background:#4f46e5;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:700;
+  ">
+    Search
+  </button>
+
+  <button onclick="clearClassFilters()" style="
+    padding:10px 14px;
+    background:#64748b;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:700;
+  ">
+    Clear Filters
+  </button>
 </div>
+
 <div id="classContainer"></div>
+<div id="classPagination" style="margin-top:16px;"></div>
+
 <script>
 window.onload = function(){
+function escapeHtml(value){
+  const div = document.createElement("div");
+  div.textContent = String(value || "");
+  return div.innerHTML;
+}
+
+function jsString(value){
+  return JSON.stringify(String(value || ""));
+}
+
 function closeCustomDropdowns(){
   document.querySelectorAll("[id$='Menu']").forEach(menu => {
     menu.style.display = "none";
   });
 }
+
 window.toggleCustomDropdown = function(inputId){
   const menu = document.getElementById(inputId + "Menu");
   if(!menu){
@@ -738,6 +778,7 @@ window.toggleCustomDropdown = function(inputId){
   closeCustomDropdowns();
   menu.style.display = isOpen ? "none" : "block";
 };
+
 function setCustomDropdownOptions(inputId, options, onSelect){
   const input = document.getElementById(inputId);
   const menu = document.getElementById(inputId + "Menu");
@@ -745,8 +786,10 @@ function setCustomDropdownOptions(inputId, options, onSelect){
   if(!input || !menu || !label){
     return;
   }
+
   const currentValue = input.value || options[0]?.value || "";
   menu.innerHTML = "";
+
   options.forEach(optionData => {
     const option = document.createElement("button");
     option.type = "button";
@@ -759,12 +802,15 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.style.cursor = "pointer";
     option.style.fontSize = "13px";
     option.style.boxSizing = "border-box";
+
     option.onmouseenter = function(){
       option.style.background = "#eef2ff";
     };
+
     option.onmouseleave = function(){
       option.style.background = "white";
     };
+
     option.onclick = function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
@@ -773,11 +819,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
         onSelect(optionData.value);
       }
     };
+
     menu.appendChild(option);
   });
+
   const selectedOption = options.find(optionData =>
     String(optionData.value) === String(currentValue)
   );
+
   if(selectedOption){
     input.value = selectedOption.value;
     label.textContent = selectedOption.label;
@@ -786,6 +835,7 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     label.textContent = options[0]?.label || "Select";
   }
 }
+
 document.addEventListener("click", function(event){
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
@@ -794,51 +844,74 @@ document.addEventListener("click", function(event){
     closeCustomDropdowns();
   }
 });
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  if(!user){
-    return window.location.replace("/");
-  }
-  const teacherId = user._id || user.id;
-  let classesData = [];
-  let studentsData = [];
-  let teachersData = [];
-  let resultsData = [];
+
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user){
+  return window.location.replace("/");
+}
+
+const teacherId = user._id || user.id;
+let classesData = [];
+let studentsData = [];
+let teachersData = [];
+let resultsData = [];
+let paginationData = null;
+let dropdownReady = false;
+
+window.loadClasses = function(page){
+  const selectedClass = document.getElementById("classFilter").value || "all";
+  const search = document.getElementById("studentSearch").value || "";
+
+  const params = new URLSearchParams({
+    studentPage: String(page || 1),
+    studentLimit: "100",
+    className: selectedClass,
+    search
+  });
+
   document.getElementById("classContainer").innerHTML =
     "<p style='color:#64748b;'>Loading classes...</p>";
-  fetch("/api/classes-data")
-  .then(res => {
-    if(!res.ok){
-      throw new Error("Failed to load classes");
-    }
-    return res.json();
-  })
-  .then(data => {
-    classesData = data.classes || [];
-    studentsData = data.students || [];
-    teachersData = data.teachers || [];
-    resultsData = data.results || [];
-  const teacherMap = {};
-  teachersData.forEach(t => {
-    teacherMap[t._id] = t.name;
-  });
-  const teacherClasses = classesData;
-  const teacherResults = resultsData.filter(r =>
-    String(r.teacherId) === String(teacherId)
-  );
-  const classFilter = document.getElementById("classFilter");
-  const classFilterLabel = document.getElementById("classFilterLabel");
+
+  fetch("/api/classes-data?" + params.toString())
+    .then(res => {
+      if(!res.ok){
+        throw new Error("Failed to load classes");
+      }
+      return res.json();
+    })
+    .then(data => {
+      classesData = data.classes || [];
+      studentsData = data.students || [];
+      teachersData = data.teachers || [];
+      resultsData = data.results || [];
+      paginationData = data.pagination?.students || null;
+
+      setupClassDropdown();
+      renderClasses();
+      renderPagination();
+    })
+    .catch(err => {
+      console.error("CLASSES LOAD ERROR:", err);
+      document.getElementById("classContainer").innerHTML =
+        "<p style='color:#dc2626;'>Failed to load classes. Please refresh.</p>";
+    });
+};
+
+function setupClassDropdown(){
+  if(dropdownReady){
+    return;
+  }
+
   const uniqueNames = [...new Set(
-    teacherClasses.map(c => c.name).filter(Boolean)
+    classesData.map(c => c.name).filter(Boolean)
   )];
-  let selected =
-    localStorage.getItem("selectedClass") || "all";
+
+  let selected = localStorage.getItem("selectedClass") || "all";
   if(selected !== "all" && !uniqueNames.includes(selected)){
     selected = "all";
     localStorage.setItem("selectedClass", "all");
   }
-  classFilter.value = selected;
-  classFilterLabel.textContent =
-    selected === "all" ? "All Classes" : selected;
+
   setCustomDropdownOptions(
     "classFilter",
     [
@@ -850,38 +923,48 @@ document.addEventListener("click", function(event){
     ],
     function(value){
       localStorage.setItem("selectedClass", value);
-      location.reload();
+      loadClasses(1);
     }
   );
-  const visibleClasses = teacherClasses.filter(c => {
-    if(selected === "all") return true;
-    return c.name === selected;
+
+  document.getElementById("classFilter").value = selected;
+  document.getElementById("classFilterLabel").textContent =
+    selected === "all" ? "All Classes" : selected;
+
+  dropdownReady = true;
+}
+
+function renderClasses(){
+  const teacherMap = {};
+  teachersData.forEach(t => {
+    teacherMap[t._id] = t.name;
   });
-    function renderClasses(){
-    const searchValue =
-      (document.getElementById("studentSearch").value || "")
-        .trim()
-        .toLowerCase();
-    let html = "";
-    visibleClasses.forEach(c => {
-      let classStudents = studentsData.filter(s =>
-        String(s.class || "").trim().toUpperCase() ===
-        String(c.name || "").trim().toUpperCase() &&
-        String(s.teacherId) === String(teacherId)
-      );
-      if(searchValue){
-        classStudents = classStudents.filter(s =>
-          String(s.name || "").toLowerCase().includes(searchValue) ||
-          String(s.studentId || "").toLowerCase().includes(searchValue)
-        );
-      }
-      if(searchValue && classStudents.length === 0){
-        return;
-      }
-      const studentCards = classStudents.length
-        ? classStudents.map(s => \`
+
+  const selected = document.getElementById("classFilter").value || "all";
+  const teacherResults = resultsData.filter(r =>
+    String(r.teacherId) === String(teacherId)
+  );
+
+  const visibleClasses = classesData.filter(c => {
+    if(selected === "all") return true;
+    return String(c.name || "") === String(selected);
+  });
+
+  let html = "";
+
+  visibleClasses.forEach(c => {
+    const classStudents = studentsData.filter(s =>
+      String(s.class || "").trim().toUpperCase() ===
+      String(c.name || "").trim().toUpperCase() &&
+      String(s.teacherId) === String(teacherId)
+    );
+
+    const studentCards = classStudents.length
+      ? classStudents.map(s => {
+        const safeStudentId = jsString(s.studentId);
+        return \`
 <div
-onclick="previewStudent('\${s.studentId}')"
+onclick="previewStudent(\${safeStudentId})"
 style="
 background:#f8fafc;
 padding:12px;
@@ -890,16 +973,18 @@ cursor:pointer;
 border:1px solid #e5e7eb;
 "
 >
-<div style="font-weight:700;margin-bottom:4px;">
-\${s.name || "No Name"}
+  <div style="font-weight:700;margin-bottom:4px;">
+    \${escapeHtml(s.name || "No Name")}
+  </div>
+  <div style="font-size:12px;color:#64748b;">
+    ID: \${escapeHtml(s.studentId)}
+  </div>
 </div>
-<div style="font-size:12px;color:#64748b;">
-ID: \${s.studentId}
-</div>
-</div>
-\`).join("")
-        : "<p style='color:gray;'>No students</p>";
-      html += \`
+\`;
+      }).join("")
+      : "<p style='color:gray;'>No students on this page</p>";
+
+    html += \`
 <div style="
 background:white;
 padding:20px;
@@ -920,9 +1005,9 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
     gap:12px;
   ">
     <div>
-      <h2 style="margin:0 0 6px 0;">Class: \${c.name}</h2>
+      <h2 style="margin:0 0 6px 0;">Class: \${escapeHtml(c.name)}</h2>
       <div style="font-size:14px;opacity:0.9;">
-        Teacher: \${teacherMap[c.teacherId] || "Unknown"}
+        Teacher: \${escapeHtml(teacherMap[c.teacherId] || "Unknown")}
       </div>
     </div>
     <div style="
@@ -931,9 +1016,10 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
       border-radius:10px;
       font-weight:700;
     ">
-      Students: \${classStudents.length}
+      Students on page: \${classStudents.length}
     </div>
   </div>
+
   <div style="
     display:grid;
     grid-template-columns:minmax(260px,360px) 1fr;
@@ -953,8 +1039,9 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
         \${studentCards}
       </div>
     </div>
+
     <div
-      id="preview-\${c.name}"
+      id="preview-\${escapeHtml(c.name)}"
       class="studentPreview"
       style="
         background:#f8fafc;
@@ -973,37 +1060,41 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
   </div>
 </div>
 \`;
-    });
-    document.getElementById("classContainer").innerHTML =
-      html || "<p>No matching students found</p>";
-  }
-  renderClasses();
-  if(!teacherClasses.length){
+  });
+
+  document.getElementById("classContainer").innerHTML =
+    html || "<p style='color:#64748b;'>No matching students found.</p>";
+
+  if(!classesData.length){
     document.getElementById("classContainer").innerHTML =
       "<p style='color:#64748b;'>No classes mapped to this teacher.</p>";
   }
-    document.getElementById("studentSearch")
-    .addEventListener("input", function(){
-      renderClasses();
-    });
+
   window.previewStudent = function(studentId){
     const student = studentsData.find(s =>
       String(s.studentId) === String(studentId)
     );
+
     if(!student){
       return;
     }
+
     const studentResults = teacherResults
       .filter(r => String(r.studentId) === String(studentId))
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-    const previews = document.querySelectorAll(".studentPreview");
-    previews.forEach(p => {
-      p.innerHTML = "<p style='color:#64748b;margin:0;'>Select a student to preview performance and download report.</p>";
+
+    document.querySelectorAll(".studentPreview").forEach(p => {
+      p.innerHTML =
+        "<p style='color:#64748b;margin:0;'>Select a student to preview performance and download report.</p>";
     });
+
     const box = document.getElementById("preview-" + student.class);
     if(!box){
       return;
     }
+
+    const safeStudentId = jsString(student.studentId);
+
     const resultCards = studentResults.length
       ? studentResults.map(r => {
         const percent = r.total
@@ -1018,9 +1109,10 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
         const date = r.date
           ? new Date(r.date).toLocaleString()
           : "N/A";
+
         return \`
 <div
-onclick="loadResultPreview('\${r.testId}','\${studentId}','\${student.class}')"
+onclick="loadResultPreview(\${jsString(r.testId)}, \${safeStudentId}, \${jsString(student.class)})"
 style="
 background:white;
 padding:14px;
@@ -1031,19 +1123,20 @@ border:1px solid #e5e7eb;
 "
 >
   <div style="display:flex;justify-content:space-between;gap:10px;">
-    <b>\${r.testName || "Unnamed Test"}</b>
+    <b>\${escapeHtml(r.testName || "Unnamed Test")}</b>
     <b style="color:\${color};">\${percent}%</b>
   </div>
   <div style="margin-top:6px;font-size:13px;">
     Score: <b>\${r.score}/\${r.total}</b>
   </div>
   <div style="font-size:12px;color:#64748b;margin-top:4px;">
-    \${date}
+    \${escapeHtml(date)}
   </div>
 </div>
 \`;
       }).join("")
       : "<p style='color:#64748b;'>No results found for this student.</p>";
+
     box.innerHTML = \`
 <div style="
 display:flex;
@@ -1053,11 +1146,11 @@ gap:12px;
 margin-bottom:15px;
 ">
   <div>
-    <h2 style="margin:0 0 6px 0;">\${student.name || "No Name"}</h2>
-    <p style="margin:0;color:#64748b;">ID: \${student.studentId}</p>
-    <p style="margin:4px 0 0 0;color:#64748b;">Class: \${student.class}</p>
+    <h2 style="margin:0 0 6px 0;">\${escapeHtml(student.name || "No Name")}</h2>
+    <p style="margin:0;color:#64748b;">ID: \${escapeHtml(student.studentId)}</p>
+    <p style="margin:4px 0 0 0;color:#64748b;">Class: \${escapeHtml(student.class)}</p>
   </div>
-  <button onclick="downloadStudentReport('\${student.studentId}')" style="
+  <button onclick="downloadStudentReport(\${safeStudentId})" style="
     padding:10px 14px;
     background:#4f46e5;
     color:white;
@@ -1073,79 +1166,151 @@ margin-bottom:15px;
 \${resultCards}
 \`;
   };
-  window.downloadStudentReport = function(studentId){
-    fetch("/download-report", {
-      method:"POST",
-headers:{
-  "Content-Type":"application/json"
-},
-      body: JSON.stringify({ studentId })
-    })
-    .then(res => {
-      if(!res.ok){
-        throw new Error("Download failed");
-      }
-      return res.blob();
-    })
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "report.csv";
-      a.click();
-    })
-    .catch(() => alert("Download failed"));
-  };
-  window.loadResultPreview = function(testId, studentId, className){
-    fetch(
-      "/result?testId=" +
-      encodeURIComponent(testId) +
-      "&studentId=" +
-      encodeURIComponent(studentId)
-    )
-    .then(res => res.text())
-    .then(html => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
+}
 
-      if(doc.body){
-        doc.body.querySelectorAll("button").forEach(button => {
-          if((button.textContent || "").trim() === "Back"){
-            button.remove();
-          }
-        });
-      }
+function renderPagination(){
+  const paginationBox = document.getElementById("classPagination");
 
-      const body = doc.body ? doc.body.innerHTML : html;
-      const box = document.getElementById("preview-" + className);
-      if(box){
-        box.innerHTML =
-          '<div style="margin-bottom:12px;">' +
-          '<button onclick="previewStudent(\\'' + studentId + '\\')" style="' +
-          'padding:8px 12px;' +
-          'background:#4f46e5;' +
-          'color:white;' +
-          'border:none;' +
-          'border-radius:8px;' +
-          'cursor:pointer;' +
-          'font-weight:700;' +
-          '">' +
-          '← Back to Student' +
-          '</button>' +
-          '</div>' +
-          '<div>' +
-          body +
-          '</div>';
-      }
-    })
-    .catch(() => alert("Failed to load result"));
-  };
+  if(!paginationData || paginationData.totalPages <= 1){
+    paginationBox.innerHTML = "";
+    return;
+  }
+
+  paginationBox.innerHTML = \`
+<div style="
+display:flex;
+gap:10px;
+align-items:center;
+justify-content:flex-end;
+background:white;
+padding:12px;
+border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.06);
+">
+  <button
+    \${paginationData.hasPrevPage ? "" : "disabled"}
+    onclick="loadClasses(\${paginationData.page - 1})"
+    style="
+      padding:8px 12px;
+      border:none;
+      border-radius:8px;
+      background:#64748b;
+      color:white;
+      cursor:pointer;
+      opacity:\${paginationData.hasPrevPage ? "1" : "0.5"};
+    "
+  >
+    Previous
+  </button>
+
+  <span style="font-weight:700;color:#334155;">
+    Page \${paginationData.page} of \${paginationData.totalPages}
+  </span>
+
+  <button
+    \${paginationData.hasNextPage ? "" : "disabled"}
+    onclick="loadClasses(\${paginationData.page + 1})"
+    style="
+      padding:8px 12px;
+      border:none;
+      border-radius:8px;
+      background:#4f46e5;
+      color:white;
+      cursor:pointer;
+      opacity:\${paginationData.hasNextPage ? "1" : "0.5"};
+    "
+  >
+    Next
+  </button>
+</div>
+\`;
+}
+
+window.clearClassFilters = function(){
+  document.getElementById("studentSearch").value = "";
+  document.getElementById("classFilter").value = "all";
+  document.getElementById("classFilterLabel").textContent = "All Classes";
+  localStorage.setItem("selectedClass", "all");
+  loadClasses(1);
+};
+
+document.getElementById("studentSearch").addEventListener("keydown", function(event){
+  if(event.key === "Enter"){
+    loadClasses(1);
+  }
+});
+
+window.downloadStudentReport = function(studentId){
+  fetch("/download-report", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({ studentId })
   })
-  .catch(err => {
-    console.error("CLASSES LOAD ERROR:", err);
-    document.getElementById("classContainer").innerHTML =
-      "<p style='color:#dc2626;'>Failed to load classes. Please refresh.</p>";
-  });
+  .then(res => {
+    if(!res.ok){
+      throw new Error("Download failed");
+    }
+    return res.blob();
+  })
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "report.csv";
+    a.click();
+  })
+  .catch(() => alert("Download failed"));
+};
+
+window.loadResultPreview = function(testId, studentId, className){
+  fetch(
+    "/result?testId=" +
+    encodeURIComponent(testId) +
+    "&studentId=" +
+    encodeURIComponent(studentId)
+  )
+  .then(res => res.text())
+  .then(html => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    if(doc.body){
+      doc.body.querySelectorAll("button").forEach(button => {
+        if((button.textContent || "").trim() === "Back"){
+          button.remove();
+        }
+      });
+    }
+
+    const body = doc.body ? doc.body.innerHTML : html;
+    const box = document.getElementById("preview-" + className);
+
+    if(box){
+      box.innerHTML =
+        '<div style="margin-bottom:12px;">' +
+        '<button onclick="previewStudent(' + jsString(studentId) + ')" style="' +
+        'padding:8px 12px;' +
+        'background:#4f46e5;' +
+        'color:white;' +
+        'border:none;' +
+        'border-radius:8px;' +
+        'cursor:pointer;' +
+        'font-weight:700;' +
+        '">' +
+        '← Back to Student' +
+        '</button>' +
+        '</div>' +
+        '<div>' +
+        body +
+        '</div>';
+    }
+  })
+  .catch(() => alert("Failed to load result"));
+};
+
+loadClasses(1);
 };
 </script>
 `;
@@ -1156,39 +1321,77 @@ headers:{
   }
 });
 // ---------- CLASSES DATA API ----------
+// ---------- CLASSES DATA API ----------
 router.get("/api/classes-data", authMiddleware, async (req, res) => {
   try {
     const ClassSubject = require("../models/ClassSubject");
     const teacherId = String(req.user.id);
-const schoolId = req.user.schoolId || null;
-const schoolScopedFilter = schoolId
-  ? { teacherId, schoolId }
-  : { teacherId };
-const classSubjects = await ClassSubject.find(schoolScopedFilter)
-  .select("className teacherId schoolId")
-  .lean();
-const assignedClassNames = [...new Set(
-  classSubjects
-    .map(m => String(m.className || "").trim())
-    .filter(Boolean)
-)];
-const classLookupFilter = {
-  name: { $in: assignedClassNames },
-  ...(schoolId ? { schoolId } : {})
-};
-const mappedClassDocs = assignedClassNames.map(className => ({
-  _id: className,
-  name: className,
-  teacherId,
-  studentIds: [],
-  createdAt: null
-}));
+    const schoolId = req.user.schoolId || null;
+
+    const schoolScopedFilter = schoolId
+      ? { teacherId, schoolId }
+      : { teacherId };
+
+    const classSubjects = await ClassSubject.find(schoolScopedFilter)
+      .select("className teacherId schoolId")
+      .lean();
+
+    const assignedClassNames = [...new Set(
+      classSubjects
+        .map(m => String(m.className || "").trim().toUpperCase())
+        .filter(Boolean)
+    )];
+
+    const selectedClassName = String(req.query.className || "all")
+      .trim()
+      .toUpperCase();
+
+    const search = String(req.query.search || "").trim();
+
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const searchFilter = search
+      ? {
+          $or: [
+            { name: { $regex: escapedSearch, $options: "i" } },
+            { studentId: { $regex: escapedSearch, $options: "i" } }
+          ]
+        }
+      : {};
+
+    const classFilter =
+      selectedClassName && selectedClassName !== "ALL"
+        ? { class: selectedClassName }
+        : { class: { $in: assignedClassNames } };
+
+    const classLookupFilter = {
+      name: { $in: assignedClassNames },
+      ...(schoolId ? { schoolId } : {})
+    };
+
+    const mappedClassDocs = assignedClassNames.map(className => ({
+      _id: className,
+      name: className,
+      teacherId,
+      studentIds: [],
+      createdAt: null
+    }));
+
     const studentPage = Math.max(parseInt(req.query.studentPage || "1"), 1);
+
     const studentLimit = Math.min(
       Math.max(parseInt(req.query.studentLimit || "100"), 1),
       500
     );
+
     const studentSkip = (studentPage - 1) * studentLimit;
+
+    const studentQuery = {
+      ...schoolScopedFilter,
+      ...classFilter,
+      ...searchFilter
+    };
+
     const [classes, students, totalStudents, teachers, results] =
       await Promise.all([
         assignedClassNames.length
@@ -1197,18 +1400,22 @@ const mappedClassDocs = assignedClassNames.map(className => ({
               .sort({ name: 1 })
               .lean()
           : [],
-        Student.find(schoolScopedFilter)
-          .select("studentId name class teacherId")
-          .sort({ class: 1, name: 1 })
-          .skip(studentSkip)
-          .limit(studentLimit)
-          .lean(),
-        Student.countDocuments(schoolScopedFilter),
-User.find({
-  _id: teacherId,
-  role: "teacher",
-  ...(schoolId ? { schoolId } : {})
-})
+        assignedClassNames.length
+          ? Student.find(studentQuery)
+              .select("studentId name class teacherId")
+              .sort({ class: 1, name: 1 })
+              .skip(studentSkip)
+              .limit(studentLimit)
+              .lean()
+          : [],
+        assignedClassNames.length
+          ? Student.countDocuments(studentQuery)
+          : 0,
+        User.find({
+          _id: teacherId,
+          role: "teacher",
+          ...(schoolId ? { schoolId } : {})
+        })
           .select("name role")
           .lean(),
         Result.find(schoolScopedFilter)
@@ -1217,14 +1424,18 @@ User.find({
           .limit(500)
           .lean()
       ]);
-const classDocMap = {};
-classes.forEach(c => {
-  classDocMap[String(c.name || "").trim()] = c;
-});
-const mappedClasses = mappedClassDocs.map(mappedClass => ({
-  ...(classDocMap[mappedClass.name] || mappedClass),
-  teacherId
-}));
+
+    const classDocMap = {};
+
+    classes.forEach(c => {
+      classDocMap[String(c.name || "").trim().toUpperCase()] = c;
+    });
+
+    const mappedClasses = mappedClassDocs.map(mappedClass => ({
+      ...(classDocMap[mappedClass.name] || mappedClass),
+      teacherId
+    }));
+
     res.json({
       classes: mappedClasses,
       students,
