@@ -1,6 +1,6 @@
 exports.adminSettingsPage = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!req.user || req.user.role !== "admin") {
       return res.send("Access denied");
     }
     function escapeHtml(value) {
@@ -76,9 +76,10 @@ function safeJsonForScript(value) {
     const ClassSubject = require("../models/ClassSubject");
     const Subject = require("../models/Subject");
     const schoolId = req.user.schoolId || null;
-    const schoolScopedFilter = schoolId
-      ? { schoolId }
-      : {};
+    if (!schoolId) {
+      return res.send("School context missing");
+    }
+    const schoolScopedFilter = { schoolId };
 const [
   school,
   admins,
@@ -153,19 +154,38 @@ const studentDropdownData = students.map(s => {
       : "Select Teacher"
   };
 });
-    const teacherOptions = teachers.map(t => {
-      const teacherId = escapeAttribute(t._id);
-      const teacherName = escapeHtml(t.name || t.email || "Unnamed Teacher");
-      const teacherEmail = escapeHtml(t.email || "");
-      return `
-      <option value="${teacherId}">
-        ${teacherName} - ${teacherEmail}
-      </option>
-    `;
-    }).join("");
-    const subjectRows = subjects.map(s => `
+    const subjectRows = subjects.map(s => {
+  const subjectName = String(s.name || "").trim();
+  const mappedClasses = [...new Set(
+    mappings
+      .filter(m =>
+        String(m.subject || "").trim().toLowerCase() ===
+        subjectName.toLowerCase()
+      )
+      .map(m => String(m.className || "").trim())
+      .filter(Boolean)
+  )];
+  const mappedTeachers = [...new Set(
+    mappings
+      .filter(m =>
+        String(m.subject || "").trim().toLowerCase() ===
+        subjectName.toLowerCase()
+      )
+      .map(m => {
+        const teacher = teachers.find(t =>
+          String(t._id) === String(m.teacherId)
+        );
+        return teacher
+          ? String(teacher.name || teacher.email || "Unknown")
+          : "Unknown";
+      })
+      .filter(Boolean)
+  )];
+  return `
 <tr>
-  <td>${escapeHtml(s.name || "-")}</td>
+  <td>${escapeHtml(subjectName || "-")}</td>
+  <td>${escapeHtml(mappedClasses.join(", ") || "-")}</td>
+  <td>${escapeHtml(mappedTeachers.join(", ") || "-")}</td>
   <td>${
     s.createdAt
       ? escapeHtml(new Date(s.createdAt).toLocaleString())
@@ -187,10 +207,8 @@ const studentDropdownData = students.map(s => {
     </button>
   </td>
 </tr>
-`).join("");
-const subjectOptions = subjects.map(s => `
-  <option value="${escapeAttribute(s.name)}">${escapeHtml(s.name)}</option>
-`).join("");
+`;
+}).join("");
     const mappingRows = mappings.map(m => {
   const teacher = teachers.find(t =>
     String(t._id) === String(m.teacherId)
@@ -262,11 +280,21 @@ const studentRows = students.map(s => {
   const assignedTeacherDisplay = assignedTeacher
     ? assignedTeacher.name || assignedTeacher.email || "-"
     : "-";
+  const studentName = s.name || s.fullName || "-";
+  const studentIdDisplay = s.studentId || "-";
+  const studentClass = s.class || "";
+  const studentTeacherId = s.teacherId || "";
   return `
-<tr>
-  <td>${escapeHtml(s.name || s.fullName || "-")}</td>
-  <td>${escapeHtml(s.studentId || "-")}</td>
-  <td>${escapeHtml(s.class || "-")}</td>
+<tr
+  class="studentSettingsRow"
+  data-student-name="${escapeAttribute(studentName)}"
+  data-student-id="${escapeAttribute(studentIdDisplay)}"
+  data-student-class="${escapeAttribute(studentClass)}"
+  data-teacher-id="${escapeAttribute(studentTeacherId)}"
+>
+  <td>${escapeHtml(studentName)}</td>
+  <td>${escapeHtml(studentIdDisplay)}</td>
+  <td>${escapeHtml(studentClass || "-")}</td>
   <td>${escapeHtml(assignedTeacherDisplay)}</td>
   <td>
     ${customDropdownHtml(
@@ -316,10 +344,43 @@ const studentRows = students.map(s => {
 </tr>
 `;
 }).join("");
-const classRows = classes.map(c => `
+const classRows = classes.map(c => {
+  const className = String(c.name || "").trim();
+  const studentCount = students.filter(s =>
+    String(s.class || "").trim().toUpperCase() ===
+    className.toUpperCase()
+  ).length;
+  const mappedSubjects = [...new Set(
+    mappings
+      .filter(m =>
+        String(m.className || "").trim().toUpperCase() ===
+        className.toUpperCase()
+      )
+      .map(m => String(m.subject || "").trim())
+      .filter(Boolean)
+  )];
+  const mappedTeachers = [...new Set(
+    mappings
+      .filter(m =>
+        String(m.className || "").trim().toUpperCase() ===
+        className.toUpperCase()
+      )
+      .map(m => {
+        const teacher = teachers.find(t =>
+          String(t._id) === String(m.teacherId)
+        );
+        return teacher
+          ? String(teacher.name || teacher.email || "Unknown")
+          : "Unknown";
+      })
+      .filter(Boolean)
+  )];
+  return `
 <tr>
-  <td>${escapeHtml(c.name || "-")}</td>
-  <td>${Array.isArray(c.studentIds) ? c.studentIds.length : 0}</td>
+  <td>${escapeHtml(className || "-")}</td>
+  <td>${studentCount}</td>
+  <td>${escapeHtml(mappedTeachers.join(", ") || "-")}</td>
+  <td>${escapeHtml(mappedSubjects.join(", ") || "-")}</td>
   <td>${
     c.createdAt
       ? escapeHtml(new Date(c.createdAt).toLocaleString())
@@ -341,7 +402,8 @@ const classRows = classes.map(c => `
     </button>
   </td>
 </tr>
-`).join("");
+`;
+}).join("");
 const adminRows = admins.map(a => `
 <tr>
   <td>${escapeHtml(a.name || "-")}</td>
@@ -375,11 +437,6 @@ const adminRows = admins.map(a => `
     }
   </td>
 </tr>
-`).join("");
-const classOptions = [...new Set(
-  classes.map(c => c.name).filter(Boolean)
-)].map(className => `
-  <option value="${escapeAttribute(className)}">${escapeHtml(className)}</option>
 `).join("");
     res.send(`
 <body style="margin:0;font-family:Arial;background:#eef2ff;">
@@ -641,10 +698,12 @@ const classOptions = [...new Set(
 <tr>
   <th>Class</th>
   <th>Students</th>
+  <th>Mapped Teachers</th>
+  <th>Mapped Subjects</th>
   <th>Created Date</th>
   <th>Action</th>
 </tr>
-        ${classRows || "<tr><td colspan='4'>No classes found</td></tr>"}
+        ${classRows || "<tr><td colspan='6'>No classes found</td></tr>"}
       </table>
     </div>
     <div id="panel-subjects" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
@@ -697,10 +756,12 @@ const classOptions = [...new Set(
   <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
 <tr>
   <th>Subject</th>
+  <th>Mapped Classes</th>
+  <th>Mapped Teachers</th>
   <th>Created Date</th>
   <th>Action</th>
 </tr>
-    ${subjectRows || "<tr><td colspan='3'>No subjects found</td></tr>"}
+    ${subjectRows || "<tr><td colspan='5'>No subjects found</td></tr>"}
   </table>
 </div>
         <div id="panel-students" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
@@ -718,7 +779,68 @@ const classOptions = [...new Set(
           </p>
         </div>
       </div>
+      <div style="
+        background:#f8fafc;
+        border:1px solid #e5e7eb;
+        padding:16px;
+        border-radius:12px;
+        margin-bottom:18px;
+      ">
+        <div style="
+          display:grid;
+          grid-template-columns:minmax(220px, 1fr) 180px 220px 130px;
+          gap:12px;
+          align-items:center;
+          margin-bottom:12px;
+        ">
+          <input
+            id="studentSearchInput"
+            placeholder="Search name or student ID"
+            style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
+          />
+          ${customDropdownHtml("studentFilterClass", "All Classes", "", "180px")}
+          ${customDropdownHtml("studentFilterTeacher", "All Teachers", "", "220px")}
+          <select
+            id="studentPageSize"
+            style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;background:white;"
+          >
+            <option value="10">10 / page</option>
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+            <option value="100">100 / page</option>
+          </select>
+        </div>
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:12px;
+          flex-wrap:wrap;
+        ">
+          <div id="studentFilteredCount" style="color:#475569;font-weight:700;">
+            Showing ${students.length} students
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button
+              id="studentPrevPageButton"
+              onclick="changeStudentPage(-1)"
+              style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;cursor:pointer;font-weight:700;"
+            >
+              Previous
+            </button>
+            <span id="studentPageInfo" style="color:#475569;font-weight:700;">Page 1</span>
+            <button
+              id="studentNextPageButton"
+              onclick="changeStudentPage(1)"
+              style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;cursor:pointer;font-weight:700;"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
       <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
+<thead>
 <tr>
   <th>Name</th>
   <th>Student ID</th>
@@ -728,7 +850,13 @@ const classOptions = [...new Set(
   <th>Assign Teacher</th>
   <th>Action</th>
 </tr>
-        ${studentRows || "<tr><td colspan='7'>No students found</td></tr>"}
+</thead>
+<tbody id="studentTableBody">
+        ${studentRows}
+<tr id="studentNoResultsRow" style="display:none;">
+  <td colspan="7">No students found</td>
+</tr>
+</tbody>
       </table>
     </div>
         <div id="panel-admins" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
@@ -953,11 +1081,29 @@ function initializeAdminDropdowns(){
     { value: "", label: "Select Teacher" },
     ...adminTeacherOptions
   ];
+  const filterClassOptions = [
+    { value: "", label: "All Classes" },
+    ...adminClassOptions
+  ];
+  const filterTeacherOptions = [
+    { value: "", label: "All Teachers" },
+    ...adminTeacherOptions
+  ];
   setCustomDropdownOptions("mapClassName", classOptions);
   setCustomDropdownOptions("mapSubject", subjectOptions);
   setCustomDropdownOptions("mapTeacherId", teacherOptions);
   setCustomDropdownOptions("bulkStudentClass", classOptions);
   setCustomDropdownOptions("bulkStudentTeacherId", teacherOptions);
+  setCustomDropdownOptions("studentFilterClass", filterClassOptions, resetStudentPagination);
+  setCustomDropdownOptions("studentFilterTeacher", filterTeacherOptions, resetStudentPagination);
+  const studentSearchInput = document.getElementById("studentSearchInput");
+  if(studentSearchInput){
+    studentSearchInput.addEventListener("input", resetStudentPagination);
+  }
+  const studentPageSize = document.getElementById("studentPageSize");
+  if(studentPageSize){
+    studentPageSize.addEventListener("change", resetStudentPagination);
+  }
   studentDropdowns.forEach(student => {
     setCustomDropdownOptions(
       "studentClass-" + student.studentId,
@@ -980,10 +1126,99 @@ function initializeAdminDropdowns(){
       studentTeacherLabel.textContent = student.teacherLabel;
     }
   });
+  applyStudentFilters();
 }
 setTimeout(function(){
   initializeAdminDropdowns();
 }, 0);
+let studentCurrentPage = 1;
+function getStudentPageSize(){
+  const pageSizeSelect = document.getElementById("studentPageSize");
+  const pageSize = parseInt(pageSizeSelect?.value || "10", 10);
+  return Number.isNaN(pageSize) ? 10 : pageSize;
+}
+function resetStudentPagination(){
+  studentCurrentPage = 1;
+  applyStudentFilters();
+}
+function changeStudentPage(direction){
+  studentCurrentPage += direction;
+  applyStudentFilters();
+}
+function applyStudentFilters(){
+  const rows = Array.from(document.querySelectorAll(".studentSettingsRow"));
+  const noResultsRow = document.getElementById("studentNoResultsRow");
+  const countLabel = document.getElementById("studentFilteredCount");
+  const pageInfo = document.getElementById("studentPageInfo");
+  const previousButton = document.getElementById("studentPrevPageButton");
+  const nextButton = document.getElementById("studentNextPageButton");
+  const searchValue = (
+    document.getElementById("studentSearchInput")?.value || ""
+  ).trim().toLowerCase();
+  const classValue = document.getElementById("studentFilterClass")?.value || "";
+  const teacherValue = document.getElementById("studentFilterTeacher")?.value || "";
+  const pageSize = getStudentPageSize();
+  const filteredRows = rows.filter(row => {
+    const rowName = (row.dataset.studentName || "").toLowerCase();
+    const rowStudentId = (row.dataset.studentId || "").toLowerCase();
+    const rowClass = row.dataset.studentClass || "";
+    const rowTeacherId = row.dataset.teacherId || "";
+    const matchesSearch =
+      !searchValue ||
+      rowName.includes(searchValue) ||
+      rowStudentId.includes(searchValue);
+    const matchesClass =
+      !classValue ||
+      rowClass === classValue;
+    const matchesTeacher =
+      !teacherValue ||
+      rowTeacherId === teacherValue;
+    return matchesSearch && matchesClass && matchesTeacher;
+  });
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  if(studentCurrentPage < 1){
+    studentCurrentPage = 1;
+  }
+  if(studentCurrentPage > totalPages){
+    studentCurrentPage = totalPages;
+  }
+  const startIndex = (studentCurrentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  rows.forEach(row => {
+    row.style.display = "none";
+  });
+  filteredRows.slice(startIndex, endIndex).forEach(row => {
+    row.style.display = "";
+  });
+  if(noResultsRow){
+    noResultsRow.style.display = filteredRows.length === 0 ? "" : "none";
+  }
+  if(countLabel){
+    const visibleStart = filteredRows.length === 0 ? 0 : startIndex + 1;
+    const visibleEnd = Math.min(endIndex, filteredRows.length);
+    countLabel.textContent =
+      "Showing " +
+      visibleStart +
+      "-" +
+      visibleEnd +
+      " of " +
+      filteredRows.length +
+      " filtered students";
+  }
+  if(pageInfo){
+    pageInfo.textContent = "Page " + studentCurrentPage + " of " + totalPages;
+  }
+  if(previousButton){
+    previousButton.disabled = studentCurrentPage <= 1;
+    previousButton.style.opacity = previousButton.disabled ? "0.55" : "1";
+    previousButton.style.cursor = previousButton.disabled ? "not-allowed" : "pointer";
+  }
+  if(nextButton){
+    nextButton.disabled = studentCurrentPage >= totalPages;
+    nextButton.style.opacity = nextButton.disabled ? "0.55" : "1";
+    nextButton.style.cursor = nextButton.disabled ? "not-allowed" : "pointer";
+  }
+}
 function showAdminPanel(panelName, button){
   document.querySelectorAll(".adminPanel").forEach(panel => {
     panel.style.display = "none";
@@ -1128,56 +1363,6 @@ headers:{
   })
   .catch(() => {
     alert("Failed to delete class");
-  });
-}
-  function createStudent(){
-  const name =
-    document
-      .getElementById("newStudentName")
-      .value
-      .trim();
-  const studentId =
-    document
-      .getElementById("newStudentId")
-      .value
-      .trim();
-  const className =
-    document
-      .getElementById("newStudentClass")
-      .value
-      .trim();
-  const teacherId =
-    document
-      .getElementById("newStudentTeacherId")
-      .value
-      .trim();
-  if(!name || !studentId || !className || !teacherId){
-    alert("Student name, student ID, class, and teacher are required");
-    return;
-  }
-  fetch("/admin/create-student", {
-    method:"POST",
-headers:{
-  "Content-Type":"application/json"
-},
-    body: JSON.stringify({
-      name,
-      studentId,
-      className,
-      teacherId
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if(data.error){
-      alert(data.error);
-      return;
-    }
-    alert("Student created");
-    location.reload();
-  })
-  .catch(() => {
-    alert("Failed to create student");
   });
 }
 function updateStudentClass(studentMongoId){
