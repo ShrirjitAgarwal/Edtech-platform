@@ -33,6 +33,11 @@ router.get(
   authMiddleware,
   adminController.adminSettingsPage
 );
+router.get(
+  "/api/admin-settings-data",
+  authMiddleware,
+  adminController.adminSettingsData
+);
 router.post(
   "/admin/add-user",
   authMiddleware,

@@ -1665,3 +1665,274 @@ function addUserWithRole(role, prefix){
     res.send("Error loading admin settings");
   }
 };
+exports.adminSettingsData = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({
+        error: "Access denied"
+      });
+    }
+
+    const schoolId = req.user.schoolId || null;
+
+    if (!schoolId) {
+      return res.status(400).json({
+        error: "School context missing"
+      });
+    }
+
+    const entity = String(req.query.entity || "students").trim().toLowerCase();
+    const search = String(req.query.search || "").trim();
+    const className = String(req.query.className || "").trim();
+    const teacherId = String(req.query.teacherId || "").trim();
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit || "10", 10), 1),
+      100
+    );
+    const skip = (page - 1) * limit;
+
+    const User = require("../models/User");
+    const Student = require("../models/Student");
+    const ClassModel = require("../models/Class");
+    const Subject = require("../models/Subject");
+    const ClassSubject = require("../models/ClassSubject");
+
+    const schoolScopedFilter = { schoolId };
+
+    if (entity === "students") {
+      const query = {
+        ...schoolScopedFilter
+      };
+
+      if (search) {
+        const searchRegex = new RegExp(
+          search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "i"
+        );
+
+        query.$or = [
+          { name: searchRegex },
+          { fullName: searchRegex },
+          { studentId: searchRegex }
+        ];
+      }
+
+      if (className) {
+        query.class = className;
+      }
+
+      if (teacherId) {
+        query.teacherId = teacherId;
+      }
+
+      const [students, total, teachers] = await Promise.all([
+        Student.find(query)
+          .select("studentId name fullName class teacherId schoolId schoolCode")
+          .sort({ class: 1, name: 1, studentId: 1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Student.countDocuments(query),
+        User.find({
+          role: "teacher",
+          ...schoolScopedFilter
+        })
+          .select("name email role schoolId schoolCode")
+          .lean()
+      ]);
+
+      const teacherMap = {};
+      teachers.forEach(teacher => {
+        teacherMap[String(teacher._id)] =
+          teacher.name || teacher.email || "Unknown";
+      });
+
+      return res.json({
+        entity,
+        students: students.map(student => ({
+          ...student,
+          teacherName: teacherMap[String(student.teacherId)] || "-"
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+          hasPrevPage: page > 1
+        }
+      });
+    }
+
+    if (entity === "classes") {
+      const query = {
+        ...schoolScopedFilter
+      };
+
+      if (search) {
+        const searchRegex = new RegExp(
+          search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "i"
+        );
+
+        query.name = searchRegex;
+      }
+
+      const [classes, total, students, mappings, teachers] = await Promise.all([
+        ClassModel.find(query)
+          .select("name schoolId schoolCode createdAt")
+          .sort({ name: 1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        ClassModel.countDocuments(query),
+        Student.find(schoolScopedFilter)
+          .select("studentId class")
+          .lean(),
+        ClassSubject.find(schoolScopedFilter)
+          .select("className subject teacherId")
+          .lean(),
+        User.find({
+          role: "teacher",
+          ...schoolScopedFilter
+        })
+          .select("name email")
+          .lean()
+      ]);
+
+      const teacherMap = {};
+      teachers.forEach(teacher => {
+        teacherMap[String(teacher._id)] =
+          teacher.name || teacher.email || "Unknown";
+      });
+
+      return res.json({
+        entity,
+        classes: classes.map(classItem => {
+          const normalizedClassName = String(classItem.name || "")
+            .trim()
+            .toUpperCase();
+
+          const classStudents = students.filter(student =>
+            String(student.class || "").trim().toUpperCase() ===
+            normalizedClassName
+          );
+
+          const classMappings = mappings.filter(mapping =>
+            String(mapping.className || "").trim().toUpperCase() ===
+            normalizedClassName
+          );
+
+          return {
+            ...classItem,
+            studentCount: classStudents.length,
+            mappedSubjects: [...new Set(
+              classMappings
+                .map(mapping => String(mapping.subject || "").trim())
+                .filter(Boolean)
+            )],
+            mappedTeachers: [...new Set(
+              classMappings
+                .map(mapping => teacherMap[String(mapping.teacherId)] || "Unknown")
+                .filter(Boolean)
+            )]
+          };
+        }),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+          hasPrevPage: page > 1
+        }
+      });
+    }
+
+    if (entity === "subjects") {
+      const query = {
+        ...schoolScopedFilter
+      };
+
+      if (search) {
+        const searchRegex = new RegExp(
+          search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "i"
+        );
+
+        query.name = searchRegex;
+      }
+
+      const [subjects, total, mappings, teachers] = await Promise.all([
+        Subject.find(query)
+          .select("name schoolId schoolCode createdAt")
+          .sort({ name: 1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Subject.countDocuments(query),
+        ClassSubject.find(schoolScopedFilter)
+          .select("className subject teacherId")
+          .lean(),
+        User.find({
+          role: "teacher",
+          ...schoolScopedFilter
+        })
+          .select("name email")
+          .lean()
+      ]);
+
+      const teacherMap = {};
+      teachers.forEach(teacher => {
+        teacherMap[String(teacher._id)] =
+          teacher.name || teacher.email || "Unknown";
+      });
+
+      return res.json({
+        entity,
+        subjects: subjects.map(subject => {
+          const normalizedSubjectName = String(subject.name || "")
+            .trim()
+            .toLowerCase();
+
+          const subjectMappings = mappings.filter(mapping =>
+            String(mapping.subject || "").trim().toLowerCase() ===
+            normalizedSubjectName
+          );
+
+          return {
+            ...subject,
+            mappedClasses: [...new Set(
+              subjectMappings
+                .map(mapping => String(mapping.className || "").trim())
+                .filter(Boolean)
+            )],
+            mappedTeachers: [...new Set(
+              subjectMappings
+                .map(mapping => teacherMap[String(mapping.teacherId)] || "Unknown")
+                .filter(Boolean)
+            )]
+          };
+        }),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+          hasPrevPage: page > 1
+        }
+      });
+    }
+
+    return res.status(400).json({
+      error: "Invalid admin settings entity"
+    });
+  } catch (err) {
+    console.error("ADMIN SETTINGS DATA API ERROR:", err);
+    res.status(500).json({
+      error: "Failed to load admin settings data"
+    });
+  }
+};
