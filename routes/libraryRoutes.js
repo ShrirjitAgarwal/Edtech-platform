@@ -62,7 +62,7 @@ justify-content:flex-start;
 <input
 id="questionSearch"
 placeholder="Search questions"
-oninput="renderLibrary()"
+oninput="scheduleLibrarySearch()"
 style="
 width:100%;
 padding:6px 8px;
@@ -319,6 +319,18 @@ overflow-y:auto;
 ">
 <h2 style="margin-top:0;">Questions</h2>
 <div id="libraryList"></div>
+<div
+  id="libraryPagination"
+  style="
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-top:14px;
+    padding-top:12px;
+    border-top:1px solid #e5e7eb;
+  "
+></div>
 </div>
 <div
 id="questionPreview"
@@ -345,6 +357,17 @@ window.location.replace("/");
 }
 const teacherId = user._id || user.id;
 let questions = [];
+let libraryPage = 1;
+let libraryLimit = 50;
+let libraryPagination = {
+page: 1,
+limit: 50,
+total: 0,
+totalPages: 1,
+hasNextPage: false,
+hasPrevPage: false
+};
+let librarySearchTimer = null;
 function escapeHtml(value){
 const div = document.createElement("div");
 div.textContent = String(value || "");
@@ -404,7 +427,7 @@ option.onclick = function(){
 input.value = optionData.value;
 label.textContent = optionData.label;
 closeCustomDropdowns();
-renderLibrary();
+loadLibrary(1);
 };
 menu.appendChild(option);
 });
@@ -442,9 +465,50 @@ setCustomDropdownOptions("scopeFilter", [
 { value: "public", label: "Platform Questions" },
 { value: "teacher", label: "My Questions" }
 ]);
+loadLibrary(1);
+function getLibraryParams(page){
+const params = new URLSearchParams();
+params.set("page", String(page || libraryPage || 1));
+params.set("limit", String(libraryLimit));
+const searchValue =
+(document.getElementById("questionSearch")?.value || "")
+.trim();
+const subject = document.getElementById("subjectFilter")?.value || "all";
+const board = document.getElementById("boardFilter")?.value || "all";
+const scope = document.getElementById("scopeFilter")?.value || "all";
+const difficulty = document.getElementById("difficultyFilter")?.value || "all";
+const attempt = document.getElementById("attemptFilter")?.value || "all";
+if(searchValue){
+params.set("search", searchValue);
+}
+if(subject !== "all"){
+params.set("subject", subject);
+}
+if(board !== "all"){
+params.set("board", board);
+}
+if(scope !== "all"){
+params.set("scope", scope);
+}
+if(difficulty !== "all"){
+params.set("difficulty", difficulty);
+}
+if(attempt !== "all"){
+params.set("attempt", attempt);
+}
+return params;
+}
+function scheduleLibrarySearch(){
+clearTimeout(librarySearchTimer);
+librarySearchTimer = setTimeout(function(){
+loadLibrary(1);
+}, 300);
+}
+function loadLibrary(page){
+libraryPage = page || 1;
 document.getElementById("libraryList").innerHTML =
 "<p style='color:#64748b;'>Loading questions...</p>";
-fetch("/api/library-data")
+fetch("/api/library-data?" + getLibraryParams(libraryPage).toString())
 .then(res => {
 if(!res.ok){
 throw new Error("Failed to load library");
@@ -453,39 +517,22 @@ return res.json();
 })
 .then(data => {
 questions = data.questions || [];
-populateFilters();
+libraryPagination = data.pagination || libraryPagination;
+if(data.filters){
+populateFilters(data.filters);
+}
 renderLibrary();
+renderPagination();
 })
 .catch(err => {
 console.error("LIBRARY LOAD ERROR:", err);
 document.getElementById("libraryList").innerHTML =
 "<p style='color:#dc2626;'>Failed to load questions. Please refresh.</p>";
 });
-function getVisibleQuestions(){
-return questions.filter(q => {
-const scope = String(q.scope || "").trim();
-return (
-scope === "public" ||
-scope === "" ||
-(
-scope === "teacher" &&
-String(q.teacherId) === String(teacherId)
-)
-);
-});
 }
-function populateFilters(){
-const visibleQuestions = getVisibleQuestions();
-const subjects = [...new Set(
-visibleQuestions
-.map(q => q.subject || q.category)
-.filter(Boolean)
-)].sort();
-const boards = [...new Set(
-visibleQuestions
-.map(q => q.board || "General")
-.filter(Boolean)
-)].sort();
+function populateFilters(filters){
+const subjects = (filters?.subjects || []).filter(Boolean).sort();
+const boards = (filters?.boards || []).filter(Boolean).sort();
 setCustomDropdownOptions(
 "subjectFilter",
 [
@@ -623,47 +670,41 @@ optionsHtml +
  "'>+ Add to Test</button>";
 }
 function renderLibrary(){
-const subject = document.getElementById("subjectFilter").value;
-const board = document.getElementById("boardFilter").value;
-const scope = document.getElementById("scopeFilter").value;
-const difficulty = document.getElementById("difficultyFilter").value;
-const attempt = document.getElementById("attemptFilter").value;
-const searchValue =
-(document.getElementById("questionSearch").value || "")
-.trim()
-.toLowerCase();
-let visibleQuestions = getVisibleQuestions();
-visibleQuestions = visibleQuestions.filter(q => {
-const qSubject = q.subject || q.category;
-const qBoard = q.board || "General";
-const questionText = String(q.question || "").toLowerCase();
-const subjectMatch =
-subject === "all" || qSubject === subject;
-const boardMatch =
-board === "all" || qBoard === board;
-const qScope = String(q.scope || "").trim();
-const normalizedScope =
-qScope === ""
-  ? "public"
-  : qScope;
-const scopeMatch =
-scope === "all" || normalizedScope === scope;
-const searchMatch =
-!searchValue || questionText.includes(searchValue);
-const difficultyMatch =
-difficulty === "all" ||
-String(q.difficulty || "").toLowerCase() === difficulty;
-const attemptedCount = q.analytics?.attempted || 0;
-const attemptMatch =
-attempt === "all" ||
-(attempt === "attempted" && attemptedCount > 0) ||
-(attempt === "not_attempted" && attemptedCount === 0);
-return subjectMatch && boardMatch && scopeMatch && searchMatch && difficultyMatch && attemptMatch;
-});
 document.getElementById("libraryList").innerHTML =
-visibleQuestions.length
-? visibleQuestions.map(q => buildQuestionCard(q)).join("")
+questions.length
+? questions.map(q => buildQuestionCard(q)).join("")
 : "<p style='color:#64748b;'>No questions found</p>";
+}
+function renderPagination(){
+const paginationBox = document.getElementById("libraryPagination");
+if(!paginationBox){
+return;
+}
+const total = Number(libraryPagination.total || 0);
+const page = Number(libraryPagination.page || 1);
+const totalPages = Number(libraryPagination.totalPages || 1);
+paginationBox.innerHTML =
+"<div style='color:#64748b;font-size:13px;'>" +
+"Showing page " + page + " of " + totalPages + " • " + total + " questions" +
+"</div>" +
+"<div style='display:flex;gap:8px;'>" +
+"<button " +
+(libraryPagination.hasPrevPage ? "" : "disabled ") +
+"onclick='loadLibrary(" + (page - 1) + ")' " +
+"style='padding:8px 12px;border:none;border-radius:8px;background:#334155;color:white;cursor:pointer;font-weight:700;" +
+(libraryPagination.hasPrevPage ? "" : "opacity:0.45;cursor:not-allowed;") +
+"'>" +
+"Previous" +
+"</button>" +
+"<button " +
+(libraryPagination.hasNextPage ? "" : "disabled ") +
+"onclick='loadLibrary(" + (page + 1) + ")' " +
+"style='padding:8px 12px;border:none;border-radius:8px;background:#4f46e5;color:white;cursor:pointer;font-weight:700;" +
+(libraryPagination.hasNextPage ? "" : "opacity:0.45;cursor:not-allowed;") +
+"'>" +
+"Next" +
+"</button>" +
+"</div>";
 }
 function addToTest(id){
 let selected = JSON.parse(localStorage.getItem("selectedQuestions") || "[]");
@@ -695,46 +736,136 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
       100
     );
     const skip = (page - 1) * limit;
- const publicQuestionQuery = {
-   $or: [
-     { scope: "public" },
-     { scope: { $exists: false } },
-     { scope: null },
-     { scope: "" }
-   ]
- };
- const teacherQuestionQuery = schoolId
-   ? {
-       scope: "teacher",
-       teacherId,
-       schoolId
-     }
-   : {
-       scope: "teacher",
-       teacherId
-     };
- const query = {
-   $or: [
-     publicQuestionQuery,
-     teacherQuestionQuery
-   ]
- };
-    const [questions, total] = await Promise.all([
+    const search = String(req.query.search || "").trim();
+    const subject = String(req.query.subject || "").trim();
+    const board = String(req.query.board || "").trim();
+    const scope = String(req.query.scope || "").trim();
+    const difficulty = String(req.query.difficulty || "").trim().toLowerCase();
+    const attempt = String(req.query.attempt || "").trim();
+    const publicQuestionQuery = {
+      $or: [
+        { scope: "public" },
+        { scope: { $exists: false } },
+        { scope: null },
+        { scope: "" }
+      ]
+    };
+    const teacherQuestionQuery = schoolId
+      ? {
+          scope: "teacher",
+          teacherId,
+          schoolId
+        }
+      : {
+          scope: "teacher",
+          teacherId
+        };
+    const query = {
+      $and: [
+        {
+          $or: [
+            publicQuestionQuery,
+            teacherQuestionQuery
+          ]
+        }
+      ]
+    };
+    if (search) {
+      const searchRegex = new RegExp(
+        search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        "i"
+      );
+      query.$and.push({
+        $or: [
+          { question: searchRegex },
+          { subject: searchRegex },
+          { category: searchRegex },
+          { board: searchRegex },
+          { difficulty: searchRegex }
+        ]
+      });
+    }
+    if (subject && subject !== "all") {
+      query.$and.push({
+        $or: [
+          { subject },
+          { category: subject }
+        ]
+      });
+    }
+    if (board && board !== "all") {
+      query.$and.push({
+        board
+      });
+    }
+    if (scope && scope !== "all") {
+      if (scope === "public") {
+        query.$and.push(publicQuestionQuery);
+      } else if (scope === "teacher") {
+        query.$and.push(teacherQuestionQuery);
+      }
+    }
+    if (difficulty && difficulty !== "all") {
+      query.$and.push({
+        difficulty
+      });
+    }
+    if (attempt && attempt !== "all") {
+      if (attempt === "attempted") {
+        query.$and.push({
+          "analytics.attempted": { $gt: 0 }
+        });
+      }
+      if (attempt === "not_attempted") {
+        query.$and.push({
+          $or: [
+            { "analytics.attempted": { $exists: false } },
+            { "analytics.attempted": 0 }
+          ]
+        });
+      }
+    }
+    const filterBaseQuery = {
+      $or: [
+        publicQuestionQuery,
+        teacherQuestionQuery
+      ]
+    };
+    const [questions, total, filterQuestions] = await Promise.all([
       Question.find(query)
         .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Question.countDocuments(query)
+      Question.countDocuments(query),
+      Question.find(filterBaseQuery)
+        .select("subject category board")
+        .lean()
     ]);
+    const subjects = [...new Set(
+      filterQuestions
+        .map(q => q.subject || q.category)
+        .filter(Boolean)
+        .map(value => String(value))
+    )];
+    const boards = [...new Set(
+      filterQuestions
+        .map(q => q.board || "General")
+        .filter(Boolean)
+        .map(value => String(value))
+    )];
     res.json({
       questions,
+      filters: {
+        subjects,
+        boards
+      },
       pagination: {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.max(Math.ceil(total / limit), 1),
         hasNextPage: page * limit < total,
         hasPrevPage: page > 1
       }
