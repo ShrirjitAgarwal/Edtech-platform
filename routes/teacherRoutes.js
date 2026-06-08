@@ -1255,7 +1255,7 @@ window.loadResultPreview = function(testId, studentId, className){
     if(box){
       box.innerHTML =
         '<div style="margin-bottom:12px;">' +
-        '<button onclick="previewStudent(' + jsString(studentId) + ')" style="' +
+        '<button id="backToStudentButton" type="button" style="' +
         'padding:8px 12px;' +
         'background:#4f46e5;' +
         'color:white;' +
@@ -1270,6 +1270,13 @@ window.loadResultPreview = function(testId, studentId, className){
         '<div>' +
         body +
         '</div>';
+
+      const backButton = document.getElementById("backToStudentButton");
+      if(backButton){
+        backButton.addEventListener("click", function(){
+          previewStudent(studentId);
+        });
+      }
     }
   })
   .catch(() => alert("Failed to load result"));
