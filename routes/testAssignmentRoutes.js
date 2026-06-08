@@ -15,7 +15,7 @@ try {
  let updated = 0;
  let skipped = 0;
  for(const row of data){
-   // ✅ VALIDATION
+   // ✅ VALIDATIO
    if(!row.studentId || !row.name || !row.class || !row.teacherEmail){
      skipped++;
      continue;
@@ -88,67 +88,55 @@ classDoc = await ClassModel.create({
 });
 // ---------- PUBLISH TEST ----------
 // ---------- PUBLISH TEST ----------
-router.post("/assign-test", authMiddleware, async (req, res) => {
+async function assignTestHandler(req, res) {
   try {
     const Test = require("../models/Test");
     const Assignment = require("../models/Assignment");
     const ClassSubject = require("../models/ClassSubject");
-
     const { testId } = req.body;
     const teacherId = String(req.user.id);
     const schoolId = req.user.schoolId || null;
-
     if (!testId) {
       return res.status(400).json({
         error: "Missing testId"
       });
     }
-
     const test = await Test.findOne({
       _id: testId,
       teacherId,
       ...(schoolId ? { schoolId } : {})
     });
-
     if (!test) {
       return res.status(404).json({
         error: "Test not found or unauthorized"
       });
     }
-
     const className = String(test.className || "").trim().toUpperCase();
     const subject = String(test.subject || "").trim();
-
     if (!className || !subject) {
       return res.status(400).json({
         error: "Test is missing class or subject"
       });
     }
-
     const mapping = await ClassSubject.findOne({
       className,
       subject,
       teacherId,
       ...(schoolId ? { schoolId } : {})
     });
-
     if (!mapping) {
       return res.status(403).json({
         error: "You are not allowed to publish this test"
       });
     }
-
     const assignmentFilter = {
       testId: String(testId),
       className,
       teacherId,
       ...(schoolId ? { schoolId } : {})
     };
-
     const existingAssignment = await Assignment.findOne(assignmentFilter);
-
     let assignmentCreated = false;
-
     if (!existingAssignment) {
       await Assignment.create({
         testId: String(testId),
@@ -158,19 +146,15 @@ router.post("/assign-test", authMiddleware, async (req, res) => {
         schoolId: test.schoolId || schoolId || null,
         schoolCode: test.schoolCode || req.user.schoolCode || null
       });
-
       assignmentCreated = true;
     }
-
     test.className = className;
     test.subject = subject;
     test.schoolId = test.schoolId || schoolId || null;
     test.schoolCode = test.schoolCode || req.user.schoolCode || null;
     test.status = "published";
     test.publishedAt = test.publishedAt || new Date();
-
     await test.save();
-
     await logAuditEvent(req, {
       event: "teacher_test_published",
       status: "success",
@@ -185,7 +169,6 @@ router.post("/assign-test", authMiddleware, async (req, res) => {
         publishedAt: test.publishedAt
       }
     });
-
     res.json({
       status: "published",
       message: assignmentCreated
@@ -199,7 +182,10 @@ router.post("/assign-test", authMiddleware, async (req, res) => {
       error: "Failed to publish test"
     });
   }
-});
+}
+
+router.post("/assign-test", authMiddleware, assignTestHandler);
+router.post("/api/teacher/tests/assign", authMiddleware, assignTestHandler);
 // ---------- ADD SUBJECT ----------
 router.post("/add-subject", async (req, res) => {
   try {
@@ -233,7 +219,7 @@ router.post("/add-subject", async (req, res) => {
   }
 });
 // ---------- GET TESTS FOR STUDENT ----------
-router.get("/get-tests", async (req, res) => {
+async function getStudentTestsHandler(req, res) {
   try {
     const jwt = require("jsonwebtoken");
     const Assignment = require("../models/Assignment");
@@ -337,5 +323,7 @@ router.get("/get-tests", async (req, res) => {
     console.error("GET TESTS ERROR:", err);
     res.status(500).json({ error: "Failed to fetch tests" });
   }
-});
+}
+router.get("/get-tests", getStudentTestsHandler);
+router.get("/api/student/tests", getStudentTestsHandler);
 module.exports = router;

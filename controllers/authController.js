@@ -1,7 +1,7 @@
 exports.registerTeacher = (req, res) => {
   const {
     readJSON,
-    writeJSON
+    writeJSO
   } = require("../utils/file");
   const teachers =
     readJSON(

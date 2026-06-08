@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const adminActionLogSchema = new mongoose.Schema({
   action: {
     type: String,
@@ -55,11 +54,9 @@ const adminActionLogSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
 adminActionLogSchema.index({ action: 1 });
 adminActionLogSchema.index({ actorId: 1 });
 adminActionLogSchema.index({ schoolId: 1 });
 adminActionLogSchema.index({ requestId: 1 });
 adminActionLogSchema.index({ createdAt: -1 });
-
 module.exports = mongoose.model("AdminActionLog", adminActionLogSchema);

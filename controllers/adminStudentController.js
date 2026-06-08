@@ -1,6 +1,10 @@
 const {
   logAdminAction
 } = require("../services/adminActionLogger");
+const {
+  ok,
+  fail
+} = require("../utils/apiResponse");
 function normalizeKey(value) {
   return String(value || "")
     .trim()
@@ -9,10 +13,8 @@ function normalizeKey(value) {
 }
 exports.createStudentFromAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
-        error: "Access denied"
-      });
+    if (!req.user || req.user.role !== "admin") {
+      return fail(res, "Access denied", 403, "ACCESS_DENIED");
     }
     const Student = require("../models/Student");
     const ClassModel = require("../models/Class");
@@ -22,37 +24,42 @@ exports.createStudentFromAdmin = async (req, res) => {
     const className = String(req.body.className || "").trim().toUpperCase();
     const teacherId = String(req.body.teacherId || "").trim();
     if (!name || !studentId || !className || !teacherId) {
-      return res.status(400).json({
-        error: "Student name, student ID, class, and teacher are required"
-      });
+      return fail(
+        res,
+        "Student name, student ID, class, and teacher are required",
+        400,
+        "MISSING_REQUIRED_FIELDS"
+      );
     }
+    const schoolFilter = req.user.schoolId
+      ? { schoolId: req.user.schoolId }
+      : {};
     const existingStudent = await Student.findOne({
       studentId,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     }).lean();
     if (existingStudent) {
-      return res.status(400).json({
-        error: "Student ID already exists"
-      });
+      return fail(res, "Student ID already exists", 409, "STUDENT_ID_EXISTS");
     }
     const existingClass = await ClassModel.findOne({
       name: className,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     }).lean();
     if (!existingClass) {
-      return res.status(404).json({
-        error: "Class not found"
-      });
+      return fail(res, "Class not found", 404, "CLASS_NOT_FOUND");
     }
     const teacher = await User.findOne({
       _id: teacherId,
       role: "teacher",
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     }).lean();
     if (!teacher) {
-      return res.status(404).json({
-        error: "Teacher not found in this school"
-      });
+      return fail(
+        res,
+        "Teacher not found in this school",
+        404,
+        "TEACHER_NOT_FOUND"
+      );
     }
     const nameParts = name.split(/\s+/).filter(Boolean);
     const firstName = nameParts[0] || name;
@@ -74,7 +81,7 @@ exports.createStudentFromAdmin = async (req, res) => {
     await ClassModel.updateOne(
       {
         _id: existingClass._id,
-        ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+        ...schoolFilter
       },
       {
         $addToSet: {
@@ -82,36 +89,49 @@ exports.createStudentFromAdmin = async (req, res) => {
         }
       }
     );
-await logAdminAction(req, {
-  action: "admin_student_created",
-  status: "success",
-  targetType: "Student",
-  targetId: student._id,
-  metadata: {
-    studentId: student.studentId,
-    studentName: student.name,
-    className: student.class,
-    teacherId: student.teacherId
-  }
-});
-
-res.json({
- status: "created",
- student
- });
+    await logAdminAction(req, {
+      action: "admin_student_created",
+      status: "success",
+      targetType: "Student",
+      targetId: student._id,
+      metadata: {
+        studentId: student.studentId,
+        studentName: student.name,
+        className: student.class,
+        teacherId: student.teacherId,
+        schoolId: student.schoolId || null,
+        schoolCode: student.schoolCode || null
+      }
+    });
+    return ok(res, {
+      status: "created",
+      student
+    });
   } catch (err) {
     console.error("ADMIN CREATE STUDENT ERROR:", err);
-    res.status(500).json({
-      error: "Failed to create student"
-    });
+    if (err && err.code === 11000) {
+      return fail(res, "Student ID already exists", 409, "STUDENT_ID_EXISTS");
+    }
+    if (err && err.name === "CastError") {
+      return fail(
+        res,
+        "Invalid student, class, or teacher id",
+        400,
+        "INVALID_ID"
+      );
+    }
+    return fail(
+      res,
+      "Failed to create student",
+      500,
+      "CREATE_STUDENT_FAILED"
+    );
   }
 };
 exports.bulkCreateStudentsFromAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
-        error: "Access denied"
-      });
+    if (!req.user || req.user.role !== "admin") {
+      return fail(res, "Access denied", 403, "ACCESS_DENIED");
     }
     const Student = require("../models/Student");
     const ClassModel = require("../models/Class");
@@ -122,80 +142,92 @@ exports.bulkCreateStudentsFromAdmin = async (req, res) => {
       ? req.body.students
       : [];
     if (!className || !teacherId || students.length === 0) {
-      return res.status(400).json({
-        error: "Class, teacher, and at least one student are required"
-      });
+      return fail(
+        res,
+        "Class, teacher, and at least one student are required",
+        400,
+        "MISSING_REQUIRED_FIELDS"
+      );
     }
+    const schoolFilter = req.user.schoolId
+      ? { schoolId: req.user.schoolId }
+      : {};
     const existingClass = await ClassModel.findOne({
       name: className,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     }).lean();
     if (!existingClass) {
-      return res.status(404).json({
-        error: "Class not found"
-      });
+      return fail(res, "Class not found", 404, "CLASS_NOT_FOUND");
     }
     const teacher = await User.findOne({
       _id: teacherId,
-      role: { $in: ["teacher", "admin"] },
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      role: "teacher",
+      ...schoolFilter
     }).lean();
     if (!teacher) {
-      return res.status(404).json({
-        error: "Teacher not found in this school"
-      });
+      return fail(
+        res,
+        "Teacher not found in this school",
+        404,
+        "TEACHER_NOT_FOUND"
+      );
     }
     const cleanedStudents = students
-      .map((s) => ({
-        name: String(s.name || "").trim(),
-        studentId: String(s.studentId || "").trim()
+      .map(student => ({
+        name: String(student.name || "").trim(),
+        studentId: String(student.studentId || "").trim()
       }))
-      .filter((s) => s.name && s.studentId);
+      .filter(student => student.name && student.studentId);
     if (cleanedStudents.length === 0) {
-      return res.status(400).json({
-        error: "No valid students found"
-      });
+      return fail(res, "No valid students found", 400, "NO_VALID_STUDENTS");
     }
     const seenIds = new Set();
     const duplicateIds = [];
-    cleanedStudents.forEach((s) => {
-      const key = normalizeKey(s.studentId);
+    cleanedStudents.forEach(student => {
+      const key = normalizeKey(student.studentId);
       if (seenIds.has(key)) {
-        duplicateIds.push(s.studentId);
+        duplicateIds.push(student.studentId);
       }
       seenIds.add(key);
     });
     if (duplicateIds.length > 0) {
-      return res.status(400).json({
-        error: "Duplicate student IDs in this batch: " + duplicateIds.join(", ")
-      });
+      return fail(
+        res,
+        "Duplicate student IDs in this batch: " + duplicateIds.join(", "),
+        400,
+        "DUPLICATE_STUDENT_IDS_IN_BATCH",
+        { duplicateIds }
+      );
     }
-    const submittedIds = cleanedStudents.map((s) => s.studentId);
+    const submittedIds = cleanedStudents.map(student => student.studentId);
     const existingStudents = await Student.find({
       studentId: { $in: submittedIds },
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     })
       .select("studentId")
       .lean();
     if (existingStudents.length > 0) {
-      return res.status(400).json({
-        error:
-          "Student IDs already exist: " +
-          existingStudents.map((s) => s.studentId).join(", ")
-      });
+      const existingStudentIds = existingStudents.map(student => student.studentId);
+      return fail(
+        res,
+        "Student IDs already exist: " + existingStudentIds.join(", "),
+        409,
+        "STUDENT_IDS_EXIST",
+        { studentIds: existingStudentIds }
+      );
     }
-    const docs = cleanedStudents.map((s) => {
-      const nameParts = s.name.split(/\s+/).filter(Boolean);
-      const firstName = nameParts[0] || s.name;
+    const docs = cleanedStudents.map(student => {
+      const nameParts = student.name.split(/\s+/).filter(Boolean);
+      const firstName = nameParts[0] || student.name;
       const lastName = nameParts.slice(1).join(" ");
       return {
-        studentId: s.studentId,
-        studentKey: normalizeKey(s.studentId),
-        name: s.name,
+        studentId: student.studentId,
+        studentKey: normalizeKey(student.studentId),
+        name: student.name,
         firstName,
         lastName,
-        fullName: s.name,
-        nameKey: normalizeKey(s.name),
+        fullName: student.name,
+        nameKey: normalizeKey(student.name),
         class: className,
         teacherId,
         schoolId: req.user.schoolId || null,
@@ -207,47 +239,60 @@ exports.bulkCreateStudentsFromAdmin = async (req, res) => {
     await ClassModel.updateOne(
       {
         _id: existingClass._id,
-        ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+        ...schoolFilter
       },
       {
         $addToSet: {
           studentIds: {
-            $each: createdStudents.map((s) => s.studentId)
+            $each: createdStudents.map(student => student.studentId)
           }
         }
       }
     );
-await logAdminAction(req, {
-  action: "admin_students_bulk_created",
-  status: "success",
-  targetType: "Student",
-  targetId: null,
-  metadata: {
-    createdCount: createdStudents.length,
-    className,
-    teacherId,
-    studentIds: createdStudents.map(s => s.studentId)
-  }
-});
-
-res.json({
- status: "created",
- createdCount: createdStudents.length,
- students: createdStudents
- });
+    await logAdminAction(req, {
+      action: "admin_students_bulk_created",
+      status: "success",
+      targetType: "Student",
+      targetId: null,
+      metadata: {
+        createdCount: createdStudents.length,
+        className,
+        teacherId,
+        schoolId: req.user.schoolId || null,
+        schoolCode: req.user.schoolCode || null,
+        studentIds: createdStudents.map(student => student.studentId)
+      }
+    });
+    return ok(res, {
+      status: "created",
+      createdCount: createdStudents.length,
+      students: createdStudents
+    });
   } catch (err) {
     console.error("ADMIN BULK CREATE STUDENTS ERROR:", err);
-    res.status(500).json({
-      error: "Failed to create students"
-    });
+    if (err && err.code === 11000) {
+      return fail(
+        res,
+        "One or more student IDs already exist",
+        409,
+        "STUDENT_IDS_EXIST"
+      );
+    }
+    if (err && err.name === "CastError") {
+      return fail(res, "Invalid class or teacher id", 400, "INVALID_ID");
+    }
+    return fail(
+      res,
+      "Failed to create students",
+      500,
+      "BULK_CREATE_STUDENTS_FAILED"
+    );
   }
 };
 exports.updateStudentClassFromAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
-        error: "Access denied"
-      });
+    if (!req.user || req.user.role !== "admin") {
+      return fail(res, "Access denied", 403, "ACCESS_DENIED");
     }
     const Student = require("../models/Student");
     const ClassModel = require("../models/Class");
@@ -256,39 +301,45 @@ exports.updateStudentClassFromAdmin = async (req, res) => {
     const className = String(req.body.className || "").trim().toUpperCase();
     const teacherId = String(req.body.teacherId || "").trim();
     if (!studentMongoId || !className || !teacherId) {
-      return res.status(400).json({
-        error: "Student, class, and teacher are required"
-      });
+      return fail(
+        res,
+        "Student, class, and teacher are required",
+        400,
+        "MISSING_REQUIRED_FIELDS"
+      );
     }
+    const schoolFilter = req.user.schoolId
+      ? { schoolId: req.user.schoolId }
+      : {};
     const student = await Student.findOne({
       _id: studentMongoId,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     });
     if (!student) {
-      return res.status(404).json({
-        error: "Student not found"
-      });
+      return fail(res, "Student not found", 404, "STUDENT_NOT_FOUND");
     }
     const existingClass = await ClassModel.findOne({
       name: className,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     }).lean();
     if (!existingClass) {
-      return res.status(404).json({
-        error: "Class not found"
-      });
+      return fail(res, "Class not found", 404, "CLASS_NOT_FOUND");
     }
     const teacher = await User.findOne({
       _id: teacherId,
       role: "teacher",
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     }).lean();
     if (!teacher) {
-      return res.status(404).json({
-        error: "Teacher not found in this school"
-      });
+      return fail(
+        res,
+        "Teacher not found in this school",
+        404,
+        "TEACHER_NOT_FOUND"
+      );
     }
     const previousClassName = student.class;
+    const previousTeacherId = student.teacherId;
     const studentId = student.studentId;
     student.class = className;
     student.teacherId = teacherId;
@@ -297,7 +348,7 @@ exports.updateStudentClassFromAdmin = async (req, res) => {
       await ClassModel.updateOne(
         {
           name: previousClassName,
-          ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+          ...schoolFilter
         },
         {
           $pull: {
@@ -309,7 +360,7 @@ exports.updateStudentClassFromAdmin = async (req, res) => {
     await ClassModel.updateOne(
       {
         _id: existingClass._id,
-        ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+        ...schoolFilter
       },
       {
         $addToSet: {
@@ -317,60 +368,64 @@ exports.updateStudentClassFromAdmin = async (req, res) => {
         }
       }
     );
-await logAdminAction(req, {
-  action: "admin_student_updated",
-  status: "success",
-  targetType: "Student",
-  targetId: student._id,
-  metadata: {
-    studentId: student.studentId,
-    studentName: student.name,
-    previousClassName,
-    newClassName: student.class,
-    previousTeacherId: null,
-    newTeacherId: student.teacherId
-  }
-});
-
-res.json({
- status: "updated",
- student
- });
+    await logAdminAction(req, {
+      action: "admin_student_updated",
+      status: "success",
+      targetType: "Student",
+      targetId: student._id,
+      metadata: {
+        studentId: student.studentId,
+        studentName: student.name,
+        previousClassName,
+        newClassName: student.class,
+        previousTeacherId,
+        newTeacherId: student.teacherId,
+        schoolId: student.schoolId || null,
+        schoolCode: student.schoolCode || null
+      }
+    });
+    return ok(res, {
+      status: "updated",
+      student
+    });
   } catch (err) {
     console.error("ADMIN UPDATE STUDENT ERROR:", err);
-    res.status(500).json({
-      error: "Failed to update student"
-    });
+    if (err && err.name === "CastError") {
+      return fail(res, "Invalid student or teacher id", 400, "INVALID_ID");
+    }
+    return fail(
+      res,
+      "Failed to update student",
+      500,
+      "UPDATE_STUDENT_FAILED"
+    );
   }
 };
 exports.deleteStudentFromAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
-        error: "Access denied"
-      });
+    if (!req.user || req.user.role !== "admin") {
+      return fail(res, "Access denied", 403, "ACCESS_DENIED");
     }
     const Student = require("../models/Student");
     const ClassModel = require("../models/Class");
     const studentMongoId = String(req.body.studentMongoId || "").trim();
     if (!studentMongoId) {
-      return res.status(400).json({
-        error: "Missing student id"
-      });
+      return fail(res, "Missing student id", 400, "MISSING_STUDENT_ID");
     }
+    const schoolFilter = req.user.schoolId
+      ? { schoolId: req.user.schoolId }
+      : {};
     const student = await Student.findOne({
       _id: studentMongoId,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      ...schoolFilter
     }).lean();
     if (!student) {
-      return res.status(404).json({
-        error: "Student not found"
-      });
+      return fail(res, "Student not found", 404, "STUDENT_NOT_FOUND");
     }
     await ClassModel.updateOne(
       {
         name: student.class,
-        ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+        ...schoolFilter
       },
       {
         $pull: {
@@ -378,31 +433,37 @@ exports.deleteStudentFromAdmin = async (req, res) => {
         }
       }
     );
-await Student.deleteOne({
- _id: studentMongoId,
- ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
- });
-
-await logAdminAction(req, {
-  action: "admin_student_deleted",
-  status: "success",
-  targetType: "Student",
-  targetId: studentMongoId,
-  metadata: {
-    studentId: student.studentId,
-    studentName: student.name,
-    className: student.class,
-    teacherId: student.teacherId
-  }
-});
-
- res.json({
- status: "deleted"
- });
+    await Student.deleteOne({
+      _id: studentMongoId,
+      ...schoolFilter
+    });
+    await logAdminAction(req, {
+      action: "admin_student_deleted",
+      status: "success",
+      targetType: "Student",
+      targetId: studentMongoId,
+      metadata: {
+        studentId: student.studentId,
+        studentName: student.name,
+        className: student.class,
+        teacherId: student.teacherId,
+        schoolId: student.schoolId || null,
+        schoolCode: student.schoolCode || null
+      }
+    });
+    return ok(res, {
+      status: "deleted"
+    });
   } catch (err) {
     console.error("ADMIN DELETE STUDENT ERROR:", err);
-    res.status(500).json({
-      error: "Failed to delete student"
-    });
+    if (err && err.name === "CastError") {
+      return fail(res, "Invalid student id", 400, "INVALID_STUDENT_ID");
+    }
+    return fail(
+      res,
+      "Failed to delete student",
+      500,
+      "DELETE_STUDENT_FAILED"
+    );
   }
 };

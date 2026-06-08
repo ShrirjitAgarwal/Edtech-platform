@@ -1,11 +1,9 @@
 const {
   executeCode
 } = require("../executeCode");
-
 async function expectFailure(name, payload) {
   try {
     await executeCode(payload);
-
     console.error("FAILED:", name, "did not fail");
     process.exitCode = 1;
   } catch (err) {
@@ -13,11 +11,9 @@ async function expectFailure(name, payload) {
     console.log("Error:", err.message);
   }
 }
-
 async function expectSuccess(name, payload, expected) {
   try {
     const result = await executeCode(payload);
-
     if (String(result) !== String(expected)) {
       console.error(
         "FAILED:",
@@ -30,14 +26,12 @@ async function expectSuccess(name, payload, expected) {
       process.exitCode = 1;
       return;
     }
-
     console.log("PASSED:", name);
   } catch (err) {
     console.error("FAILED:", name, err.message);
     process.exitCode = 1;
   }
 }
-
 async function run() {
   await expectSuccess(
     "javascript normal memory usage",
@@ -49,7 +43,6 @@ async function run() {
     },
     5
   );
-
   await expectFailure(
     "javascript excessive memory usage",
     {
@@ -59,7 +52,6 @@ async function run() {
       args: []
     }
   );
-
   await expectSuccess(
     "python normal memory usage",
     {
@@ -70,7 +62,6 @@ async function run() {
     },
     5
   );
-
   await expectFailure(
     "python excessive memory usage",
     {
@@ -80,14 +71,11 @@ async function run() {
       args: []
     }
   );
-
   if (process.exitCode) {
     process.exit(process.exitCode);
   }
-
   console.log("All memory limit smoke tests passed");
 }
-
 run().catch(err => {
   console.error(err);
   process.exit(1);

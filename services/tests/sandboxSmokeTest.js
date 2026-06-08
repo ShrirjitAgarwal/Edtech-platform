@@ -1,16 +1,13 @@
 const {
   executeCode
 } = require("../executeCode");
-
 async function expectBlocked(name, payload, expectedErrorPart) {
   try {
     await executeCode(payload);
-
     console.error("FAILED:", name, "was not blocked");
     process.exitCode = 1;
   } catch (err) {
     const message = String(err.message || "");
-
     if (
       expectedErrorPart &&
       !message.includes(expectedErrorPart)
@@ -19,16 +16,13 @@ async function expectBlocked(name, payload, expectedErrorPart) {
       process.exitCode = 1;
       return;
     }
-
     console.log("PASSED:", name);
     console.log("Error:", message);
   }
 }
-
 async function expectSuccess(name, payload, expected) {
   try {
     const result = await executeCode(payload);
-
     if (String(result) !== String(expected)) {
       console.error(
         "FAILED:",
@@ -41,14 +35,12 @@ async function expectSuccess(name, payload, expected) {
       process.exitCode = 1;
       return;
     }
-
     console.log("PASSED:", name);
   } catch (err) {
     console.error("FAILED:", name, err.message);
     process.exitCode = 1;
   }
 }
-
 async function run() {
   await expectSuccess(
     "javascript normal code still works",
@@ -60,7 +52,6 @@ async function run() {
     },
     5
   );
-
   await expectBlocked(
     "javascript require blocked",
     {
@@ -71,7 +62,6 @@ async function run() {
     },
     "blocked JavaScript"
   );
-
   await expectBlocked(
     "javascript process blocked",
     {
@@ -82,7 +72,6 @@ async function run() {
     },
     "blocked JavaScript"
   );
-
   await expectSuccess(
     "python normal code still works",
     {
@@ -93,7 +82,6 @@ async function run() {
     },
     5
   );
-
   await expectBlocked(
     "python os import blocked",
     {
@@ -104,7 +92,6 @@ async function run() {
     },
     "blocked Python"
   );
-
   await expectBlocked(
     "python open blocked",
     {
@@ -115,14 +102,11 @@ async function run() {
     },
     "blocked Python"
   );
-
   if (process.exitCode) {
     process.exit(process.exitCode);
   }
-
   console.log("All sandbox smoke tests passed");
 }
-
 run().catch(err => {
   console.error(err);
   process.exit(1);

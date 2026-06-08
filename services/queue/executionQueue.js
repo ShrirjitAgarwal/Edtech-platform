@@ -4,7 +4,6 @@ class ExecutionQueue {
     this.activeCount = 0;
     this.queue = [];
   }
-
   add(task) {
     return new Promise((resolve, reject) => {
       this.queue.push({
@@ -12,24 +11,18 @@ class ExecutionQueue {
         resolve,
         reject
       });
-
       this.runNext();
     });
   }
-
   runNext() {
     if (this.activeCount >= this.concurrency) {
       return;
     }
-
     const item = this.queue.shift();
-
     if (!item) {
       return;
     }
-
     this.activeCount++;
-
     Promise.resolve()
       .then(() => item.task())
       .then(item.resolve)
@@ -39,7 +32,6 @@ class ExecutionQueue {
         this.runNext();
       });
   }
-
   getStats() {
     return {
       concurrency: this.concurrency,
@@ -48,13 +40,11 @@ class ExecutionQueue {
     };
   }
 }
-
 const executionQueue = new ExecutionQueue({
   concurrency: Number(
     process.env.CODE_EXECUTION_CONCURRENCY || 4
   )
 });
-
 module.exports = {
   executionQueue,
   ExecutionQueue

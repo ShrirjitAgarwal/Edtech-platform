@@ -44,98 +44,76 @@ function normalizeOutput(value) {
   if (value === undefined) {
     return "undefined";
   }
-
   if (value === null) {
     return "null";
   }
-
   if (typeof value === "string") {
     return value.trim();
   }
-
   if (typeof value === "number" || typeof value === "boolean") {
     return value;
   }
-
   if (typeof value === "object") {
     return stableStringify(value);
   }
-
   return String(value).trim();
 }
-
 function tryParseComparableValue(value) {
   if (typeof value !== "string") {
     return value;
   }
-
   const trimmed = value.trim();
-
   if (trimmed === "") {
     return "";
   }
-
   if (trimmed === "undefined") {
     return undefined;
   }
-
   try {
     return JSON.parse(trimmed);
   } catch (err) {
     if (!Number.isNaN(Number(trimmed))) {
       return Number(trimmed);
     }
-
     if (trimmed.toLowerCase() === "true") {
       return true;
     }
-
     if (trimmed.toLowerCase() === "false") {
       return false;
     }
-
     return trimmed;
   }
 }
-
 function stableStringify(value) {
   if (value === null) {
     return "null";
   }
-
   if (Array.isArray(value)) {
     return "[" + value.map(item => stableStringify(item)).join(",") + "]";
   }
-
   if (typeof value === "object") {
     const keys = Object.keys(value).sort();
-
     return "{" + keys.map(key =>
       JSON.stringify(key) + ":" + stableStringify(value[key])
     ).join(",") + "}";
   }
-
   return JSON.stringify(value);
 }
-
 function valuesEqual(actual, expected) {
   const actualValue = tryParseComparableValue(actual);
   const expectedValue = tryParseComparableValue(expected);
-
   if (
     typeof actualValue === "number" &&
     typeof expectedValue === "number"
   ) {
     return Object.is(actualValue, expectedValue);
   }
-
   if (
     typeof actualValue === "boolean" ||
     typeof expectedValue === "boolean"
   ) {
     return actualValue === expectedValue;
   }
-
   if (
     actualValue === null ||
     expectedValue === null ||
@@ -144,14 +122,12 @@ function valuesEqual(actual, expected) {
   ) {
     return actualValue === expectedValue;
   }
-
   if (
     typeof actualValue === "object" &&
     typeof expectedValue === "object"
   ) {
     return stableStringify(actualValue) === stableStringify(expectedValue);
   }
-
   return String(actualValue).trim() === String(expectedValue).trim();
 }
 function buildJudgeFailure(error) {
@@ -164,7 +140,6 @@ function buildJudgeFailure(error) {
     testResults: []
   };
 }
-
 function isValidTestCase(testCase) {
   return (
     testCase &&
@@ -172,7 +147,6 @@ function isValidTestCase(testCase) {
     Object.prototype.hasOwnProperty.call(testCase, "expectedOutput")
   );
 }
-
 function normalizeTestCases(testCases) {
   if (!Array.isArray(testCases)) {
     return {
@@ -181,7 +155,6 @@ function normalizeTestCases(testCases) {
       testCases: []
     };
   }
-
   if (testCases.length === 0) {
     return {
       ok: false,
@@ -189,16 +162,13 @@ function normalizeTestCases(testCases) {
       testCases: []
     };
   }
-
   const limitedTestCases = testCases.slice(
     0,
     EXECUTION_LIMITS.MAX_TEST_CASES
   );
-
   const invalidIndex = limitedTestCases.findIndex(
     testCase => !isValidTestCase(testCase)
   );
-
   if (invalidIndex !== -1) {
     return {
       ok: false,
@@ -206,7 +176,6 @@ function normalizeTestCases(testCases) {
       testCases: []
     };
   }
-
   return {
     ok: true,
     error: null,
@@ -222,33 +191,25 @@ async function judgeSubmission({
   const safeCode = String(code || "");
   const safeFunctionName = String(functionName || "").trim();
   const safeLanguage = String(language || "javascript").trim().toLowerCase();
-
   if (!safeCode.trim()) {
     return buildJudgeFailure("Empty code submission");
   }
-
   if (safeCode.length > EXECUTION_LIMITS.MAX_CODE_LENGTH) {
     return buildJudgeFailure("Code exceeds limit");
   }
-
   if (!safeFunctionName) {
     return buildJudgeFailure("Function name is required");
   }
-
   if (!EXECUTION_LIMITS.SUPPORTED_LANGUAGES.includes(safeLanguage)) {
     return buildJudgeFailure("Unsupported language: " + safeLanguage);
   }
-
   const normalizedTestCases = normalizeTestCases(testCases);
-
   if (!normalizedTestCases.ok) {
     return buildJudgeFailure(normalizedTestCases.error);
   }
-
   const safeTestCases = normalizedTestCases.testCases;
   const testResults = [];
   let passedCount = 0;
-
   for (let index = 0; index < safeTestCases.length; index++) {
     const tc = safeTestCases[index];
     const args = parseArgs(tc.input);
@@ -256,7 +217,6 @@ async function judgeSubmission({
     let actualOutput = "";
     let expectedOutput = normalizeOutput(tc.expectedOutput);
     let executionError = null;
-
     try {
       const result = await executeCode({
         language: safeLanguage,
@@ -264,21 +224,17 @@ async function judgeSubmission({
         functionName: safeFunctionName,
         args
       });
-
       actualOutput = normalizeOutput(result);
-
       passed = valuesEqual(
         actualOutput,
         expectedOutput
       );
-
       if (passed) {
         passedCount++;
       }
     } catch (err) {
       executionError = err.message;
     }
-
     testResults.push({
       index,
       input: tc.input,
@@ -289,7 +245,6 @@ async function judgeSubmission({
       error: executionError
     });
   }
-
   return {
     success: true,
     error: null,

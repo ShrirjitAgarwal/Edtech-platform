@@ -1,9 +1,7 @@
 const AdminActionLog = require("../models/AdminActionLog");
 const logger = require("../utils/logger");
-
 function getActor(req) {
   const user = req.user || {};
-
   return {
     actorId: user.id ? String(user.id) : null,
     actorEmail: user.email ? String(user.email) : null,
@@ -12,7 +10,6 @@ function getActor(req) {
     schoolCode: user.schoolCode ? String(user.schoolCode) : null
   };
 }
-
 async function logAdminAction(req, {
   action,
   status = "success",
@@ -41,7 +38,6 @@ async function logAdminAction(req, {
     });
   }
 }
-
 module.exports = {
   logAdminAction
 };

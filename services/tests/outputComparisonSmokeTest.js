@@ -1,33 +1,26 @@
 const {
-  judgeSubmission
+  judgeSubmissio
 } = require("../codeJudge");
-
 async function expectPass(name, payload) {
   const result = await judgeSubmission(payload);
-
   if (!result.allPassed) {
     console.error("FAILED:", name);
     console.error(JSON.stringify(result, null, 2));
     process.exitCode = 1;
     return;
   }
-
   console.log("PASSED:", name);
 }
-
 async function expectFail(name, payload) {
   const result = await judgeSubmission(payload);
-
   if (result.allPassed) {
     console.error("FAILED:", name, "should not have passed");
     console.error(JSON.stringify(result, null, 2));
     process.exitCode = 1;
     return;
   }
-
   console.log("PASSED:", name);
 }
-
 async function run() {
   await expectPass(
     "number comparison",
@@ -43,7 +36,6 @@ async function run() {
       ]
     }
   );
-
   await expectPass(
     "array comparison",
     {
@@ -58,7 +50,6 @@ async function run() {
       ]
     }
   );
-
   await expectPass(
     "object comparison ignores key order",
     {
@@ -73,7 +64,6 @@ async function run() {
       ]
     }
   );
-
   await expectPass(
     "boolean comparison",
     {
@@ -88,7 +78,6 @@ async function run() {
       ]
     }
   );
-
   await expectFail(
     "case sensitive string comparison",
     {
@@ -103,7 +92,6 @@ async function run() {
       ]
     }
   );
-
   await expectFail(
     "wrong array order fails",
     {
@@ -118,14 +106,11 @@ async function run() {
       ]
     }
   );
-
   if (process.exitCode) {
     process.exit(process.exitCode);
   }
-
   console.log("All output comparison smoke tests passed");
 }
-
 run().catch(err => {
   console.error(err);
   process.exit(1);

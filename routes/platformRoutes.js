@@ -21,7 +21,6 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
 function getMongoHealth() {
   const readyState = mongoose.connection.readyState;
   const states = {
@@ -30,7 +29,6 @@ function getMongoHealth() {
     2: "connecting",
     3: "disconnecting"
   };
-
   return {
     status: states[readyState] || "unknown",
     readyState,
@@ -38,17 +36,14 @@ function getMongoHealth() {
     host: mongoose.connection.host || null
   };
 }
-
 function getEnvStatus(name) {
   const value = String(process.env[name] || "").trim();
-
   return {
     name,
     present: Boolean(value),
     length: value.length || 0
   };
 }
-
 function getStatusBadge(isOk) {
   return isOk
     ? `<span style="background:#dcfce7;color:#166534;padding:5px 10px;border-radius:999px;font-weight:800;font-size:12px;">OK</span>`
@@ -67,10 +62,8 @@ router.get(
       "LOCAL_CODE_EXECUTION_ENABLED",
       "PLATFORM_ADMIN_EMAIL"
     ];
-
     const envRows = requiredEnv.map(name => {
       const env = getEnvStatus(name);
-
       return `
 <tr>
   <td style="padding:12px;border-bottom:1px solid #e5e7eb;font-weight:700;">
@@ -85,13 +78,11 @@ router.get(
 </tr>
 `;
     }).join("");
-
     const mongoOk = mongo.readyState === 1;
     const localCodeExecutionEnabled =
       String(process.env.LOCAL_CODE_EXECUTION_ENABLED || "")
         .trim()
         .toLowerCase() === "true";
-
     const content = `
 <body style="margin:0;font-family:Arial;background:#eef2ff;">
 <div style="
@@ -127,7 +118,6 @@ router.get(
       Back
     </button>
   </div>
-
   <div style="
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -140,21 +130,18 @@ router.get(
         ${getStatusBadge(mongoOk)}
       </div>
     </div>
-
     <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
       <div style="color:#64748b;font-size:13px;font-weight:700;">Environment</div>
       <div style="margin-top:10px;font-size:18px;font-weight:800;">
         ${escapeHtml(process.env.NODE_ENV || "local")}
       </div>
     </div>
-
     <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
       <div style="color:#64748b;font-size:13px;font-weight:700;">Uptime</div>
       <div style="margin-top:10px;font-size:18px;font-weight:800;">
         ${Math.round(process.uptime())} seconds
       </div>
     </div>
-
     <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
       <div style="color:#64748b;font-size:13px;font-weight:700;">Server Time</div>
       <div style="margin-top:10px;font-size:14px;font-weight:800;">
@@ -162,7 +149,6 @@ router.get(
       </div>
     </div>
   </div>
-
   <div style="
     background:#f8fafc;
     border:1px solid #e5e7eb;
@@ -176,7 +162,6 @@ router.get(
     <p><b>Database:</b> ${escapeHtml(mongo.databaseName || "N/A")}</p>
     <p><b>Host:</b> ${escapeHtml(mongo.host || "N/A")}</p>
   </div>
-
   <div style="
     background:#f8fafc;
     border:1px solid #e5e7eb;
@@ -188,7 +173,6 @@ router.get(
     <p><b>Judge Provider:</b> ${escapeHtml(process.env.JUDGE_PROVIDER || "local")}</p>
     <p><b>Local Code Execution Enabled:</b> ${localCodeExecutionEnabled ? "true" : "false"}</p>
   </div>
-
   <div style="
     background:#f8fafc;
     border:1px solid #e5e7eb;
@@ -211,7 +195,6 @@ router.get(
 </div>
 </body>
 `;
-
     res.send(content);
   }
 );
@@ -235,7 +218,6 @@ router.post(
   express.urlencoded({ extended: true }),
   platformSchoolController.updateSchool
 );
-
 router.post(
   "/platform/schools/:schoolId/delete",
   authMiddleware,

@@ -28,6 +28,25 @@ window.addEventListener("pageshow", function(event){
 </script>
 `;
 }
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
+function safeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
 // ---------- TEACHER DASHBOARD ----------
 router.get("/teacher", async (req, res) => {
   try {
@@ -98,6 +117,11 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     label.textContent = options[0]?.label || "Select";
   }
 }
+function escapeClientHtml(value){
+  const div = document.createElement("div");
+  div.textContent = String(value || "");
+  return div.innerHTML;
+}
 document.addEventListener("click", function(event){
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
@@ -149,10 +173,10 @@ fetch("/api/teacher-dashboard-data")
       onclick="selectTest('\${t._id}')"
       >
         <div style="font-weight:700;margin-bottom:5px;">
-          \${t.name || "Untitled Test"}
+          \${escapeClientHtml(t.name || "Untitled Test")}
         </div>
         <div style="font-size:13px;color:#64748b;">
-          \${t.subject || "No Subject"} • \${t.className || "No Class"}
+          \${escapeClientHtml(t.subject || "No Subject")} • \${escapeClientHtml(t.className || "No Class")}
         </div>
         <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
           \${new Date(t.createdAt).toLocaleDateString()}
@@ -231,13 +255,13 @@ fetch("/api/teacher-dashboard-data")
           return \`
             <tr style="cursor:pointer;" onclick="go('/teacher-tests')">
               <td style="padding:12px;border-bottom:1px solid #e5e7eb;font-weight:700;">
-                \${stats.test.name || "Untitled Test"}
+                \${escapeClientHtml(stats.test.name || "Untitled Test")}
               </td>
               <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
-                \${stats.test.className || "N/A"}
+                \${escapeClientHtml(stats.test.className || "N/A")}
               </td>
               <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
-                \${stats.test.subject || "N/A"}
+                \${escapeClientHtml(stats.test.subject || "N/A")}
               </td>
               <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
                 \${stats.avgScore}%
@@ -279,7 +303,7 @@ fetch("/api/teacher-dashboard-data")
     ">
       <div>
         <h1 style="margin:0 0 8px 0;font-size:32px;">
-          Welcome, \${user.name || "Teacher"}
+          Welcome, \${escapeClientHtml(user.name || "Teacher")}
         </h1>
         <p style="margin:0;color:#64748b;font-size:16px;">
           Here is your teaching overview.
@@ -475,7 +499,7 @@ fetch("/api/teacher-dashboard-data")
         String(t._id) === String(testId)
       );
       label.textContent = selectedTest
-        ? (selectedTest.name || "Untitled Test") + " - " + (selectedTest.className || "No Class")
+        ? escapeClientHtml(selectedTest.name || "Untitled Test") + " - " + escapeClientHtml(selectedTest.className || "No Class")
         : "All Tests";
     }
   };
@@ -606,13 +630,18 @@ overflow:hidden;
 </table>
 <script>
 window.onload = function(){
+  function escapeClientHtml(value){
+    const div = document.createElement("div");
+    div.textContent = String(value || "");
+    return div.innerHTML;
+  }
   const user = JSON.parse(localStorage.getItem("user") || "null");
   if(!user){
     return window.location.replace("/");
   }
   const teacherId = user._id || user.id;
-  const students = ${JSON.stringify(students)};
-  const teachers = ${JSON.stringify(teachers)};
+  const students = ${safeJsonForScript(students)};
+  const teachers = ${safeJsonForScript(teachers)};
   const teacherMap = {};
   teachers.forEach(t => {
     teacherMap[t._id] = t.name;
@@ -623,12 +652,12 @@ window.onload = function(){
   const rows = filtered.map(s => \`
 <tr
 style="cursor:pointer;"
-onclick="viewStudent('\${s.studentId}')"
+onclick='viewStudent(\${JSON.stringify(String(s.studentId || ""))})'
 >
-<td>\${s.name}</td>
-<td>\${s.class}</td>
-<td>\${s.studentId}</td>
-<td>\${teacherMap[s.teacherId] || "Unknown"}</td>
+<td>\${escapeClientHtml(s.name)}</td>
+<td>\${escapeClientHtml(s.class)}</td>
+<td>\${escapeClientHtml(s.studentId)}</td>
+<td>\${escapeClientHtml(teacherMap[s.teacherId] || "Unknown")}</td>
 </tr>
 \`).join("");
   document.getElementById("studentBody").innerHTML =
@@ -662,7 +691,6 @@ margin-bottom:20px;
   <h1 style="margin:0;">Classes</h1>
   ${backButton("/teacher")}
 </div>
-
 <div style="
 display:flex;
 gap:12px;
@@ -711,7 +739,6 @@ flex-wrap:wrap;
     ></div>
     <input id="classFilter" type="hidden" value="all">
   </div>
-
   <input
     id="studentSearch"
     placeholder="Search student name or ID"
@@ -722,7 +749,6 @@ flex-wrap:wrap;
       min-width:280px;
     "
   />
-
   <button onclick="loadClasses(1)" style="
     padding:10px 14px;
     background:#4f46e5;
@@ -734,7 +760,6 @@ flex-wrap:wrap;
   ">
     Search
   </button>
-
   <button onclick="clearClassFilters()" style="
     padding:10px 14px;
     background:#64748b;
@@ -747,10 +772,8 @@ flex-wrap:wrap;
     Clear Filters
   </button>
 </div>
-
 <div id="classContainer"></div>
 <div id="classPagination" style="margin-top:16px;"></div>
-
 <script>
 window.onload = function(){
 function escapeHtml(value){
@@ -758,17 +781,14 @@ function escapeHtml(value){
   div.textContent = String(value || "");
   return div.innerHTML;
 }
-
 function jsString(value){
   return JSON.stringify(String(value || ""));
 }
-
 function closeCustomDropdowns(){
   document.querySelectorAll("[id$='Menu']").forEach(menu => {
     menu.style.display = "none";
   });
 }
-
 window.toggleCustomDropdown = function(inputId){
   const menu = document.getElementById(inputId + "Menu");
   if(!menu){
@@ -778,7 +798,6 @@ window.toggleCustomDropdown = function(inputId){
   closeCustomDropdowns();
   menu.style.display = isOpen ? "none" : "block";
 };
-
 function setCustomDropdownOptions(inputId, options, onSelect){
   const input = document.getElementById(inputId);
   const menu = document.getElementById(inputId + "Menu");
@@ -786,10 +805,8 @@ function setCustomDropdownOptions(inputId, options, onSelect){
   if(!input || !menu || !label){
     return;
   }
-
   const currentValue = input.value || options[0]?.value || "";
   menu.innerHTML = "";
-
   options.forEach(optionData => {
     const option = document.createElement("button");
     option.type = "button";
@@ -802,15 +819,12 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.style.cursor = "pointer";
     option.style.fontSize = "13px";
     option.style.boxSizing = "border-box";
-
     option.onmouseenter = function(){
       option.style.background = "#eef2ff";
     };
-
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-
     option.onclick = function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
@@ -819,14 +833,11 @@ function setCustomDropdownOptions(inputId, options, onSelect){
         onSelect(optionData.value);
       }
     };
-
     menu.appendChild(option);
   });
-
   const selectedOption = options.find(optionData =>
     String(optionData.value) === String(currentValue)
   );
-
   if(selectedOption){
     input.value = selectedOption.value;
     label.textContent = selectedOption.label;
@@ -835,7 +846,6 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     label.textContent = options[0]?.label || "Select";
   }
 }
-
 document.addEventListener("click", function(event){
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
@@ -844,12 +854,10 @@ document.addEventListener("click", function(event){
     closeCustomDropdowns();
   }
 });
-
 const user = JSON.parse(localStorage.getItem("user") || "null");
 if(!user){
   return window.location.replace("/");
 }
-
 const teacherId = user._id || user.id;
 let classesData = [];
 let studentsData = [];
@@ -857,21 +865,17 @@ let teachersData = [];
 let resultsData = [];
 let paginationData = null;
 let dropdownReady = false;
-
 window.loadClasses = function(page){
   const selectedClass = document.getElementById("classFilter").value || "all";
   const search = document.getElementById("studentSearch").value || "";
-
   const params = new URLSearchParams({
     studentPage: String(page || 1),
     studentLimit: "100",
     className: selectedClass,
     search
   });
-
   document.getElementById("classContainer").innerHTML =
     "<p style='color:#64748b;'>Loading classes...</p>";
-
   fetch("/api/classes-data?" + params.toString())
     .then(res => {
       if(!res.ok){
@@ -885,7 +889,6 @@ window.loadClasses = function(page){
       teachersData = data.teachers || [];
       resultsData = data.results || [];
       paginationData = data.pagination?.students || null;
-
       setupClassDropdown();
       renderClasses();
       renderPagination();
@@ -896,22 +899,18 @@ window.loadClasses = function(page){
         "<p style='color:#dc2626;'>Failed to load classes. Please refresh.</p>";
     });
 };
-
 function setupClassDropdown(){
   if(dropdownReady){
     return;
   }
-
   const uniqueNames = [...new Set(
     classesData.map(c => c.name).filter(Boolean)
   )];
-
   let selected = localStorage.getItem("selectedClass") || "all";
   if(selected !== "all" && !uniqueNames.includes(selected)){
     selected = "all";
     localStorage.setItem("selectedClass", "all");
   }
-
   setCustomDropdownOptions(
     "classFilter",
     [
@@ -926,45 +925,37 @@ function setupClassDropdown(){
       loadClasses(1);
     }
   );
-
   document.getElementById("classFilter").value = selected;
   document.getElementById("classFilterLabel").textContent =
     selected === "all" ? "All Classes" : selected;
-
   dropdownReady = true;
 }
-
 function renderClasses(){
   const teacherMap = {};
   teachersData.forEach(t => {
     teacherMap[t._id] = t.name;
   });
-
   const selected = document.getElementById("classFilter").value || "all";
   const teacherResults = resultsData.filter(r =>
     String(r.teacherId) === String(teacherId)
   );
-
   const visibleClasses = classesData.filter(c => {
     if(selected === "all") return true;
     return String(c.name || "") === String(selected);
   });
-
   let html = "";
-
   visibleClasses.forEach(c => {
     const classStudents = studentsData.filter(s =>
       String(s.class || "").trim().toUpperCase() ===
       String(c.name || "").trim().toUpperCase() &&
       String(s.teacherId) === String(teacherId)
     );
-
     const studentCards = classStudents.length
       ? classStudents.map(s => {
         const safeStudentId = jsString(s.studentId);
         return \`
 <div
-onclick="previewStudent(\${safeStudentId})"
+onclick='previewStudent(\${safeStudentId})'
 style="
 background:#f8fafc;
 padding:12px;
@@ -983,7 +974,6 @@ border:1px solid #e5e7eb;
 \`;
       }).join("")
       : "<p style='color:gray;'>No students on this page</p>";
-
     html += \`
 <div style="
 background:white;
@@ -1019,7 +1009,6 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
       Students on page: \${classStudents.length}
     </div>
   </div>
-
   <div style="
     display:grid;
     grid-template-columns:minmax(260px,360px) 1fr;
@@ -1039,7 +1028,6 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
         \${studentCards}
       </div>
     </div>
-
     <div
       id="preview-\${escapeHtml(c.name)}"
       class="studentPreview"
@@ -1061,40 +1049,31 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
 </div>
 \`;
   });
-
   document.getElementById("classContainer").innerHTML =
     html || "<p style='color:#64748b;'>No matching students found.</p>";
-
   if(!classesData.length){
     document.getElementById("classContainer").innerHTML =
       "<p style='color:#64748b;'>No classes mapped to this teacher.</p>";
   }
-
   window.previewStudent = function(studentId){
     const student = studentsData.find(s =>
       String(s.studentId) === String(studentId)
     );
-
     if(!student){
       return;
     }
-
     const studentResults = teacherResults
       .filter(r => String(r.studentId) === String(studentId))
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-
     document.querySelectorAll(".studentPreview").forEach(p => {
       p.innerHTML =
         "<p style='color:#64748b;margin:0;'>Select a student to preview performance and download report.</p>";
     });
-
     const box = document.getElementById("preview-" + student.class);
     if(!box){
       return;
     }
-
     const safeStudentId = jsString(student.studentId);
-
     const resultCards = studentResults.length
       ? studentResults.map(r => {
         const percent = r.total
@@ -1109,10 +1088,9 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
         const date = r.date
           ? new Date(r.date).toLocaleString()
           : "N/A";
-
         return \`
 <div
-onclick="loadResultPreview(\${jsString(r.testId)}, \${safeStudentId}, \${jsString(student.class)})"
+onclick='loadResultPreview(\${jsString(r.testId)}, \${safeStudentId}, \${jsString(student.class)})'
 style="
 background:white;
 padding:14px;
@@ -1136,7 +1114,6 @@ border:1px solid #e5e7eb;
 \`;
       }).join("")
       : "<p style='color:#64748b;'>No results found for this student.</p>";
-
     box.innerHTML = \`
 <div style="
 display:flex;
@@ -1167,15 +1144,12 @@ margin-bottom:15px;
 \`;
   };
 }
-
 function renderPagination(){
   const paginationBox = document.getElementById("classPagination");
-
   if(!paginationData || paginationData.totalPages <= 1){
     paginationBox.innerHTML = "";
     return;
   }
-
   paginationBox.innerHTML = \`
 <div style="
 display:flex;
@@ -1202,11 +1176,9 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
   >
     Previous
   </button>
-
   <span style="font-weight:700;color:#334155;">
     Page \${paginationData.page} of \${paginationData.totalPages}
   </span>
-
   <button
     \${paginationData.hasNextPage ? "" : "disabled"}
     onclick="loadClasses(\${paginationData.page + 1})"
@@ -1225,7 +1197,6 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
 </div>
 \`;
 }
-
 window.clearClassFilters = function(){
   document.getElementById("studentSearch").value = "";
   document.getElementById("classFilter").value = "all";
@@ -1233,15 +1204,13 @@ window.clearClassFilters = function(){
   localStorage.setItem("selectedClass", "all");
   loadClasses(1);
 };
-
 document.getElementById("studentSearch").addEventListener("keydown", function(event){
   if(event.key === "Enter"){
     loadClasses(1);
   }
 });
-
 window.downloadStudentReport = function(studentId){
-  fetch("/download-report", {
+fetch("/api/reports/student/download", {
     method:"POST",
     headers:{
       "Content-Type":"application/json"
@@ -1263,7 +1232,6 @@ window.downloadStudentReport = function(studentId){
   })
   .catch(() => alert("Download failed"));
 };
-
 window.loadResultPreview = function(testId, studentId, className){
   fetch(
     "/result?testId=" +
@@ -1275,7 +1243,6 @@ window.loadResultPreview = function(testId, studentId, className){
   .then(html => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
-
     if(doc.body){
       doc.body.querySelectorAll("button").forEach(button => {
         if((button.textContent || "").trim() === "Back"){
@@ -1283,10 +1250,8 @@ window.loadResultPreview = function(testId, studentId, className){
         }
       });
     }
-
     const body = doc.body ? doc.body.innerHTML : html;
     const box = document.getElementById("preview-" + className);
-
     if(box){
       box.innerHTML =
         '<div style="margin-bottom:12px;">' +
@@ -1309,7 +1274,6 @@ window.loadResultPreview = function(testId, studentId, className){
   })
   .catch(() => alert("Failed to load result"));
 };
-
 loadClasses(1);
 };
 </script>
@@ -1321,35 +1285,27 @@ loadClasses(1);
   }
 });
 // ---------- CLASSES DATA API ----------
-// ---------- CLASSES DATA API ----------
 router.get("/api/classes-data", authMiddleware, async (req, res) => {
   try {
     const ClassSubject = require("../models/ClassSubject");
     const teacherId = String(req.user.id);
     const schoolId = req.user.schoolId || null;
-
     const schoolScopedFilter = schoolId
       ? { teacherId, schoolId }
       : { teacherId };
-
     const classSubjects = await ClassSubject.find(schoolScopedFilter)
       .select("className teacherId schoolId")
       .lean();
-
     const assignedClassNames = [...new Set(
       classSubjects
         .map(m => String(m.className || "").trim().toUpperCase())
         .filter(Boolean)
     )];
-
     const selectedClassName = String(req.query.className || "all")
       .trim()
       .toUpperCase();
-
     const search = String(req.query.search || "").trim();
-
     const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
     const searchFilter = search
       ? {
           $or: [
@@ -1358,17 +1314,14 @@ router.get("/api/classes-data", authMiddleware, async (req, res) => {
           ]
         }
       : {};
-
     const classFilter =
       selectedClassName && selectedClassName !== "ALL"
         ? { class: selectedClassName }
         : { class: { $in: assignedClassNames } };
-
     const classLookupFilter = {
       name: { $in: assignedClassNames },
       ...(schoolId ? { schoolId } : {})
     };
-
     const mappedClassDocs = assignedClassNames.map(className => ({
       _id: className,
       name: className,
@@ -1376,22 +1329,17 @@ router.get("/api/classes-data", authMiddleware, async (req, res) => {
       studentIds: [],
       createdAt: null
     }));
-
     const studentPage = Math.max(parseInt(req.query.studentPage || "1"), 1);
-
     const studentLimit = Math.min(
       Math.max(parseInt(req.query.studentLimit || "100"), 1),
       500
     );
-
     const studentSkip = (studentPage - 1) * studentLimit;
-
     const studentQuery = {
       ...schoolScopedFilter,
       ...classFilter,
       ...searchFilter
     };
-
     const [classes, students, totalStudents, teachers, results] =
       await Promise.all([
         assignedClassNames.length
@@ -1424,18 +1372,14 @@ router.get("/api/classes-data", authMiddleware, async (req, res) => {
           .limit(500)
           .lean()
       ]);
-
     const classDocMap = {};
-
     classes.forEach(c => {
       classDocMap[String(c.name || "").trim().toUpperCase()] = c;
     });
-
     const mappedClasses = mappedClassDocs.map(mappedClass => ({
       ...(classDocMap[mappedClass.name] || mappedClass),
       teacherId
     }));
-
     res.json({
       classes: mappedClasses,
       students,
@@ -1510,8 +1454,8 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
       ]);
     const mappingRows = mappings.map(m => `
 <tr>
-  <td style="padding:10px;border:1px solid #e5e7eb;">${m.className || "-"}</td>
-  <td style="padding:10px;border:1px solid #e5e7eb;">${m.subject || "-"}</td>
+  <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(m.className || "-")}</td>
+  <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(m.subject || "-")}</td>
 </tr>
 `).join("");
     const uniqueClasses = [...new Set(
@@ -1539,9 +1483,9 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
   margin-bottom:20px;
 ">
   <h2 style="margin-top:0;">Account Info</h2>
-  <p><b>Name:</b> ${teacher?.name || "N/A"}</p>
-  <p><b>Email:</b> ${teacher?.email || "N/A"}</p>
-  <p><b>Role:</b> ${teacher?.role || "N/A"}</p>
+  <p><b>Name:</b> ${escapeHtml(teacher?.name || "N/A")}</p>
+  <p><b>Email:</b> ${escapeHtml(teacher?.email || "N/A")}</p>
+  <p><b>Role:</b> ${escapeHtml(teacher?.role || "N/A")}</p>
 </div>
 <div style="
   background:white;
@@ -1551,8 +1495,8 @@ router.get("/teacher-settings", authMiddleware, async (req, res) => {
   margin-bottom:20px;
 ">
   <h2 style="margin-top:0;">School Info</h2>
-  <p><b>School Name:</b> ${school?.name || "N/A"}</p>
-  <p><b>School Code:</b> ${school?.code || req.user.schoolCode || "N/A"}</p>
+  <p><b>School Name:</b> ${escapeHtml(school?.name || "N/A")}</p>
+  <p><b>School Code:</b> ${escapeHtml(school?.code || req.user.schoolCode || "N/A")}</p>
   <div style="
     display:grid;
     grid-template-columns:repeat(4,1fr);

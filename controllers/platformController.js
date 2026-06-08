@@ -4,7 +4,7 @@ importQuestionsFromExcel,
 writeImportReport
 } = require("../utils/questionExcelImporter");
 const {
-logAdminAction
+logAdminActio
 } = require("../services/adminActionLogger");
 exports.importPage = (req, res) => {
   res.send(`
@@ -128,7 +128,6 @@ exports.importQuestions = async (req, res) => {
  },
  error: "Validation failed"
  });
-
  return res.status(400).json({
  error: "Validation failed",
  report,
@@ -150,7 +149,6 @@ exports.importQuestions = async (req, res) => {
  importBatchId: report.importBatchId
  }
  });
-
  res.json({
  status: "success",
  report,
@@ -158,7 +156,6 @@ exports.importQuestions = async (req, res) => {
  });
 } catch (err) {
  console.error("PLATFORM IMPORT ERROR:", err);
-
  await logAdminAction(req, {
  action: "question_import",
  status: "failed",
@@ -169,7 +166,6 @@ exports.importQuestions = async (req, res) => {
  },
  error: err.message
  });
-
  res.status(500).json({
  error: "Import failed",
  details: err.message

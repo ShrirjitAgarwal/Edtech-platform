@@ -12,7 +12,7 @@ router.get("/test", async (req, res, next) => {
   return next();
 });
 // ---------- SUBMIT TEST ----------
-router.post("/submit", async (req, res) => {
+async function submitStudentTestHandler(req, res) {
   try {
     const {
       testId,
@@ -149,6 +149,81 @@ router.post("/submit", async (req, res) => {
       });
       return res.status(404).json({ error: "Test not found" });
     }
+    if (test.status !== "published") {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName: testName || test.name,
+          studentId,
+          studentRecordId,
+          testStatus: test.status,
+          reason: "test_not_published"
+        },
+        error: "Test not available"
+      });
+      return res.status(403).json({ error: "Test not available" });
+    }
+    if (test.scheduledAt && new Date(test.scheduledAt) > new Date()) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName: testName || test.name,
+          studentId,
+          studentRecordId,
+          scheduledAt: test.scheduledAt,
+          reason: "test_not_started"
+        },
+        error: "Test not available yet"
+      });
+      return res.status(403).json({ error: "Test not available yet" });
+    }
+    if (
+      String(test.teacherId || "") !== String(student.teacherId || "")
+    ) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName: testName || test.name,
+          studentId,
+          studentRecordId,
+          studentTeacherId: student.teacherId,
+          testTeacherId: test.teacherId,
+          reason: "teacher_mismatch"
+        },
+        error: "Test not available"
+      });
+      return res.status(403).json({ error: "Test not available" });
+    }
+    if (
+      String(test.className || "").trim().toUpperCase() !==
+      String(student.class || "").trim().toUpperCase()
+    ) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName: testName || test.name,
+          studentId,
+          studentRecordId,
+          studentClass: student.class,
+          testClassName: test.className,
+          reason: "class_mismatch"
+        },
+        error: "Test not available"
+      });
+      return res.status(403).json({ error: "Test not available" });
+    }
     if (
       student.schoolId &&
       test.schoolId &&
@@ -170,6 +245,33 @@ router.post("/submit", async (req, res) => {
         error: "Test not available"
       });
       return res.status(403).json({ error: "Test not available" });
+    }
+    const Assignment = require("../models/Assignment");
+    const assignment = await Assignment.findOne({
+      testId: String(testId),
+      className: String(student.class || "").trim().toUpperCase(),
+      teacherId: String(student.teacherId || ""),
+      ...(student.schoolId ? { schoolId: student.schoolId } : {})
+    })
+      .select("_id")
+      .lean();
+    if (!assignment) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName: testName || test.name,
+          studentId,
+          studentRecordId,
+          className: student.class,
+          teacherId: student.teacherId,
+          reason: "assignment_not_found"
+        },
+        error: "Test not assigned"
+      });
+      return res.status(403).json({ error: "Test not assigned" });
     }
     const questionIds = answers
       .filter(answer => answer.questionId)
@@ -284,7 +386,7 @@ gradedAnswers.push({
       schoolId: test.schoolId || student.schoolId || null,
       schoolCode: test.schoolCode || student.schoolCode || null,
       score: finalScore,
-      total,
+      total: Number(total) || gradedAnswers.length,
       answers: gradedAnswers,
       date: new Date()
     });
@@ -319,7 +421,7 @@ gradedAnswers.push({
         studentId,
         studentRecordId,
         score: finalScore,
-        total,
+        total: Number(total) || gradedAnswers.length,
         answerCount: gradedAnswers.length,
         schoolId: result.schoolId || null,
         schoolCode: result.schoolCode || null
@@ -352,5 +454,7 @@ gradedAnswers.push({
     });
     res.status(500).json({ error: "Failed to submit test" });
   }
-});
+}
+router.post("/submit", submitStudentTestHandler);
+router.post("/api/student/submit", submitStudentTestHandler);
 module.exports = router;

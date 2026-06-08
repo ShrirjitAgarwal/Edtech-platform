@@ -28,7 +28,6 @@ async function createPlatformAdmin() {
     );
   }
   const passwordPolicyError = validatePasswordPolicy(password);
-
 if (passwordPolicyError) {
   throw new Error(passwordPolicyError);
 }

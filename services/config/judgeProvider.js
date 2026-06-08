@@ -3,24 +3,20 @@ function getJudgeProvider() {
     .trim()
     .toLowerCase();
 }
-
 function isProduction() {
   return process.env.NODE_ENV === "production";
 }
-
 function isLocalCodeExecutionEnabled() {
   return String(process.env.LOCAL_CODE_EXECUTION_ENABLED || "true")
     .trim()
     .toLowerCase() === "true";
 }
-
 function getJudge0Config() {
   return {
     apiUrl: String(process.env.JUDGE0_API_URL || "").trim(),
     apiKey: String(process.env.JUDGE0_API_KEY || "").trim()
   };
 }
-
 function assertProviderAllowed(provider) {
   if (
     isProduction() &&
@@ -31,7 +27,6 @@ function assertProviderAllowed(provider) {
       "Local code execution is disabled in production"
     );
   }
-
   if (
     provider === "judge0" &&
     !getJudge0Config().apiUrl
@@ -41,7 +36,6 @@ function assertProviderAllowed(provider) {
     );
   }
 }
-
 module.exports = {
   getJudgeProvider,
   getJudge0Config,

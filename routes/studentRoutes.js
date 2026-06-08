@@ -10,6 +10,7 @@ const { readJSON } = require("../utils/file");
 const sidebar = require("../views/sidebar");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
+const authMiddleware = require("../middleware/auth");
 // ======================================================
 // HELPERS
 // ======================================================
@@ -49,6 +50,83 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, "&#096;");
 }
+function safeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+async function getStudentSession(req) {
+  const studentToken = req.cookies && req.cookies.studentSessionToken;
+  if (!studentToken) {
+    return null;
+  }
+  let decodedStudent;
+  try {
+    decodedStudent = jwt.verify(
+      studentToken,
+      process.env.JWT_SECRET
+    );
+  } catch (tokenErr) {
+    return null;
+  }
+  if (!decodedStudent || decodedStudent.role !== "student") {
+    return null;
+  }
+  const student = await Student.findOne({
+    _id: decodedStudent.studentRecordId,
+    studentId: decodedStudent.studentId,
+    status: "active"
+  })
+    .select("studentId studentKey name fullName class teacherId schoolId schoolCode status")
+    .lean();
+  if (!student) {
+    return null;
+  }
+  if (
+    decodedStudent.schoolId &&
+    student.schoolId &&
+    String(decodedStudent.schoolId) !== String(student.schoolId)
+  ) {
+    return null;
+  }
+  return {
+    decodedStudent,
+    student
+  };
+}
+async function requireStudentApiSession(req, res, next) {
+  try {
+    const session = await getStudentSession(req);
+    if (!session) {
+      return res.status(401).json({
+        error: "Student session expired"
+      });
+    }
+    req.studentSession = session;
+    next();
+  } catch (err) {
+    console.error("STUDENT SESSION ERROR:", err);
+    return res.status(500).json({
+      error: "Failed to verify student session"
+    });
+  }
+}
+async function requireStudentPageSession(req, res, next) {
+  try {
+    const session = await getStudentSession(req);
+    if (!session) {
+      return res.redirect("/student-entry");
+    }
+    req.studentSession = session;
+    next();
+  } catch (err) {
+    console.error("STUDENT PAGE SESSION ERROR:", err);
+    return res.redirect("/student-entry");
+  }
+}
 // ======================================================
 // STUDENT DETAIL PAGE
 // ======================================================
@@ -81,7 +159,7 @@ router.get("/student", async (req, res) => {
           ? "#ca8a04"
           : "#dc2626";
       return `
-<div onclick="viewResult('${r.testId}')" style="
+<div onclick="viewResult('${escapeAttribute(r.testId)}')" style="
 background:white;
 padding:20px;
 margin:15px 0;
@@ -90,7 +168,7 @@ cursor:pointer;
 ">
   <div style="display:flex;justify-content:space-between;">
     <div style="font-weight:600;">
-      ${r.testName || "Unnamed Test"}
+      ${escapeHtml(r.testName || "Unnamed Test")}
     </div>
     <div style="font-weight:600;color:${color};">
       ${percent}%
@@ -120,9 +198,9 @@ cursor:pointer;
     Download Report
   </button>
 </div>
-<p><b>Name:</b> ${student.name}</p>
-<p><b>Class:</b> ${student.class}</p>
-<p><b>Student ID:</b> ${student.studentId}</p>
+<p><b>Name:</b> ${escapeHtml(student.name)}</p>
+<p><b>Class:</b> ${escapeHtml(student.class)}</p>
+<p><b>Student ID:</b> ${escapeHtml(student.studentId)}</p>
 <h2>Performance History</h2>
 ${resultsHTML}
 <script>
@@ -134,7 +212,7 @@ function viewResult(testId){
 function downloadReport(){
   const params = new URLSearchParams(window.location.search);
   const studentId = params.get("studentId");
-fetch("/download-report", {
+fetch("/api/reports/student/download", {
   method:"POST",
   headers:{
     "Content-Type":"application/json"
@@ -251,7 +329,7 @@ function lookupStudent(){
     showError("Please enter first name, last name, and student ID.");
     return;
   }
-  fetch("/student-lookup", {
+  fetch("/api/student/lookup", {
     method:"POST",
     headers:{
       "Content-Type":"application/json"
@@ -327,7 +405,7 @@ ${pageReloadScript()}
 // ======================================================
 // STUDENT LOOKUP
 // ======================================================
-router.post("/student-lookup", async (req, res) => {
+async function studentLookupHandler(req, res) {
   try {
     const firstName = String(req.body.firstName || "").trim();
     const lastName = String(req.body.lastName || "").trim();
@@ -459,12 +537,14 @@ router.post("/student-lookup", async (req, res) => {
       error: "Student lookup failed"
     });
   }
-});
+}
+router.post("/student-lookup", studentLookupHandler);
+router.post("/api/student/lookup", studentLookupHandler);
 // ======================================================
 // MY TESTS
 // ======================================================
 // ---------- STUDENT TEST LIST ----------
-router.get("/my-tests", async (req, res) => {
+router.get("/my-tests", requireStudentPageSession, async (req, res) => {
 res.send(`
 <body style="margin:0;font-family:Arial;">
 <div style="display:flex;height:100vh;">
@@ -586,7 +666,7 @@ window.onload = function(){
       return;
     }
     fetch(
-      "/get-tests?subject=" +
+      "/api/student/tests?subject=" +
       encodeURIComponent(subject)
     )
       .then(res => {
@@ -646,7 +726,7 @@ window.onload = function(){
       subjectDropdownMenu.style.display = "none";
     }
   });
-  fetch("/get-subjects")
+  fetch("/api/student/subjects")
     .then(res => res.json())
     .then(subjects => {
       subjectDropdownMenu.innerHTML = "";
@@ -687,42 +767,9 @@ window.onload = function(){
 // ======================================================
 // API ROUTES
 // ======================================================
-router.get("/get-subjects", async (req, res) => {
+async function getStudentSubjectsHandler(req, res) {
   try {
-    const studentToken = req.cookies && req.cookies.studentSessionToken;
-    if (!studentToken) {
-      return res.status(401).json({
-        error: "Student session expired"
-      });
-    }
-    let decodedStudent;
-    try {
-      decodedStudent = jwt.verify(
-        studentToken,
-        process.env.JWT_SECRET
-      );
-    } catch (tokenErr) {
-      return res.status(401).json({
-        error: "Student session expired"
-      });
-    }
-    if (!decodedStudent || decodedStudent.role !== "student") {
-      return res.status(401).json({
-        error: "Invalid student session"
-      });
-    }
-    const student = await Student.findOne({
-      _id: decodedStudent.studentRecordId,
-      studentId: decodedStudent.studentId,
-      status: "active"
-    })
-      .select("studentId class teacherId schoolId schoolCode status")
-      .lean();
-    if (!student) {
-      return res.status(401).json({
-        error: "Invalid student session"
-      });
-    }
+    const student = req.studentSession.student;
     const className = String(student.class || "").trim().toUpperCase();
     const teacherId = String(student.teacherId || "").trim();
     const schoolCode = String(student.schoolCode || "").trim();
@@ -750,9 +797,16 @@ router.get("/get-subjects", async (req, res) => {
       error: "Failed to fetch subjects"
     });
   }
-});
-router.get("/get-classes", async (req, res) => {
+}
+router.get("/get-subjects", requireStudentApiSession, getStudentSubjectsHandler);
+router.get("/api/student/subjects", requireStudentApiSession, getStudentSubjectsHandler);
+router.get("/get-classes", authMiddleware, async (req, res) => {
   try {
+        if (!req.user || (req.user.role !== "admin" && req.user.role !== "teacher")) {
+      return res.status(403).json({
+        error: "Access denied"
+      });
+    }
     const teacherId =
       String(req.query.teacherId || "").trim();
     let classes;
@@ -767,8 +821,13 @@ router.get("/get-classes", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch classes" });
   }
 });
-router.get("/get-students", async (req, res) => {
+router.get("/get-students", authMiddleware, async (req, res) => {
   try {
+        if (!req.user || (req.user.role !== "admin" && req.user.role !== "teacher")) {
+      return res.status(403).json({
+        error: "Access denied"
+      });
+    }
     const className =
       String(req.query.className || "").trim();
     if (!className) {
@@ -825,44 +884,15 @@ router.post("/student-login", async (req, res) => {
 // ======================================================
 // TEST PAGE
 // ======================================================
-router.get("/test", async (req, res) => {
+router.get("/test", requireStudentPageSession, async (req, res) => {
   try {
     const id = req.query.id;
-    const studentToken = req.cookies && req.cookies.studentSessionToken;
-    if (!id || !studentToken) {
+    if (!id) {
       return res.redirect("/student-entry");
     }
-    let decodedStudent;
-    try {
-      decodedStudent = jwt.verify(
-        studentToken,
-        process.env.JWT_SECRET
-      );
-    } catch (tokenErr) {
-      return res.redirect("/student-entry");
-    }
-    if (!decodedStudent || decodedStudent.role !== "student") {
-      return res.redirect("/student-entry");
-    }
+    const decodedStudent = req.studentSession.decodedStudent;
+    const student = req.studentSession.student;
     const studentId = decodedStudent.studentId;
-    const studentRecordId = decodedStudent.studentRecordId;
-    const student = await Student.findOne({
-      _id: studentRecordId,
-      studentId,
-      status: "active"
-    })
-      .select("studentId studentKey schoolId schoolCode teacherId class status")
-      .lean();
-    if (!student) {
-      return res.redirect("/student-entry");
-    }
-    if (
-      decodedStudent.schoolId &&
-      student.schoolId &&
-      String(decodedStudent.schoolId) !== String(student.schoolId)
-    ) {
-      return res.redirect("/student-entry");
-    }
 const alreadyAttempted = await Result.findOne({
   studentId,
   testId: id,
@@ -913,12 +943,12 @@ return `
   data-question-id="${qid}"
   style="background:white;padding:20px;margin:15px 0;border-radius:12px;"
 >
-  <p><b>Q${i + 1}: ${q.question}</b></p>
+  <p><b>Q${i + 1}: ${escapeHtml(q.question)}</b></p>
   ${q.options.map(o => `
     <label>
       ${(q.correctAnswers && q.correctAnswers.length > 1)
-        ? `<input type="checkbox" name="q${qid}" value="${o}"> ${o}`
-        : `<input type="radio" name="q${qid}" value="${o}"> ${o}`
+        ? `<input type="checkbox" name="q${escapeAttribute(qid)}" value="${escapeAttribute(o)}"> ${escapeHtml(o)}`
+        : `<input type="radio" name="q${escapeAttribute(qid)}" value="${escapeAttribute(o)}"> ${escapeHtml(o)}`
       }
     </label><br>
   `).join("")}
@@ -932,7 +962,7 @@ return `
   data-question-id="${qid}"
   style="background:white;padding:20px;margin:15px 0;border-radius:12px;"
 >
-  <p><b>Q${i + 1}: ${q.question}</b></p>
+  <p><b>Q${i + 1}: ${escapeHtml(q.question)}</b></p>
   <div style="
     background:#020617;
     border-radius:12px;
@@ -961,7 +991,7 @@ return `
       ">
         <button
         id="run-${qid}"
-      onclick="runCode('${qid}')"
+      onclick="runCode('${escapeAttribute(qid)}')"
           style="
             padding:6px 12px;
             background:#16a34a;
@@ -975,7 +1005,7 @@ return `
         >
           Run Code
         </button>
-        <span
+        <spa
           class="language-badge"
           data-question-id="${qid}"
           style="
@@ -1061,7 +1091,7 @@ return `
           overflow:auto;
         "
         placeholder="Write your code here..."
-      >${q.codingMeta?.starterCode || ""}</textarea>
+      >${escapeHtml(q.codingMeta?.starterCode || "")}</textarea>
     </div>
     <div
       id="output-${qid}"
@@ -1113,7 +1143,7 @@ Click to Start
     <h2>Student</h2>
   </div>
   <div style="flex:1;padding:30px;background:#eef2ff;overflow:auto;">
-    <h1>${test.name}</h1>
+    <h1>${escapeHtml(test.name)}</h1>
     <p style="color:#64748b;">
       Duration: ${test.durationMinutes || 60} minutes
     </p>
@@ -1172,13 +1202,13 @@ Click to Start
   </div>
 </div>
 <script>
-const qs = ${JSON.stringify(testQuestions)};
+const qs = ${safeJsonForScript(testQuestions)};
 window.__testQuestions = qs;
 const questionTimersEnabled = ${test.questionTimersEnabled ? "true" : "false"};
-const testId = "${test._id}";
+const testId = ${safeJsonForScript(String(test._id))};
 window.__testId = testId;
-const testName = "${test.name}";
-const studentId = "${studentId}";
+const testName = ${safeJsonForScript(test.name)};
+const studentId = ${safeJsonForScript(studentId)};
 window.codeMirrorEditors = window.codeMirrorEditors || {};
 window.getCodeAnswer = function(qid){
   const editor = window.codeMirrorEditors?.[qid];
@@ -1213,7 +1243,7 @@ window.runCode = async function(qid){
     controller.abort();
   }, 5000);
   try {
-    const res = await fetch("/run-code", {
+    const res = await fetch("/api/code/run", {
       method:"POST",
       headers:{
         "Content-Type":"application/json"
@@ -1268,7 +1298,7 @@ document.addEventListener("keydown", function(e){
 if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s"){
   e.preventDefault();
   const questionId = textarea.dataset.questionId;
-  const storageKey = "code_answer_${test._id}_" + questionId;
+  const storageKey = "code_answer_" + testId + "_" + questionId;
   localStorage.setItem(storageKey, textarea.value);
   return;
 }
@@ -1525,7 +1555,7 @@ function submitTest(){
   const btn = document.getElementById("submitBtn");
   if(btn){
     btn.disabled = true;
-    btn.innerText = window.__submitReason
+    btn.innerText = window.__submitReaso
       ? "Auto-submitting..."
       : "Submitting...";
     btn.style.opacity = "0.7";
@@ -1585,7 +1615,7 @@ function submitTest(){
     }
     return;
   }
-  fetch("/submit", {
+  fetch("/api/student/submit", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     keepalive:true,
@@ -1605,8 +1635,8 @@ function submitTest(){
       localStorage.removeItem("code_answer_" + testId + "_" + questionId);
       localStorage.removeItem("code_language_" + testId + "_" + questionId);
     });
-        alert(window.__submitReason
-      ? "Test submitted automatically: " + window.__submitReason
+        alert(window.__submitReaso
+      ? "Test submitted automatically: " + window.__submitReaso
       : "Submitted"
     );
     window.location.replace("/my-tests");

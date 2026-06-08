@@ -38,6 +38,22 @@ app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "same-origin");
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com",
+      "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com",
+      "img-src 'self' data:",
+      "font-src 'self' data: cdn.jsdelivr.net cdnjs.cloudflare.com",
+      "connect-src 'self'",
+      "worker-src 'self' blob:"
+    ].join("; ")
+  );
   if (process.env.NODE_ENV === "production") {
     res.setHeader(
       "Strict-Transport-Security",
@@ -104,6 +120,11 @@ app.use((req, res, next) => {
   }
   if (req.params) {
     mongoSanitize.sanitize(req.params, {
+      replaceWith: "_"
+    });
+  }
+  if (req.query) {
+    mongoSanitize.sanitize(req.query, {
       replaceWith: "_"
     });
   }
@@ -189,14 +210,12 @@ app.use((err, req, res, next) => {
 });
 function getEnvStatus(name) {
   const value = String(process.env[name] || "").trim();
-
   return {
     name,
     present: Boolean(value),
     length: value.length || 0
   };
 }
-
 function getStartupRouteReport() {
   return [
     "publicRoutes",
@@ -216,7 +235,6 @@ function getStartupRouteReport() {
     "platformRoutes"
   ];
 }
-
 function logStartupHealthReport(port) {
   const mongo = getMongoHealth();
   const requiredEnv = [
@@ -226,7 +244,6 @@ function logStartupHealthReport(port) {
     "LOCAL_CODE_EXECUTION_ENABLED",
     "PLATFORM_ADMIN_EMAIL"
   ];
-
   logger.info("startup health report", {
     status: mongo.readyState === 1 ? "healthy" : "degraded",
     port,
@@ -239,18 +256,14 @@ function logStartupHealthReport(port) {
     routesMounted: getStartupRouteReport()
   });
 }
-
 const startServer = async () => {
   try {
     await connectDB();
-
     const PORT = envConfig.port;
-
     app.listen(PORT, "0.0.0.0", () => {
       logger.info("server started", {
         port: PORT
       });
-
       logStartupHealthReport(PORT);
     });
   } catch (err) {
@@ -258,9 +271,7 @@ const startServer = async () => {
       message: err.message,
       stack: err.stack
     });
-
     process.exit(1);
   }
 };
-
 startServer();

@@ -995,19 +995,15 @@ function getErrorMessage(errorValue){
   if(!errorValue){
     return "Something went wrong";
   }
-
   if(typeof errorValue === "string"){
     return errorValue;
   }
-
   if(errorValue.message){
     return errorValue.message;
   }
-
   if(errorValue.code && errorValue.message){
     return errorValue.code + ": " + errorValue.message;
   }
-
   return "Something went wrong";
 }
 function closeCustomDropdowns(){
@@ -1278,7 +1274,7 @@ function logout(){
     alert("Subject name is required");
     return;
   }
-  fetch("/admin/create-subject", {
+  fetch("/api/admin/subjects/create", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1304,7 +1300,7 @@ function deleteSubject(subjectId){
   if(!confirm("Delete this subject?")){
     return;
   }
-  fetch("/admin/delete-subject", {
+  fetch("/api/admin/subjects/delete", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1336,7 +1332,7 @@ headers:{
     alert("Class name is required");
     return;
   }
-  fetch("/admin/create-class", {
+  fetch("/api/admin/classes/create", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1362,7 +1358,7 @@ function deleteClass(classId){
   if(!confirm("Delete this class?")){
     return;
   }
-  fetch("/admin/delete-class", {
+  fetch("/api/admin/classes/delete", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1399,7 +1395,7 @@ function updateStudentClass(studentMongoId){
     alert("Class and teacher are required");
     return;
   }
-  fetch("/admin/update-student-class", {
+  fetch("/api/admin/students/update-class", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1427,7 +1423,7 @@ function deleteStudent(studentMongoId){
   if(!confirm("Delete this student?")){
     return;
   }
-  fetch("/admin/delete-student", {
+  fetch("/api/admin/students/delete", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1492,7 +1488,7 @@ function saveBulkStudents(){
     alert("Add at least one valid student");
     return;
   }
-  fetch("/admin/bulk-create-students", {
+  fetch("/api/admin/students/bulk-create", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1531,7 +1527,7 @@ function saveMapping(){
     alert("Class, subject, and teacher are required");
     return;
   }
-  fetch("/admin/map-class-subject", {
+  fetch("/api/admin/mappings/create", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1562,7 +1558,7 @@ function deleteMapping(mappingId){
     return;
   }
   fetch(
-    "/admin/delete-class-subject-mapping",
+    "/api/admin/mappings/delete",
     {
       method:"POST",
       headers:{
@@ -1597,7 +1593,7 @@ function deleteMapping(mappingId){
     return;
   }
   fetch(
-    "/admin/delete-user",
+    "/api/admin/users/delete",
     {
       method:"POST",
       headers:{
@@ -1647,7 +1643,7 @@ function addUserWithRole(role, prefix){
     alert("All fields are required");
     return;
   }
-  fetch("/admin/add-user", {
+  fetch("/api/admin/users/create", {
     method:"POST",
     headers:{
       "Content-Type":"application/json",
@@ -1695,9 +1691,7 @@ exports.adminSettingsData = async (req, res) => {
         }
       });
     }
-
     const schoolId = req.user.schoolId || null;
-
     if (!schoolId) {
       return res.status(400).json({
         success: false,
@@ -1707,7 +1701,6 @@ exports.adminSettingsData = async (req, res) => {
         }
       });
     }
-
     const entity = String(req.query.entity || "students").trim().toLowerCase();
     const search = String(req.query.search || "").trim();
     const className = String(req.query.className || "").trim();
@@ -1718,41 +1711,33 @@ exports.adminSettingsData = async (req, res) => {
       100
     );
     const skip = (page - 1) * limit;
-
     const User = require("../models/User");
     const Student = require("../models/Student");
     const ClassModel = require("../models/Class");
     const Subject = require("../models/Subject");
     const ClassSubject = require("../models/ClassSubject");
-
     const schoolScopedFilter = { schoolId };
-
     if (entity === "students") {
       const query = {
         ...schoolScopedFilter
       };
-
       if (search) {
         const searchRegex = new RegExp(
           search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
           "i"
         );
-
         query.$or = [
           { name: searchRegex },
           { fullName: searchRegex },
           { studentId: searchRegex }
         ];
       }
-
       if (className) {
         query.class = className;
       }
-
       if (teacherId) {
         query.teacherId = teacherId;
       }
-
       const [students, total, teachers] = await Promise.all([
         Student.find(query)
           .select("studentId name fullName class teacherId schoolId schoolCode")
@@ -1768,13 +1753,11 @@ exports.adminSettingsData = async (req, res) => {
           .select("name email role schoolId schoolCode")
           .lean()
       ]);
-
       const teacherMap = {};
       teachers.forEach(teacher => {
         teacherMap[String(teacher._id)] =
           teacher.name || teacher.email || "Unknown";
       });
-
       return res.json({
         entity,
         students: students.map(student => ({
@@ -1791,21 +1774,17 @@ exports.adminSettingsData = async (req, res) => {
         }
       });
     }
-
     if (entity === "classes") {
       const query = {
         ...schoolScopedFilter
       };
-
       if (search) {
         const searchRegex = new RegExp(
           search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
           "i"
         );
-
         query.name = searchRegex;
       }
-
       const [classes, total, students, mappings, teachers] = await Promise.all([
         ClassModel.find(query)
           .select("name schoolId schoolCode createdAt")
@@ -1827,30 +1806,25 @@ exports.adminSettingsData = async (req, res) => {
           .select("name email")
           .lean()
       ]);
-
       const teacherMap = {};
       teachers.forEach(teacher => {
         teacherMap[String(teacher._id)] =
           teacher.name || teacher.email || "Unknown";
       });
-
       return res.json({
         entity,
         classes: classes.map(classItem => {
           const normalizedClassName = String(classItem.name || "")
             .trim()
             .toUpperCase();
-
           const classStudents = students.filter(student =>
             String(student.class || "").trim().toUpperCase() ===
             normalizedClassName
           );
-
           const classMappings = mappings.filter(mapping =>
             String(mapping.className || "").trim().toUpperCase() ===
             normalizedClassName
           );
-
           return {
             ...classItem,
             studentCount: classStudents.length,
@@ -1876,21 +1850,17 @@ exports.adminSettingsData = async (req, res) => {
         }
       });
     }
-
     if (entity === "subjects") {
       const query = {
         ...schoolScopedFilter
       };
-
       if (search) {
         const searchRegex = new RegExp(
           search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
           "i"
         );
-
         query.name = searchRegex;
       }
-
       const [subjects, total, mappings, teachers] = await Promise.all([
         Subject.find(query)
           .select("name schoolId schoolCode createdAt")
@@ -1909,25 +1879,21 @@ exports.adminSettingsData = async (req, res) => {
           .select("name email")
           .lean()
       ]);
-
       const teacherMap = {};
       teachers.forEach(teacher => {
         teacherMap[String(teacher._id)] =
           teacher.name || teacher.email || "Unknown";
       });
-
       return res.json({
         entity,
         subjects: subjects.map(subject => {
           const normalizedSubjectName = String(subject.name || "")
             .trim()
             .toLowerCase();
-
           const subjectMappings = mappings.filter(mapping =>
             String(mapping.subject || "").trim().toLowerCase() ===
             normalizedSubjectName
           );
-
           return {
             ...subject,
             mappedClasses: [...new Set(
@@ -1952,7 +1918,6 @@ exports.adminSettingsData = async (req, res) => {
         }
       });
     }
-
     return res.status(400).json({
       success: false,
       error: {

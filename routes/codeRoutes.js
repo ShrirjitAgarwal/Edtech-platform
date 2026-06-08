@@ -33,7 +33,7 @@ function checkRunCodeRateLimit(req){
 let activeCodeRuns = 0;
 const maxActiveCodeRuns = 25;
 // ---------- RUN CODE ----------
-router.post("/run-code", async (req, res) => {
+async function runCodeHandler(req, res) {
   try {
     if (activeCodeRuns >= maxActiveCodeRuns) {
       return res.status(503).json({
@@ -147,5 +147,9 @@ router.post("/run-code", async (req, res) => {
   } finally {
     activeCodeRuns = Math.max(activeCodeRuns - 1, 0);
   }
-});
+}
+
+router.post("/run-code", runCodeHandler);
+router.post("/api/code/run", runCodeHandler);
+
 module.exports = router;

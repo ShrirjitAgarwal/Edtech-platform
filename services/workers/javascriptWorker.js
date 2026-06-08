@@ -33,18 +33,14 @@ const BLOCKED_JS_PATTERNS = [
   /\bimport\s*\(/,
   /\bwhile\s*\(\s*true\s*\)/
 ];
-
 function validateJavaScriptCode(code) {
   const safeCode = String(code || "");
-
   if (!safeCode.trim()) {
     throw new Error("Empty code submission");
   }
-
   if (safeCode.length > EXECUTION_LIMITS.MAX_CODE_LENGTH) {
     throw new Error("Code exceeds limit");
   }
-
   for (const pattern of BLOCKED_JS_PATTERNS) {
     if (pattern.test(safeCode)) {
       throw new Error("Code uses blocked JavaScript features");

@@ -66,7 +66,7 @@ router.get("/platform-login", (req, res) => {
           box-sizing:border-box;
         "
       />
-      <butto
+      <button
         onclick="platformLogin()"
         style="
           width:100%;
@@ -79,7 +79,7 @@ router.get("/platform-login", (req, res) => {
           font-weight:700;
         "
       >
-        Logi
+        Login
       </button>
       <p id="error" style="color:#dc2626;font-weight:600;"></p>
     </div>
@@ -208,14 +208,12 @@ router.post("/platform-admins", authMiddleware, async (req, res) => {
  error: "Name, email, and password are required"
  });
  }
-
  const passwordPolicyError = validatePasswordPolicy(password);
  if (passwordPolicyError) {
  return res.status(400).json({
  error: passwordPolicyError
  });
  }
-
  const existing = await User.findOne({
  email
  });
@@ -306,7 +304,7 @@ router.get("/platform-change-password", authMiddleware, async (req, res) => {
         box-sizing:border-box;
       "
     />
-    <butto
+    <button
       onclick="changePassword()"
       style="
         width:100%;
@@ -388,7 +386,6 @@ router.post("/platform-change-password", authMiddleware, async (req, res) => {
  error: passwordPolicyError
  });
  }
-
  const user = await User.findOne({
  _id: req.user.id,
  role: "platform_admin"

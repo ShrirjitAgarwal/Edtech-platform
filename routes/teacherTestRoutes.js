@@ -18,6 +18,14 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, "&#096;");
 }
+function safeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
 // ---------- TEACHER TEST LIST ----------
 router.get("/teacher-tests", authMiddleware, async (req, res) => {
   const content = `
@@ -354,7 +362,7 @@ box-sizing:border-box;
         });
       };
       function assignTest(testId){
-        fetch("/assign-test", {
+fetch("/api/teacher/tests/assign", {
           method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -374,7 +382,7 @@ headers:{
       }
       function confirmDelete(id){
         if(!confirm("Delete test?")) return;
-        fetch("/delete-test", {
+        fetch("/api/teacher/tests/delete", {
           method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -404,7 +412,7 @@ function openSelectedSettings(){
           return;
         }
         if(!confirm("Delete selected tests?")) return;
-        fetch("/delete-multiple-tests", {
+        fetch("/api/teacher/tests/delete-multiple", {
           method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -855,13 +863,13 @@ if(
  window.location.replace("/");
 }
 const teacherId = user._id || user.id;
-const assignedClassSubjects = ${JSON.stringify(classSubjectMappings)};
-const editingTestId = "${editTest?._id || ""}";
-const editingQuestionIds = ${JSON.stringify((editTest?.questionIds || []).map(id => String(id)))};
+const assignedClassSubjects = ${safeJsonForScript(classSubjectMappings)};
+const editingTestId = ${safeJsonForScript(String(editTest?._id || ""))};
+const editingQuestionIds = ${safeJsonForScript((editTest?.questionIds || []).map(id => String(id)))};
 if(editingTestId){
  localStorage.setItem("selectedQuestions", JSON.stringify(editingQuestionIds));
 }
-const allQuestions = ${JSON.stringify(questions)};
+const allQuestions = ${safeJsonForScript(questions)};
 const questions = allQuestions.filter(q =>
  q.scope === "public" ||
  String(q.scope || "").trim() === "" ||
@@ -1311,7 +1319,7 @@ function saveTest(){
  if(!className) return alert("Select class");
  if(!subject) return alert("Select subject");
  if(selected.length === 0) return alert("Select at least one question");
- fetch("/save-test", {
+ fetch("/api/teacher/tests/save", {
  method:"POST",
 headers:{
  "Content-Type":"application/json"
@@ -1377,7 +1385,7 @@ res.send("Error loading create test");
 }
 });
 // ---------- SAVE TEST ----------
-router.post("/save-test", authMiddleware, async (req, res) => {
+async function saveTestHandler(req, res) {
   try {
     const { testId, name, questionIds, className, subject } = req.body;
     if (!name || !Array.isArray(questionIds) || !questionIds.length) {
@@ -1467,7 +1475,9 @@ res.json({ status: "draft_saved", test: newTest });
     console.error(err);
     res.status(500).json({ error: "Failed to save test" });
   }
-});
+}
+router.post("/save-test", authMiddleware, saveTestHandler);
+router.post("/api/teacher/tests/save", authMiddleware, saveTestHandler);
 // ---------- TEST SETTINGS PAGE ----------
 router.get("/test-settings", authMiddleware, async (req, res) => {
   try {
@@ -1840,7 +1850,7 @@ function saveSettings(){
   if(durationMinutes > 1440){
     return alert("Duration cannot exceed 1440 minutes");
   }
-  fetch("/save-test-settings", {
+  fetch("/api/teacher/tests/settings/save", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1898,7 +1908,7 @@ loadSelectedTest();
   }
 });
 // ---------- SAVE TEST SETTINGS ----------
-router.post("/save-test-settings", authMiddleware, async (req, res) => {
+async function saveTestSettingsHandler(req, res) {
   try {
     const {
       testId,
@@ -1960,9 +1970,11 @@ res.json({
       error: "Failed to save test settings"
     });
   }
-});
+}
+router.post("/save-test-settings", authMiddleware, saveTestSettingsHandler);
+router.post("/api/teacher/tests/settings/save", authMiddleware, saveTestSettingsHandler);
 // ---------- DELETE TEST ----------
-router.post("/delete-test", authMiddleware, async (req, res) => {
+async function deleteTestHandler(req, res) {
   try {
     const { id } = req.body;
     if (!id) {
@@ -2008,8 +2020,10 @@ await logAuditEvent(req, {
     console.error("DELETE TEST ERROR:", err);
     res.status(500).json({ error: "Failed to delete test" });
   }
-});
-router.post("/delete-multiple-tests", authMiddleware, async (req, res) => {
+}
+router.post("/delete-test", authMiddleware, deleteTestHandler);
+router.post("/api/teacher/tests/delete", authMiddleware, deleteTestHandler);
+async function deleteMultipleTestsHandler(req, res) {
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids) || !ids.length) {
@@ -2056,5 +2070,7 @@ await logAuditEvent(req, {
     console.error("BULK DELETE ERROR:", err);
     res.status(500).json({ error: "Bulk delete failed" });
   }
-});
+}
+router.post("/delete-multiple-tests", authMiddleware, deleteMultipleTestsHandler);
+router.post("/api/teacher/tests/delete-multiple", authMiddleware, deleteMultipleTestsHandler);
 module.exports = router;

@@ -1,7 +1,6 @@
 const {
   EXECUTION_LIMITS
 } = require("../config/executionLimits");
-
 const BLOCKED_PATTERNS = [
   /\bimport\s+os\b/,
   /\bimport\s+sys\b/,
@@ -50,24 +49,20 @@ const BLOCKED_PATTERNS = [
   /\bsubclasses\s*\(/,
   /__/
 ];
-
 function validatePythonCode(code) {
   const safeCode = String(code || "");
-
   if (!safeCode.trim()) {
     return {
       ok: false,
       error: "Empty code submission"
     };
   }
-
   if (safeCode.length > EXECUTION_LIMITS.MAX_CODE_LENGTH) {
     return {
       ok: false,
       error: "Code exceeds limit"
     };
   }
-
   for (const pattern of BLOCKED_PATTERNS) {
     if (pattern.test(safeCode)) {
       return {
@@ -76,13 +71,11 @@ function validatePythonCode(code) {
       };
     }
   }
-
   return {
     ok: true,
     error: null
   };
 }
-
 module.exports = {
   validatePythonCode
 };

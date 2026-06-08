@@ -6,13 +6,12 @@ function sidebar(active = "", role = "__USER_ROLE__") {
   const sidebarRole = sidebarUser?.role || "${role}";
   const sidebarIsStudent = sidebarRole === "student";
   const sidebarIsAdmin = sidebarRole === "admin";
-
   const sidebarItems = sidebarIsStudent
     ? [
         { key: "my-tests", label: "My Tests", path: "/my-tests" },
         { key: "dashboard", label: "Dashboard", path: "/my-tests" }
       ]
-    : sidebarIsAdmin
+    : sidebarIsAdmi
       ? [
           { key: "admin-dashboard", label: "Admin Dashboard", path: "/admin-dashboard" },
           { key: "admin-settings", label: "Admin Settings", path: "/admin-settings" },
@@ -29,18 +28,14 @@ function sidebar(active = "", role = "__USER_ROLE__") {
           { key: "classes", label: "Classes", path: "/classes" },
           { key: "settings", label: "Settings", path: "/teacher-settings" }
         ];
-
   const sidebarTitle = sidebarIsStudent
     ? "Student"
-    : sidebarIsAdmin
+    : sidebarIsAdmi
       ? "Admin"
       : "Wizdm.io";
-
   const activeKey = "${active}";
-
   const itemsHtml = sidebarItems.map(item => {
     const isActive = activeKey === item.key;
-
     return \`
       <div
         onclick="go('\${item.path}')"
@@ -59,7 +54,6 @@ function sidebar(active = "", role = "__USER_ROLE__") {
       </div>
     \`;
   }).join("");
-
   document.getElementById("sidebarContent").innerHTML = \`
     <div>
       <h2 style="
@@ -69,7 +63,6 @@ function sidebar(active = "", role = "__USER_ROLE__") {
       ">\${sidebarTitle}</h2>
       \${itemsHtml}
     </div>
-
     <div>
       <div
         onclick="logout()"
@@ -90,7 +83,6 @@ function sidebar(active = "", role = "__USER_ROLE__") {
 })();
 </script>
 `;
-
   return `
 <div
   id="sidebarContent"
@@ -111,5 +103,4 @@ function sidebar(active = "", role = "__USER_ROLE__") {
 ${sidebarScript}
 `;
 }
-
 module.exports = sidebar;

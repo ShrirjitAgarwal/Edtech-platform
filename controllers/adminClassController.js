@@ -1,7 +1,6 @@
 const {
-  logAdminAction
+  logAdminActio
 } = require("../services/adminActionLogger");
-
 function sendSuccess(res, message, data = {}) {
   return res.json({
     success: true,
@@ -9,7 +8,6 @@ function sendSuccess(res, message, data = {}) {
     data
   });
 }
-
 function sendError(res, statusCode, code, message, details = {}) {
   return res.status(statusCode).json({
     success: false,
@@ -20,7 +18,6 @@ function sendError(res, statusCode, code, message, details = {}) {
     }
   });
 }
-
 exports.createClassFromAdmin = async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
@@ -31,13 +28,10 @@ exports.createClassFromAdmin = async (req, res) => {
         "Only school admins can create classes."
       );
     }
-
     const ClassModel = require("../models/Class");
-
     const normalizedName = String(req.body.name || "")
       .trim()
       .toUpperCase();
-
     if (!normalizedName) {
       return sendError(
         res,
@@ -46,12 +40,10 @@ exports.createClassFromAdmin = async (req, res) => {
         "Class name is required."
       );
     }
-
     const existingClass = await ClassModel.findOne({
       name: normalizedName,
       ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     }).lean();
-
     if (existingClass) {
       return sendError(
         res,
@@ -63,7 +55,6 @@ exports.createClassFromAdmin = async (req, res) => {
         }
       );
     }
-
     const newClass = await ClassModel.create({
       name: normalizedName,
       teacherId: "",
@@ -71,7 +62,6 @@ exports.createClassFromAdmin = async (req, res) => {
       schoolCode: req.user.schoolCode || null,
       studentIds: []
     });
-
     await logAdminAction(req, {
       action: "admin_class_created",
       status: "success",
@@ -81,7 +71,6 @@ exports.createClassFromAdmin = async (req, res) => {
         className: newClass.name
       }
     });
-
     return sendSuccess(
       res,
       "Class created successfully.",
@@ -91,7 +80,6 @@ exports.createClassFromAdmin = async (req, res) => {
     );
   } catch (err) {
     console.error("ADMIN CREATE CLASS ERROR:", err);
-
     return sendError(
       res,
       500,
@@ -100,7 +88,6 @@ exports.createClassFromAdmin = async (req, res) => {
     );
   }
 };
-
 exports.deleteClassFromAdmin = async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
@@ -111,13 +98,10 @@ exports.deleteClassFromAdmin = async (req, res) => {
         "Only school admins can delete classes."
       );
     }
-
     const ClassModel = require("../models/Class");
     const Student = require("../models/Student");
     const ClassSubject = require("../models/ClassSubject");
-
     const classId = String(req.body.classId || "").trim();
-
     if (!classId) {
       return sendError(
         res,
@@ -126,12 +110,10 @@ exports.deleteClassFromAdmin = async (req, res) => {
         "Class ID is required to delete a class."
       );
     }
-
     const existingClass = await ClassModel.findOne({
       _id: classId,
       ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     }).lean();
-
     if (!existingClass) {
       return sendError(
         res,
@@ -140,12 +122,10 @@ exports.deleteClassFromAdmin = async (req, res) => {
         "Class was not found for this school."
       );
     }
-
     const studentCount = await Student.countDocuments({
       class: existingClass.name,
       ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     });
-
     if (studentCount > 0) {
       return sendError(
         res,
@@ -158,12 +138,10 @@ exports.deleteClassFromAdmin = async (req, res) => {
         }
       );
     }
-
     const mappingCount = await ClassSubject.countDocuments({
       className: existingClass.name,
       ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     });
-
     if (mappingCount > 0) {
       return sendError(
         res,
@@ -176,12 +154,10 @@ exports.deleteClassFromAdmin = async (req, res) => {
         }
       );
     }
-
     await ClassModel.deleteOne({
       _id: classId,
       ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     });
-
     await logAdminAction(req, {
       action: "admin_class_deleted",
       status: "success",
@@ -191,7 +167,6 @@ exports.deleteClassFromAdmin = async (req, res) => {
         className: existingClass.name
       }
     });
-
     return sendSuccess(
       res,
       "Class deleted successfully.",
@@ -202,7 +177,6 @@ exports.deleteClassFromAdmin = async (req, res) => {
     );
   } catch (err) {
     console.error("ADMIN DELETE CLASS ERROR:", err);
-
     return sendError(
       res,
       500,

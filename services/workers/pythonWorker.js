@@ -32,7 +32,6 @@ try:
  resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
 except Exception:
  pass
-
 SAFE_BUILTINS = {
  "abs": abs,
  "all": all,
@@ -58,7 +57,6 @@ SAFE_BUILTINS = {
  "tuple": tuple,
  "zip": zip
 }
-
 student_globals = {
  "__builtins__": SAFE_BUILTINS
 }

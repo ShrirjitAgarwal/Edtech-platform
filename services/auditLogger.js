@@ -1,14 +1,11 @@
 const AuditLog = require("../models/AuditLog");
 const logger = require("../utils/logger");
-
 function safeString(value) {
   if (value === undefined || value === null) {
     return null;
   }
-
   return String(value);
 }
-
 function getRequestMeta(req) {
   return {
     requestId: safeString(req.requestId),
@@ -16,7 +13,6 @@ function getRequestMeta(req) {
     userAgent: safeString(req.headers && req.headers["user-agent"])
   };
 }
-
 function getActorFromUser(user) {
   if (!user) {
     return {
@@ -27,7 +23,6 @@ function getActorFromUser(user) {
       schoolCode: null
     };
   }
-
   return {
     actorId: safeString(user._id || user.id),
     actorEmail: safeString(user.email),
@@ -36,7 +31,6 @@ function getActorFromUser(user) {
     schoolCode: safeString(user.schoolCode)
   };
 }
-
 async function logAuditEvent(req, {
   event,
   status = "success",
@@ -62,7 +56,6 @@ async function logAuditEvent(req, {
     });
   }
 }
-
 module.exports = {
   logAuditEvent
 };

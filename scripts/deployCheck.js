@@ -1,29 +1,23 @@
 const fs = require("fs");
 const path = require("path");
 const childProcess = require("child_process");
-
 let hasFailure = false;
 let hasWarning = false;
-
 function section(title) {
   console.log("");
   console.log("=== " + title + " ===");
 }
-
 function pass(message) {
   console.log("PASS  " + message);
 }
-
 function warn(message) {
   hasWarning = true;
   console.log("WARN  " + message);
 }
-
 function fail(message) {
   hasFailure = true;
   console.log("FAIL  " + message);
 }
-
 function run(command) {
   return childProcess
     .execSync(command, {
@@ -32,76 +26,58 @@ function run(command) {
     })
     .trim();
 }
-
 function fileExists(filePath) {
   return fs.existsSync(path.join(process.cwd(), filePath));
 }
-
 function getFilesRecursive(dirPath) {
   const absoluteDir = path.join(process.cwd(), dirPath);
-
   if (!fs.existsSync(absoluteDir)) {
     return [];
   }
-
   const entries = fs.readdirSync(absoluteDir, {
     withFileTypes: true
   });
-
   let files = [];
-
   entries.forEach(entry => {
     const relativePath = path.join(dirPath, entry.name);
     const absolutePath = path.join(process.cwd(), relativePath);
-
     if (entry.isDirectory()) {
       files = files.concat(getFilesRecursive(relativePath));
       return;
     }
-
     if (entry.isFile() && absolutePath.endsWith(".js")) {
       files.push(relativePath);
     }
   });
-
   return files;
 }
-
 function checkGitState() {
   section("Git State");
-
   let status = "";
-
   try {
     status = run("git status --short");
   } catch (err) {
     fail("Unable to read git status");
     return;
   }
-
   const changedFiles = status
     .split("\n")
     .map(line => line.trim())
     .filter(Boolean);
-
   if (!changedFiles.length) {
     pass("Working tree is clean");
   } else {
     warn("Working tree has uncommitted files");
-
     changedFiles.forEach(line => {
       console.log("      " + line);
     });
   }
-
   try {
     const head = run("git rev-parse HEAD");
     const branch = run("git rev-parse --abbrev-ref HEAD");
     const origin = run("git rev-parse origin/" + branch);
-
     console.log("      local HEAD:  " + head);
     console.log("      origin HEAD: " + origin);
-
     if (head === origin) {
       pass("Local HEAD matches origin/" + branch);
     } else {
@@ -111,34 +87,26 @@ function checkGitState() {
     warn("Could not compare local HEAD with origin branch. Run git fetch first if needed.");
   }
 }
-
 function checkPackageManager() {
   section("Package Manager");
-
   const hasPackageLock = fileExists("package-lock.json");
   const hasYarnLock = fileExists("yarn.lock");
-
   if (hasPackageLock && hasYarnLock) {
     warn("Both package-lock.json and yarn.lock exist. Use one package manager only.");
     return;
   }
-
   if (hasPackageLock) {
     pass("Using npm/package-lock.json");
     return;
   }
-
   if (hasYarnLock) {
     pass("Using yarn/yarn.lock");
     return;
   }
-
   warn("No package lock file found");
 }
-
 function checkSyntax() {
   section("Syntax Check");
-
   const filesToCheck = [
     "server.js",
     "config/validateEnv.js",
@@ -148,7 +116,6 @@ function checkSyntax() {
     ...getFilesRecursive("models"),
     ...getFilesRecursive("middleware")
   ];
-
   filesToCheck.forEach(filePath => {
     try {
       run("node -c " + JSON.stringify(filePath));
@@ -159,17 +126,13 @@ function checkSyntax() {
     }
   });
 }
-
 function checkRouteLoad() {
   section("Route Load Check");
-
   const routeFiles = getFilesRecursive("routes");
-
   if (!routeFiles.length) {
     fail("No route files found");
     return;
   }
-
   routeFiles.forEach(filePath => {
     try {
       require(path.join(process.cwd(), filePath));
@@ -180,15 +143,12 @@ function checkRouteLoad() {
     }
   });
 }
-
 function extractBackendRoutes() {
   const routeFiles = getFilesRecursive("routes");
   const routes = [];
-
   routeFiles.forEach(filePath => {
     const content = fs.readFileSync(path.join(process.cwd(), filePath), "utf8");
     const regex = /router\.(get|post|put|patch|delete)\(\s*["'`]([^"'`]+)["'`]/g;
-
     let match;
     while ((match = regex.exec(content))) {
       routes.push({
@@ -198,10 +158,8 @@ function extractBackendRoutes() {
       });
     }
   });
-
   return routes;
 }
-
 function extractFrontendFetches() {
   const scanDirs = [
     "routes",
@@ -209,24 +167,18 @@ function extractFrontendFetches() {
     "views",
     "public"
   ];
-
   const fetches = [];
-
   scanDirs.forEach(dir => {
     const files = getFilesRecursive(dir);
-
     files.forEach(filePath => {
       const content = fs.readFileSync(path.join(process.cwd(), filePath), "utf8");
       const regex = /fetch\(\s*["'`]([^"'`]+)["'`]/g;
-
       let match;
       while ((match = regex.exec(content))) {
         const fetchPath = match[1];
-
         if (!fetchPath.startsWith("/")) {
           return;
         }
-
         fetches.push({
           path: fetchPath,
           file: filePath
@@ -234,56 +186,43 @@ function extractFrontendFetches() {
       }
     });
   });
-
   return fetches;
 }
-
 function normalizePath(value) {
   return String(value || "")
     .split("?")[0]
     .replace(/\/+$/, "") || "/";
 }
-
 function routeMatchesFetch(routePath, fetchPath) {
   const normalizedRoute = normalizePath(routePath);
   const normalizedFetch = normalizePath(fetchPath);
-
   if (normalizedRoute === normalizedFetch) {
     return true;
   }
-
   const routeParts = normalizedRoute.split("/");
   const fetchParts = normalizedFetch.split("/");
-
   if (routeParts.length !== fetchParts.length) {
     return false;
   }
-
   return routeParts.every((part, index) => {
     if (part.startsWith(":")) {
       return true;
     }
-
     return part === fetchParts[index];
   });
 }
-
 function checkFetchRouteMatching() {
   section("Frontend Fetch Route Matching");
-
   const backendRoutes = extractBackendRoutes();
   const frontendFetches = extractFrontendFetches();
-
   if (!frontendFetches.length) {
     warn("No frontend fetch calls found");
     return;
   }
-
   frontendFetches.forEach(fetchCall => {
     const matched = backendRoutes.some(route =>
       routeMatchesFetch(route.path, fetchCall.path)
     );
-
     if (matched) {
       pass("Fetch has matching route: " + fetchCall.path + " (" + fetchCall.file + ")");
     } else {
@@ -291,19 +230,15 @@ function checkFetchRouteMatching() {
     }
   });
 }
-
 function checkCriticalUncommittedFiles() {
   section("Critical File Commit Check");
-
   let status = "";
-
   try {
     status = run("git status --short");
   } catch (err) {
     warn("Could not check critical file status");
     return;
   }
-
   const criticalPatterns = [
     "server.js",
     "routes/",
@@ -313,7 +248,6 @@ function checkCriticalUncommittedFiles() {
     "data/config/",
     "config/"
   ];
-
   const criticalChanges = status
     .split("\n")
     .map(line => line.trim())
@@ -324,22 +258,17 @@ function checkCriticalUncommittedFiles() {
         filePath === pattern || filePath.startsWith(pattern)
       );
     });
-
   if (!criticalChanges.length) {
     pass("No uncommitted critical app files");
     return;
   }
-
   warn("Uncommitted critical app files exist. Render will not have these unless committed and pushed.");
-
   criticalChanges.forEach(line => {
     console.log("      " + line);
   });
 }
-
 function checkProductionEnvShape() {
   section("Production Env Shape");
-
   const requiredInProduction = [
     "JWT_SECRET",
     "MONGO_URI",
@@ -347,7 +276,6 @@ function checkProductionEnvShape() {
     "LOCAL_CODE_EXECUTION_ENABLED",
     "PLATFORM_ADMIN_EMAIL"
   ];
-
   requiredInProduction.forEach(name => {
     if (process.env[name]) {
       pass("Env present in current shell: " + name);
@@ -355,11 +283,9 @@ function checkProductionEnvShape() {
       warn("Env not present in current shell: " + name + " Render must have this set");
     }
   });
-
   if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
     fail("JWT_SECRET is present but shorter than 32 characters");
   }
-
   if (
     process.env.NODE_ENV === "production" &&
     process.env.LOCAL_CODE_EXECUTION_ENABLED !== "false"
@@ -367,28 +293,22 @@ function checkProductionEnvShape() {
     fail("LOCAL_CODE_EXECUTION_ENABLED must be false in production");
   }
 }
-
 function printFinalStatus() {
   section("Final Status");
-
   if (hasFailure) {
     console.log("DO NOT DEPLOY");
     process.exit(1);
   }
-
   if (hasWarning) {
     console.log("DEPLOY WITH CAUTION");
     process.exit(0);
   }
-
   console.log("READY TO DEPLOY");
   process.exit(0);
 }
-
 console.log("");
 console.log("Deploy Check Report");
 console.log("Time: " + new Date().toISOString());
-
 checkGitState();
 checkPackageManager();
 checkSyntax();

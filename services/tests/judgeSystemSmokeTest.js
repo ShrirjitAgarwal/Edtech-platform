@@ -1,17 +1,14 @@
 const {
-  judgeSubmission
+  judgeSubmissio
 } = require("../codeJudge");
-
 async function expectFailure(name, payload, expectedErrorPart) {
   const result = await judgeSubmission(payload);
-
   if (result.success !== false) {
     console.error("FAILED:", name, "expected failure");
     console.error(JSON.stringify(result, null, 2));
     process.exitCode = 1;
     return;
   }
-
   if (
     expectedErrorPart &&
     !String(result.error || "").includes(expectedErrorPart)
@@ -21,44 +18,36 @@ async function expectFailure(name, payload, expectedErrorPart) {
     process.exitCode = 1;
     return;
   }
-
   console.log("PASSED:", name);
 }
-
 async function expectJudgeResult(name, payload, expected) {
   const result = await judgeSubmission(payload);
-
   if (result.success !== expected.success) {
     console.error("FAILED:", name, "success mismatch");
     console.error(JSON.stringify(result, null, 2));
     process.exitCode = 1;
     return;
   }
-
   if (result.passedCount !== expected.passedCount) {
     console.error("FAILED:", name, "passedCount mismatch");
     console.error(JSON.stringify(result, null, 2));
     process.exitCode = 1;
     return;
   }
-
   if (result.totalCount !== expected.totalCount) {
     console.error("FAILED:", name, "totalCount mismatch");
     console.error(JSON.stringify(result, null, 2));
     process.exitCode = 1;
     return;
   }
-
   if (result.allPassed !== expected.allPassed) {
     console.error("FAILED:", name, "allPassed mismatch");
     console.error(JSON.stringify(result, null, 2));
     process.exitCode = 1;
     return;
   }
-
   console.log("PASSED:", name);
 }
-
 async function run() {
   await expectFailure(
     "empty code fails",
@@ -75,7 +64,6 @@ async function run() {
     },
     "Empty code"
   );
-
   await expectFailure(
     "missing function name fails",
     {
@@ -91,7 +79,6 @@ async function run() {
     },
     "Function name"
   );
-
   await expectFailure(
     "unsupported language fails",
     {
@@ -107,7 +94,6 @@ async function run() {
     },
     "Unsupported language"
   );
-
   await expectFailure(
     "missing test cases fails",
     {
@@ -118,7 +104,6 @@ async function run() {
     },
     "At least one test case"
   );
-
   await expectFailure(
     "invalid test case fails",
     {
@@ -133,7 +118,6 @@ async function run() {
     },
     "Invalid test case"
   );
-
   await expectJudgeResult(
     "mixed pass and fail returns consistent result",
     {
@@ -158,7 +142,6 @@ async function run() {
       allPassed: false
     }
   );
-
   await expectJudgeResult(
     "python judge works",
     {
@@ -179,14 +162,11 @@ async function run() {
       allPassed: true
     }
   );
-
   if (process.exitCode) {
     process.exit(process.exitCode);
   }
-
   console.log("All judge system smoke tests passed");
 }
-
 run().catch(err => {
   console.error(err);
   process.exit(1);

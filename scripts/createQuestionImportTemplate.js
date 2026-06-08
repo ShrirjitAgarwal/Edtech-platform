@@ -1,9 +1,7 @@
 const XLSX = require("xlsx");
 const path = require("path");
 const fs = require("fs");
-
 const workbook = XLSX.utils.book_new();
-
 // ---------- MCQ SHEET ----------
 const mcqData = [
   [
@@ -31,16 +29,13 @@ const mcqData = [
     "Arithmetic"
   ]
 ];
-
 const mcqSheet =
   XLSX.utils.aoa_to_sheet(mcqData);
-
 XLSX.utils.book_append_sheet(
   workbook,
   mcqSheet,
   "MCQ"
 );
-
 // ---------- CODING SHEET ----------
 const codingData = [
   [
@@ -80,16 +75,13 @@ const codingData = [
     "Functions"
   ]
 ];
-
 const codingSheet =
   XLSX.utils.aoa_to_sheet(codingData);
-
 XLSX.utils.book_append_sheet(
   workbook,
   codingSheet,
   "Coding"
 );
-
 // ---------- WRITTEN SHEET ----------
 const writtenData = [
   [
@@ -109,36 +101,29 @@ const writtenData = [
     "An object remains at rest or in motion unless acted upon by an external force."
   ]
 ];
-
 const writtenSheet =
   XLSX.utils.aoa_to_sheet(writtenData);
-
 XLSX.utils.book_append_sheet(
   workbook,
   writtenSheet,
   "Written"
 );
-
 // ---------- CREATE OUTPUT DIRECTORY ----------
 const outputDir = path.join(
   __dirname,
   "templates"
 );
-
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, {
     recursive: true
   });
 }
-
 // ---------- WRITE FILE ----------
 const outputPath = path.join(
   outputDir,
   "question-import-template.xlsx"
 );
-
 XLSX.writeFile(workbook, outputPath);
-
 console.log(
   "Template created at:",
   outputPath

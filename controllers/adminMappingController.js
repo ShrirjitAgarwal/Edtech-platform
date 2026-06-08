@@ -1,7 +1,6 @@
 const {
-  logAdminAction
+  logAdminActio
 } = require("../services/adminActionLogger");
-
 function sendSuccess(res, message, data = {}) {
   return res.json({
     success: true,
@@ -9,7 +8,6 @@ function sendSuccess(res, message, data = {}) {
     data
   });
 }
-
 function sendError(res, statusCode, code, message, details = {}) {
   return res.status(statusCode).json({
     success: false,
@@ -20,7 +18,6 @@ function sendError(res, statusCode, code, message, details = {}) {
     }
   });
 }
-
 exports.mapClassSubject = async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
@@ -31,16 +28,13 @@ exports.mapClassSubject = async (req, res) => {
         "Only school admins can map teachers to classes and subjects."
       );
     }
-
     const ClassSubject = require("../models/ClassSubject");
     const User = require("../models/User");
     const ClassModel = require("../models/Class");
     const Subject = require("../models/Subject");
-
     const className = String(req.body.className || "").trim().toUpperCase();
     const subject = String(req.body.subject || "").trim();
     const teacherId = String(req.body.teacherId || "").trim();
-
     if (!className || !subject || !teacherId) {
       return sendError(
         res,
@@ -54,16 +48,13 @@ exports.mapClassSubject = async (req, res) => {
         }
       );
     }
-
     const schoolFilter = req.user.schoolId
       ? { schoolId: req.user.schoolId }
       : {};
-
     const existingClass = await ClassModel.findOne({
       name: className,
       ...schoolFilter
     }).lean();
-
     if (!existingClass) {
       return sendError(
         res,
@@ -75,12 +66,10 @@ exports.mapClassSubject = async (req, res) => {
         }
       );
     }
-
     const existingSubject = await Subject.findOne({
       name: subject,
       ...schoolFilter
     }).lean();
-
     if (!existingSubject) {
       return sendError(
         res,
@@ -92,7 +81,6 @@ exports.mapClassSubject = async (req, res) => {
         }
       );
     }
-
     const teacher = await User.findOne({
       _id: teacherId,
       role: "teacher",
@@ -100,7 +88,6 @@ exports.mapClassSubject = async (req, res) => {
     })
       .select("name email role")
       .lean();
-
     if (!teacher) {
       return sendError(
         res,
@@ -112,20 +99,17 @@ exports.mapClassSubject = async (req, res) => {
         }
       );
     }
-
     const existingMapping = await ClassSubject.findOne({
       className,
       subject,
       ...schoolFilter
     }).lean();
-
     if (existingMapping) {
       const existingTeacher = await User.findById(
         existingMapping.teacherId
       )
         .select("name email")
         .lean();
-
       return sendError(
         res,
         400,
@@ -141,7 +125,6 @@ exports.mapClassSubject = async (req, res) => {
         }
       );
     }
-
     const newMapping = await ClassSubject.create({
       className,
       subject,
@@ -149,7 +132,6 @@ exports.mapClassSubject = async (req, res) => {
       schoolId: req.user.schoolId || null,
       schoolCode: req.user.schoolCode || null
     });
-
     await logAdminAction(req, {
       action: "admin_mapping_created",
       status: "success",
@@ -161,7 +143,6 @@ exports.mapClassSubject = async (req, res) => {
         teacherId: newMapping.teacherId
       }
     });
-
     return sendSuccess(
       res,
       "Teacher mapping created successfully.",
@@ -171,7 +152,6 @@ exports.mapClassSubject = async (req, res) => {
     );
   } catch (err) {
     console.error("ADMIN CREATE MAPPING ERROR:", err);
-
     return sendError(
       res,
       500,
@@ -180,7 +160,6 @@ exports.mapClassSubject = async (req, res) => {
     );
   }
 };
-
 exports.deleteClassSubjectMapping = async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
@@ -191,11 +170,8 @@ exports.deleteClassSubjectMapping = async (req, res) => {
         "Only school admins can delete teacher mappings."
       );
     }
-
     const ClassSubject = require("../models/ClassSubject");
-
     const mappingId = String(req.body.mappingId || "").trim();
-
     if (!mappingId) {
       return sendError(
         res,
@@ -204,12 +180,10 @@ exports.deleteClassSubjectMapping = async (req, res) => {
         "Mapping ID is required to delete a teacher mapping."
       );
     }
-
     const deleted = await ClassSubject.findOneAndDelete({
       _id: mappingId,
       ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     });
-
     if (!deleted) {
       return sendError(
         res,
@@ -218,7 +192,6 @@ exports.deleteClassSubjectMapping = async (req, res) => {
         "Teacher mapping was not found for this school."
       );
     }
-
     await logAdminAction(req, {
       action: "admin_mapping_deleted",
       status: "success",
@@ -230,7 +203,6 @@ exports.deleteClassSubjectMapping = async (req, res) => {
         teacherId: deleted.teacherId
       }
     });
-
     return sendSuccess(
       res,
       "Teacher mapping deleted successfully.",
@@ -243,7 +215,6 @@ exports.deleteClassSubjectMapping = async (req, res) => {
     );
   } catch (err) {
     console.error("ADMIN DELETE MAPPING ERROR:", err);
-
     return sendError(
       res,
       500,

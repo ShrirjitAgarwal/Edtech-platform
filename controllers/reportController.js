@@ -1,3 +1,10 @@
+function escapeCsvCell(value) {
+  const raw = String(value ?? "");
+  const protectedValue = /^[=+\-@]/.test(raw)
+    ? "'" + raw
+    : raw;
+  return '"' + protectedValue.replace(/"/g, '""') + '"';
+}
 exports.downloadReport = async (req, res) => {
   try {
     const { studentId } = req.body;
@@ -31,7 +38,13 @@ const results = await Result.find({
       const date = r.date
         ? new Date(r.date).toLocaleString()
         : "";
-      csv += `"${r.testName || ""}",${r.score},${r.total},${percent}%,${date}\n`;
+      csv += [
+        escapeCsvCell(r.testName || ""),
+        escapeCsvCell(r.score),
+        escapeCsvCell(r.total),
+        escapeCsvCell(percent + "%"),
+        escapeCsvCell(date)
+      ].join(",") + "\n";
     });
     const safeStudentId =
       encodeURIComponent(
@@ -101,7 +114,12 @@ const results = await Result.find({
                 100
             )
           : 0;
-      csv += `${s.name},${id},${avg}%,${s.attempts}\n`;
+      csv += [
+        escapeCsvCell(s.name || ""),
+        escapeCsvCell(id),
+        escapeCsvCell(avg + "%"),
+        escapeCsvCell(s.attempts)
+      ].join(",") + "\n";
     });
     const safeClass =
       encodeURIComponent(className);
@@ -126,7 +144,6 @@ exports.resultPage = async (req, res) => {
   const Result = require("../models/Result");
   const Student = require("../models/Student");
   const Question = require("../models/Question");
-
   function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -135,20 +152,16 @@ exports.resultPage = async (req, res) => {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
-
   let result;
-
   try {
     const student = await Student.findOne({
       studentId: String(studentId)
     })
       .select("studentId schoolId")
       .lean();
-
     if (!student) {
       return res.send("<h2>No result found</h2>");
     }
-
     result = await Result.findOne({
       testId: String(testId),
       studentId: String(studentId),
@@ -157,15 +170,12 @@ exports.resultPage = async (req, res) => {
   } catch (err) {
     console.error(err);
   }
-
   if (!result) {
     return res.send("<h2>No result found</h2>");
   }
-
   const questionIds = (result.answers || [])
     .map(answer => String(answer.questionId || ""))
     .filter(Boolean);
-
   const questions = questionIds.length
     ? await Question.find({
         _id: { $in: questionIds }
@@ -173,19 +183,16 @@ exports.resultPage = async (req, res) => {
         .select("question")
         .lean()
     : [];
-
   const questionMap = {};
   questions.forEach(question => {
     questionMap[String(question._id)] = question.question || "";
   });
-
   const answersHTML = (result.answers || [])
     .map((a, index) => {
       const correct = a.isCorrect;
       const questionText =
         questionMap[String(a.questionId)] ||
         `Question ${index + 1}`;
-
       return `
 <div style="
 margin:12px 0;
@@ -216,7 +223,6 @@ ${correct ? "Correct" : "Incorrect"}
 `;
     })
     .join("");
-
   res.send(`
 <body style="
 font-family:Arial;
@@ -231,10 +237,10 @@ border-radius:10px;
 margin-bottom:20px;
 ">
 <b>Score:</b>
-${result.score} / ${result.total}
+${escapeHtml(result.score)} / ${escapeHtml(result.total)}
 <br>
 <b>Percentage:</b>
-${result.total ? Math.round((result.score / result.total) * 100) : 0}%
+${escapeHtml(result.total ? Math.round((result.score / result.total) * 100) : 0)}%
 </div>
 <h3>Answers</h3>
 ${answersHTML}

@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const auditLogSchema = new mongoose.Schema({
   event: {
     type: String,
@@ -55,7 +54,6 @@ const auditLogSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
 auditLogSchema.index({ event: 1 });
 auditLogSchema.index({ status: 1 });
 auditLogSchema.index({ actorId: 1 });
@@ -63,5 +61,4 @@ auditLogSchema.index({ actorEmail: 1 });
 auditLogSchema.index({ schoolId: 1 });
 auditLogSchema.index({ requestId: 1 });
 auditLogSchema.index({ createdAt: -1 });
-
 module.exports = mongoose.model("AuditLog", auditLogSchema);

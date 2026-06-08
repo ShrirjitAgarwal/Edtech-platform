@@ -13,5 +13,4 @@ function backButton(fallbackPath = "/") {
 </button>
 `;
 }
-
 module.exports = backButton;

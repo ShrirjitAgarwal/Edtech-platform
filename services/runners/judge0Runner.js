@@ -1,11 +1,9 @@
 const {
   getJudge0Config
 } = require("../config/judgeProvider");
-
 const {
   EXECUTION_LIMITS
 } = require("../config/executionLimits");
-
 const LANGUAGE_IDS = Object.freeze({
   javascript: Number(
     process.env.JUDGE0_LANGUAGE_ID_JAVASCRIPT || 63
@@ -14,42 +12,33 @@ const LANGUAGE_IDS = Object.freeze({
     process.env.JUDGE0_LANGUAGE_ID_PYTHON || 71
   )
 });
-
 function normalizeApiUrl(apiUrl) {
   return String(apiUrl || "")
     .trim()
     .replace(/\/+$/, "");
 }
-
 function buildHeaders(apiKey) {
   const headers = {
     "Content-Type": "application/json"
   };
-
   if (apiKey) {
     headers["X-Auth-Token"] = apiKey;
   }
-
   return headers;
 }
-
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 function getLanguageId(language) {
   const languageId = LANGUAGE_IDS[language];
-
   if (!languageId || Number.isNaN(languageId)) {
     throw new Error(
       "Judge0 language id is not configured for " +
       language
     );
   }
-
   return languageId;
 }
-
 function buildJavaScriptSource({
   code,
   functionName,
@@ -57,25 +46,20 @@ function buildJavaScriptSource({
 }) {
   return `
 ${code}
-
 (function(){
   const functionName = ${JSON.stringify(functionName)};
   const args = ${JSON.stringify(args || [])};
-
   try {
     let targetFunction = globalThis[functionName];
-
     if (typeof targetFunction !== "function") {
       const matchedKey = Object.keys(globalThis).find(key =>
         String(key).toLowerCase() ===
         String(functionName).toLowerCase()
       );
-
       if (matchedKey) {
         targetFunction = globalThis[matchedKey];
       }
     }
-
     if (typeof targetFunction !== "function") {
       console.log(JSON.stringify({
         ok: false,
@@ -83,9 +67,7 @@ ${code}
       }));
       return;
     }
-
     const result = targetFunction(...args);
-
     console.log(JSON.stringify({
       ok: true,
       result,
@@ -100,7 +82,6 @@ ${code}
 })();
 `;
 }
-
 function buildPythonSource({
   code,
   functionName,
@@ -108,26 +89,19 @@ function buildPythonSource({
 }) {
   return `
 import json
-
 ${code}
-
 function_name = ${JSON.stringify(functionName)}
 args = json.loads(${JSON.stringify(JSON.stringify(args || []))})
-
 try:
     target_function = globals().get(function_name)
-
     if not callable(target_function):
         matched_name = None
-
         for key in globals().keys():
             if str(key).lower() == str(function_name).lower():
                 matched_name = key
                 break
-
         if matched_name:
             target_function = globals().get(matched_name)
-
     if not callable(target_function):
         print(json.dumps({
             "ok": False,
@@ -147,7 +121,6 @@ except Exception as err:
     }))
 `;
 }
-
 function buildSource({
   language,
   code,
@@ -161,7 +134,6 @@ function buildSource({
       args
     });
   }
-
   if (language === "python") {
     return buildPythonSource({
       code,
@@ -169,12 +141,10 @@ function buildSource({
       args
     });
   }
-
   throw new Error(
     "Unsupported Judge0 language: " + language
   );
 }
-
 async function createSubmission({
   apiUrl,
   headers,
@@ -199,10 +169,8 @@ async function createSubmission({
       })
     }
   );
-
   if (!response.ok) {
     const text = await response.text();
-
     throw new Error(
       "Judge0 submission failed: " +
       response.status +
@@ -210,20 +178,16 @@ async function createSubmission({
       text
     );
   }
-
   const data = await response.json();
-
   if (!data.token) {
     throw new Error("Judge0 submission token missing");
   }
-
   return data.token;
 }
-
 async function getSubmission({
   apiUrl,
   headers,
-  token
+  toke
 }) {
   const fields = [
     "stdout",
@@ -234,7 +198,6 @@ async function getSubmission({
     "time",
     "memory"
   ].join(",");
-
   const response = await fetch(
     apiUrl +
       "/submissions/" +
@@ -246,10 +209,8 @@ async function getSubmission({
       headers
     }
   );
-
   if (!response.ok) {
     const text = await response.text();
-
     throw new Error(
       "Judge0 result fetch failed: " +
       response.status +
@@ -257,35 +218,27 @@ async function getSubmission({
       text
     );
   }
-
   return response.json();
 }
-
 function parseJudge0Output(submission) {
   const statusId = submission?.status?.id;
   const statusDescription =
     submission?.status?.description || "Unknown";
-
   if (statusId !== 3) {
     const errorOutput =
       submission.compile_output ||
       submission.stderr ||
       submission.message ||
       statusDescription;
-
     throw new Error(
       "Judge0 execution failed: " + String(errorOutput).trim()
     );
   }
-
   const stdout = String(submission.stdout || "").trim();
-
   if (!stdout) {
     throw new Error("Judge0 returned empty output");
   }
-
   let parsed;
-
   try {
     parsed = JSON.parse(stdout);
   } catch (err) {
@@ -293,24 +246,20 @@ function parseJudge0Output(submission) {
       "Judge0 returned invalid JSON output"
     );
   }
-
   if (!parsed.ok) {
     throw new Error(
       parsed.error || "Judge0 code execution failed"
     );
   }
-
   if (parsed.isUndefined) {
     return undefined;
   }
-
   return parsed.result;
 }
-
 async function waitForSubmission({
   apiUrl,
   headers,
-  token
+  toke
 }) {
   for (
     let attempt = 0;
@@ -320,21 +269,16 @@ async function waitForSubmission({
     const submission = await getSubmission({
       apiUrl,
       headers,
-      token
+      toke
     });
-
     const statusId = submission?.status?.id;
-
     if (statusId !== 1 && statusId !== 2) {
       return submission;
     }
-
     await sleep(EXECUTION_LIMITS.JUDGE0_POLL_INTERVAL_MS);
   }
-
   throw new Error("Judge0 execution timed out while polling");
 }
-
 async function runJudge0Code({
   language,
   code,
@@ -343,43 +287,35 @@ async function runJudge0Code({
 }) {
   const config = getJudge0Config();
   const apiUrl = normalizeApiUrl(config.apiUrl);
-
   if (!apiUrl) {
     throw new Error("Judge0 API URL is required");
   }
-
   if (typeof fetch !== "function") {
     throw new Error(
       "Fetch API is not available. Use Node 18+ or add a fetch client."
     );
   }
-
   const languageId = getLanguageId(language);
   const headers = buildHeaders(config.apiKey);
-
   const sourceCode = buildSource({
     language,
     code,
     functionName,
     args
   });
-
   const token = await createSubmission({
     apiUrl,
     headers,
     languageId,
     sourceCode
   });
-
   const submission = await waitForSubmission({
     apiUrl,
     headers,
-    token
+    toke
   });
-
   return parseJudge0Output(submission);
 }
-
 module.exports = {
   runJudge0Code
 };

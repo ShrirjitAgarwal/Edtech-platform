@@ -1,3 +1,22 @@
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
+function safeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
 exports.adminStudentPage = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -30,11 +49,11 @@ padding:15px;
 margin:10px 0;
 border-radius:10px;
 ">
-<b>Test:</b> ${r.testName}<br>
+<b>Test:</b> ${escapeHtml(r.testName || "Unnamed Test")}<br>
 <b>Score:</b>
-${r.score}/${r.total}
-(${percent}%)<br>
-<b>Date:</b> ${date}
+${escapeHtml(r.score)}/${escapeHtml(r.total)}
+(${escapeHtml(percent)}%)<br>
+<b>Date:</b> ${escapeHtml(date)}
 </div>
 `;
     }).join("");
@@ -56,9 +75,9 @@ padding:20px;
 border-radius:12px;
 margin-bottom:20px;
 ">
-<p><b>Name:</b> ${student.name}</p>
-<p><b>Student ID:</b> ${studentId}</p>
-<p><b>Class:</b> ${student.class || "N/A"}</p>
+<p><b>Name:</b> ${escapeHtml(student.name)}</p>
+<p><b>Student ID:</b> ${escapeHtml(studentId)}</p>
+<p><b>Class:</b> ${escapeHtml(student.class || "N/A")}</p>
 </div>
 <h3>Performance History</h3>
 ${rows}
@@ -84,7 +103,7 @@ background:#64748b;
 color:white;
 border:none;
 border-radius:8px;
-cursor:pointer;
+cursor:pointer;   
 ">
 Back
 </button>
@@ -100,7 +119,7 @@ window.location.search
 );
 const studentId =
 params.get("studentId");
-fetch("/download-report",{
+fetch("/api/reports/student/download",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
@@ -195,8 +214,8 @@ display:flex;
 justify-content:space-between;
 ">
 <span>
-${s.name}
-(${s.studentId})
+${escapeHtml(s.name)}
+(${escapeHtml(s.studentId)})
 </span>
 <span style="
 color:#dc2626;
@@ -252,7 +271,7 @@ Not Attempted
         rows += `
 <tr
 onclick="
-goToStudent('${id}')
+goToStudent('${escapeAttribute(id)}')
 "
 style="cursor:pointer;"
 >
@@ -261,11 +280,11 @@ font-weight:600;
 color:#4f46e5;
 text-align:center;
 ">
-${s.name}
+${escapeHtml(s.name)}
 </td>
-<td>${id}</td>
-<td>${avg}%</td>
-<td>${s.attempts}</td>
+<td>${escapeHtml(id)}</td>
+<td>${escapeHtml(avg)}%</td>
+<td>${escapeHtml(s.attempts)}</td>
 </tr>
 `;
       });
@@ -279,14 +298,14 @@ padding:10px 0;
 border-bottom:1px solid #eee;
 ">
 <span>
-${s.name}
-(${s.id})
+${escapeHtml(s.name)}
+(${escapeHtml(s.id)})
 </span>
 <span style="
 color:#dc2626;
 font-weight:700;
 ">
-${s.avg}%
+${escapeHtml(s.avg)}%
 </span>
 </div>
 `;
@@ -299,7 +318,7 @@ background:#eef2ff;
 ">
 <div style="padding:30px;">
 <h1>
-Class: ${className}
+Class: ${escapeHtml(className)}
 </h1>
 <div style="
 background:white;
@@ -389,7 +408,7 @@ headers:{
 },
 body:JSON.stringify({
 className:
-"${className}"
+${safeJsonForScript(className)}
 })
 }
 )

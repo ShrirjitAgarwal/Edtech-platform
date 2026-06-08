@@ -20,7 +20,6 @@ const loginLimiter = rateLimit({
     error: "Too many login attempts. Please try again after 15 minutes."
   }
 });
-
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -30,7 +29,6 @@ const registerLimiter = rateLimit({
     error: "Too many registration attempts. Please try again after 15 minutes."
   }
 });
-
 const DUMMY_PASSWORD_HASH =
   "$2b$10$CwTycUXWue0Thq9StjUM0uJ8q7pFEd5QxjZ2vZp7PvWjW7M8mKxNe";
 function hashToken(token) {
@@ -46,7 +44,7 @@ function hashToken(token) {
 router.post("/register", registerLimiter, async (req, res) => {
   await logAuditEvent(req, {
     event: "public_registration_blocked",
-    status: "blocked",
+    status: "failed",
     metadata: {
       email: String(req.body.email || "").trim().toLowerCase(),
       requestedRole: String(req.body.role || "").trim().toLowerCase(),
@@ -62,26 +60,21 @@ router.post("/register", registerLimiter, async (req, res) => {
 router.post("/login", loginLimiter, async (req, res) => {
   const emailInput = (req.body.email || "").trim().toLowerCase();
   const passwordInput = (req.body.password || "").trim();
-
   try {
     const user = await User.findOne({ email: emailInput });
     const passwordHashForCompare =
       user && String(user.password || "").startsWith("$2b$")
         ? user.password
         : DUMMY_PASSWORD_HASH;
-
     let isMatch = await bcrypt.compare(passwordInput, passwordHashForCompare);
-
     if (user && !String(user.password || "").startsWith("$2b$")) {
       isMatch = passwordInput === user.password;
-
       if (isMatch) {
         const newHashed = await bcrypt.hash(passwordInput, 10);
         user.password = newHashed;
         await user.save();
       }
     }
-
     if (!user || !isMatch) {
       await logAuditEvent(req, {
         event: "login_failed",
@@ -93,10 +86,8 @@ router.post("/login", loginLimiter, async (req, res) => {
         },
         error: "Invalid credentials"
       });
-
       return res.status(401).json({ error: "Invalid credentials" });
     }
-
     if (user.role === "platform_admin") {
       await logAuditEvent(req, {
         event: "login_failed",
@@ -108,12 +99,10 @@ router.post("/login", loginLimiter, async (req, res) => {
         },
         error: "Use platform admin login"
       });
-
       return res.status(403).json({
         error: "Use platform admin login"
       });
     }
-
     const token = jwt.sign(
       {
         id: user._id,
@@ -125,7 +114,6 @@ router.post("/login", loginLimiter, async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-
     const safeUser = {
       _id: user._id,
       name: user.name,
@@ -134,10 +122,8 @@ router.post("/login", loginLimiter, async (req, res) => {
       schoolId: user.schoolId || null,
       schoolCode: user.schoolCode || null
     };
-
     const Student = require("../models/Student");
     let studentData = null;
-
     if (user.role === "student") {
       studentData = await Student.findOne({
         $or: [
@@ -147,14 +133,12 @@ router.post("/login", loginLimiter, async (req, res) => {
         ]
       });
     }
-
     res.cookie("authToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
-
     await logAuditEvent(req, {
       event: "login_success",
       status: "success",
@@ -166,7 +150,6 @@ router.post("/login", loginLimiter, async (req, res) => {
         schoolCode: user.schoolCode || null
       }
     });
-
     res.json({
       status: "success",
       token,

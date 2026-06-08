@@ -28,6 +28,11 @@ router.post(
   authMiddleware,
   adminController.mapClassSubject
 );
+router.post(
+  "/api/admin/mappings/create",
+  authMiddleware,
+  adminController.mapClassSubject
+);
 router.get(
   "/admin-settings",
   authMiddleware,
@@ -44,7 +49,17 @@ router.post(
   adminController.addUserFromAdmin
 );
 router.post(
+  "/api/admin/users/create",
+  authMiddleware,
+  adminController.addUserFromAdmin
+);
+router.post(
   "/admin/create-class",
+  authMiddleware,
+  adminController.createClassFromAdmin
+);
+router.post(
+  "/api/admin/classes/create",
   authMiddleware,
   adminController.createClassFromAdmin
 );
@@ -54,7 +69,17 @@ router.post(
   adminController.deleteClassFromAdmin
 );
 router.post(
+  "/api/admin/classes/delete",
+  authMiddleware,
+  adminController.deleteClassFromAdmin
+);
+router.post(
   "/admin/create-subject",
+  authMiddleware,
+  adminSubjectController.createSubjectFromAdmin
+);
+router.post(
+  "/api/admin/subjects/create",
   authMiddleware,
   adminSubjectController.createSubjectFromAdmin
 );
@@ -64,7 +89,17 @@ router.post(
   adminSubjectController.deleteSubjectFromAdmin
 );
 router.post(
+  "/api/admin/subjects/delete",
+  authMiddleware,
+  adminSubjectController.deleteSubjectFromAdmin
+);
+router.post(
   "/admin/create-student",
+  authMiddleware,
+  adminController.createStudentFromAdmin
+);
+router.post(
+  "/api/admin/students/create",
   authMiddleware,
   adminController.createStudentFromAdmin
 );
@@ -74,7 +109,17 @@ router.post(
   adminController.bulkCreateStudentsFromAdmin
 );
 router.post(
+  "/api/admin/students/bulk-create",
+  authMiddleware,
+  adminController.bulkCreateStudentsFromAdmin
+);
+router.post(
   "/admin/update-student-class",
+  authMiddleware,
+  adminController.updateStudentClassFromAdmin
+);
+router.post(
+  "/api/admin/students/update-class",
   authMiddleware,
   adminController.updateStudentClassFromAdmin
 );
@@ -84,12 +129,27 @@ router.post(
   adminController.deleteStudentFromAdmin
 );
 router.post(
+  "/api/admin/students/delete",
+  authMiddleware,
+  adminController.deleteStudentFromAdmin
+);
+router.post(
   "/admin/delete-class-subject-mapping",
   authMiddleware,
   adminController.deleteClassSubjectMapping
 );
 router.post(
+  "/api/admin/mappings/delete",
+  authMiddleware,
+  adminController.deleteClassSubjectMapping
+);
+router.post(
   "/admin/delete-user",
+  authMiddleware,
+  adminController.deleteUserFromAdmin
+);
+router.post(
+  "/api/admin/users/delete",
   authMiddleware,
   adminController.deleteUserFromAdmin
 );

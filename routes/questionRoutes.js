@@ -3,6 +3,26 @@ const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
+// --- HTML Escaping Helpers ---
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
+function safeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
 // ---------- CREATE QUESTION PAGE ----------
 router.get("/create-question", authMiddleware, async (req, res) => {
   try {
@@ -145,7 +165,7 @@ if(!pageUser || pageUser.role !== "teacher"){
             z-index:120;
           "
         ></div>
-        <input id="questionType" type="hidden" value="${editQuestion?.type || "mcq"}">
+        <input id="questionType" type="hidden" value="${escapeAttribute(editQuestion?.type || "mcq")}">
       </div>
     </div>
     <div>
@@ -189,7 +209,7 @@ if(!pageUser || pageUser.role !== "teacher"){
             z-index:120;
           "
         ></div>
-        <input id="difficulty" type="hidden" value="${editQuestion?.difficulty || "easy"}">
+        <input id="difficulty" type="hidden" value="${escapeAttribute(editQuestion?.difficulty || "easy")}">
       </div>
     </div>
   </div>
@@ -208,7 +228,7 @@ if(!pageUser || pageUser.role !== "teacher"){
         box-sizing:border-box;
         resize:vertical;
       "
-        >${editQuestion?.question || ""}</textarea>
+>${escapeHtml(editQuestion?.question || "")}</textarea>
   </div>
   <div style="
     display:grid;
@@ -257,7 +277,7 @@ if(!pageUser || pageUser.role !== "teacher"){
             z-index:120;
           "
         ></div>
-        <input id="subject" type="hidden" value="${editQuestion?.subject || ""}">
+        <input id="subject" type="hidden" value="${escapeAttribute(editQuestion?.subject || "")}">
       </div>
     </div>
     <div>
@@ -301,7 +321,7 @@ if(!pageUser || pageUser.role !== "teacher"){
             z-index:120;
           "
         ></div>
-        <input id="board" type="hidden" value="${editQuestion?.board || ""}">
+        <input id="board" type="hidden" value="${escapeAttribute(editQuestion?.board || "")}">
       </div>
     </div>
   </div>
@@ -313,22 +333,22 @@ if(!pageUser || pageUser.role !== "teacher"){
       gap:16px;
       margin-bottom:18px;
     ">
-            <input id="option1" value="${editQuestion?.options?.[0] || ""}" placeholder="Option 1" style="
+            <input id="option1" value="${escapeAttribute(editQuestion?.options?.[0] || "")}" placeholder="Option 1" style="
         padding:12px;
         border-radius:8px;
         border:1px solid #cbd5e1;
       ">
-            <input id="option2" value="${editQuestion?.options?.[1] || ""}" placeholder="Option 2" style="
+            <input id="option2" value="${escapeAttribute(editQuestion?.options?.[1] || "")}" placeholder="Option 2" style="
         padding:12px;
         border-radius:8px;
         border:1px solid #cbd5e1;
       ">
-            <input id="option3" value="${editQuestion?.options?.[2] || ""}" placeholder="Option 3" style="
+            <input id="option3" value="${escapeAttribute(editQuestion?.options?.[2] || "")}" placeholder="Option 3" style="
         padding:12px;
         border-radius:8px;
         border:1px solid #cbd5e1;
       ">
-            <input id="option4" value="${editQuestion?.options?.[3] || ""}" placeholder="Option 4" style="
+            <input id="option4" value="${escapeAttribute(editQuestion?.options?.[3] || "")}" placeholder="Option 4" style="
         padding:12px;
         border-radius:8px;
         border:1px solid #cbd5e1;
@@ -337,7 +357,7 @@ if(!pageUser || pageUser.role !== "teacher"){
     <label style="font-weight:600;">Correct Answer</label><br>
     <input
             id="correctAnswer"
-      value="${editQuestion?.correct || ""}"
+      value="${escapeAttribute(editQuestion?.correct || "")}"
       placeholder="Enter exact correct option"
       style="
         width:100%;
@@ -359,7 +379,7 @@ if(!pageUser || pageUser.role !== "teacher"){
     ">
       <input
                 id="functionName"
-        value="${editQuestion?.codingMeta?.functionName || ""}"
+        value="${escapeAttribute(editQuestion?.codingMeta?.functionName || "")}"
         placeholder="Function Name"
         style="
           padding:12px;
@@ -406,7 +426,7 @@ if(!pageUser || pageUser.role !== "teacher"){
       z-index:120;
     "
   ></div>
-  <input id="language" type="hidden" value="${editQuestion?.codingMeta?.language || "javascript"}">
+  <input id="language" type="hidden" value="${escapeAttribute(editQuestion?.codingMeta?.language || "javascript")}">
 </div>
     </div>
     <textarea
@@ -422,17 +442,17 @@ if(!pageUser || pageUser.role !== "teacher"){
         resize:vertical;
         font-family:monospace;
       "
-        >${editQuestion?.codingMeta?.starterCode || ""}</textarea>
+        >${escapeHtml(editQuestion?.codingMeta?.starterCode || "")}</textarea>
             <h3 style="margin-top:20px;">Test Cases</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <input id="testInput1" value="${editQuestion?.testCases?.[0]?.input || ""}" placeholder="Test Case 1 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput1" value="${editQuestion?.testCases?.[0]?.expectedOutput || ""}" placeholder="Test Case 1 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testInput2" value="${editQuestion?.testCases?.[1]?.input || ""}" placeholder="Test Case 2 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput2" value="${editQuestion?.testCases?.[1]?.expectedOutput || ""}" placeholder="Test Case 2 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testInput3" value="${editQuestion?.testCases?.[2]?.input || ""}" placeholder="Test Case 3 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput3" value="${editQuestion?.testCases?.[2]?.expectedOutput || ""}" placeholder="Test Case 3 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testInput4" value="${editQuestion?.testCases?.[3]?.input || ""}" placeholder="Test Case 4 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput4" value="${editQuestion?.testCases?.[3]?.expectedOutput || ""}" placeholder="Test Case 4 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testInput1" value="${escapeAttribute(editQuestion?.testCases?.[0]?.input || "")}" placeholder="Test Case 1 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput1" value="${escapeAttribute(editQuestion?.testCases?.[0]?.expectedOutput || "")}" placeholder="Test Case 1 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testInput2" value="${escapeAttribute(editQuestion?.testCases?.[1]?.input || "")}" placeholder="Test Case 2 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput2" value="${escapeAttribute(editQuestion?.testCases?.[1]?.expectedOutput || "")}" placeholder="Test Case 2 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testInput3" value="${escapeAttribute(editQuestion?.testCases?.[2]?.input || "")}" placeholder="Test Case 3 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput3" value="${escapeAttribute(editQuestion?.testCases?.[2]?.expectedOutput || "")}" placeholder="Test Case 3 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testInput4" value="${escapeAttribute(editQuestion?.testCases?.[3]?.input || "")}" placeholder="Test Case 4 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+      <input id="testOutput4" value="${escapeAttribute(editQuestion?.testCases?.[3]?.expectedOutput || "")}" placeholder="Test Case 4 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
     </div>
   </div>
   <button onclick="saveQuestion()" style="
@@ -450,8 +470,8 @@ if(!pageUser || pageUser.role !== "teacher"){
   </button>
 </div>
 <script>
-const subjectOptionsForQuestionBuilder = ${JSON.stringify(subjectOptionsForQuestionBuilder)};
-const boardOptionsForQuestionBuilder = ${JSON.stringify(boardOptionsForQuestionBuilder)};
+const subjectOptionsForQuestionBuilder = ${safeJsonForScript(subjectOptionsForQuestionBuilder)};
+const boardOptionsForQuestionBuilder = ${safeJsonForScript(boardOptionsForQuestionBuilder)};
 function getErrorMessage(errorValue){
   if(!errorValue){
     return "Something went wrong";
@@ -593,7 +613,7 @@ function saveQuestion(){
   const type =
     document.getElementById("questionType").value;
     const payload = {
-    questionId: "${editQuestion?._id || ""}",
+    questionId: ${safeJsonForScript(String(editQuestion?._id || ""))},
     type,
     question:
       document.getElementById("question").value.trim(),
@@ -662,7 +682,7 @@ function saveQuestion(){
       return alert("Correct answer required");
     }
   }
-  fetch("/save-question", {
+  fetch("/api/teacher/questions/save", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -693,7 +713,7 @@ toggleQuestionType();
   }
 });
 // ---------- SAVE QUESTION ----------
-router.post("/save-question", authMiddleware, async (req, res) => {
+async function saveQuestionHandler(req, res) {
   try {
     const Question = require("../models/Question");
     const {
@@ -778,7 +798,9 @@ const existingQuestion = await Question.findOne({
       error: "Failed to save question"
     });
   }
-});
+}
+router.post("/save-question", authMiddleware, saveQuestionHandler);
+router.post("/api/teacher/questions/save", authMiddleware, saveQuestionHandler);
 // ---------- MY QUESTIONS ----------
 router.get("/my-questions", authMiddleware, async (req, res) => {
   try {
@@ -879,7 +901,7 @@ function getErrorMessage(errorValue){
   }
   return "Something went wrong";
 }
-const allQuestions = ${JSON.stringify(questions)};
+const allQuestions = ${safeJsonForScript(questions)};
 const user = JSON.parse(localStorage.getItem("user") || "null");
 const teacherId = user?._id || user?.id;
 const questions = allQuestions.filter(q =>
@@ -889,6 +911,11 @@ function toTitleCase(value){
   return String(value || "")
     .replace(/[_-]/g, " ")
     .replace(/\\b\\w/g, letter => letter.toUpperCase());
+}
+function escapeClientHtml(value){
+  const div = document.createElement("div");
+  div.textContent = String(value || "");
+  return div.innerHTML;
 }
 function renderMyQuestions(){
   const list = document.getElementById("questionList");
@@ -915,17 +942,17 @@ function renderMyQuestions(){
       "\\">" +
         "<div style=\\"min-width:0;flex:1;\\">" +
           "<div style=\\"font-weight:700;margin-bottom:8px;line-height:1.4;\\">" +
-            (q.question || "Untitled Question") +
+            escapeClientHtml(q.question || "Untitled Question") +
           "</div>" +
           "<div style=\\"display:flex;gap:8px;flex-wrap:wrap;\\">" +
             "<span style=\\"background:#4f46e5;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
-              toTitleCase(q.subject || "No Subject") +
+              escapeClientHtml(toTitleCase(q.subject || "No Subject")) +
             "</span>" +
             "<span style=\\"background:#0f172a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
-              String(q.type || "mcq").toUpperCase() +
+              escapeClientHtml(String(q.type || "mcq").toUpperCase()) +
             "</span>" +
             "<span style=\\"background:#16a34a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
-              toTitleCase(q.difficulty || "easy") +
+              escapeClientHtml(toTitleCase(q.difficulty || "easy")) +
             "</span>" +
           "</div>" +
         "</div>" +
@@ -947,7 +974,7 @@ function previewQuestion(id){
     q.options && q.options.length
       ? q.options.map((opt, index) =>
           "<div style='background:#f8fafc;padding:10px;border-radius:8px;margin:8px 0;'>" +
-          "<b>Option " + (index + 1) + ":</b> " + opt +
+          "<b>Option " + (index + 1) + ":</b> " + escapeClientHtml(opt) +
           "</div>"
         ).join("")
       : "<p style='color:#64748b;'>No options found.</p>";
@@ -956,7 +983,7 @@ function previewQuestion(id){
     "<div style='background:#f8fafc;padding:16px;border-radius:12px;margin-bottom:18px;'>" +
       "<b>Question</b>" +
       "<div style='margin-top:10px;line-height:1.6;'>" +
-        (q.question || "No question") +
+        escapeClientHtml(q.question || "No question") +
       "</div>" +
     "</div>" +
     "<div style='margin-bottom:18px;'>" +
@@ -964,12 +991,12 @@ function previewQuestion(id){
     "</div>" +
     "<div style='background:#ecfdf5;padding:14px;border-radius:10px;margin-bottom:14px;'>" +
       "<b>Correct Answer:</b> " +
-      (q.correct || "N/A") +
+      escapeClientHtml(q.correct || "N/A") +
     "</div>" +
-    "<p><b>Subject:</b> " + toTitleCase(q.subject || "N/A") + "</p>" +
-    "<p><b>Board:</b> " + toTitleCase(q.board || "N/A") + "</p>" +
-    "<p><b>Difficulty:</b> " + toTitleCase(q.difficulty || "N/A") + "</p>" +
-    "<p><b>Type:</b> " + String(q.type || "mcq").toUpperCase() + "</p>" +
+    "<p><b>Subject:</b> " + escapeClientHtml(toTitleCase(q.subject || "N/A")) + "</p>" +
+    "<p><b>Board:</b> " + escapeClientHtml(toTitleCase(q.board || "N/A")) + "</p>" +
+    "<p><b>Difficulty:</b> " + escapeClientHtml(toTitleCase(q.difficulty || "N/A")) + "</p>" +
+    "<p><b>Type:</b> " + escapeClientHtml(String(q.type || "mcq").toUpperCase()) + "</p>" +
     "<div style='background:#eef2ff;padding:14px;border-radius:10px;margin-top:18px;'>" +
       "<b>Analytics</b><br><br>" +
       "Attempted: " + (q.analytics?.attempted || 0) + "<br>" +
@@ -984,7 +1011,7 @@ function deleteQuestion(id){
   if(!confirm("Delete this question?")){
     return;
   }
-  fetch("/delete-question", {
+  fetch("/api/teacher/questions/delete", {
     method:"POST",
 headers:{
   "Content-Type":"application/json"
@@ -1020,7 +1047,7 @@ router.post("/update-question", authMiddleware, async (req, res) => {
   });
 });
 // ---------- DELETE QUESTION ----------
-router.post("/delete-question", authMiddleware, async (req, res) => {
+async function deleteQuestionHandler(req, res) {
   try {
     const Question = require("../models/Question");
     const { id } = req.body;
@@ -1055,5 +1082,7 @@ await Question.deleteOne({
       error: "Failed to delete question"
     });
   }
-});
+}
+router.post("/delete-question", authMiddleware, deleteQuestionHandler);
+router.post("/api/teacher/questions/delete", authMiddleware, deleteQuestionHandler);
 module.exports = router;
