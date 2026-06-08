@@ -183,8 +183,6 @@ async function assignTestHandler(req, res) {
     });
   }
 }
-
-router.post("/assign-test", authMiddleware, assignTestHandler);
 router.post("/api/teacher/tests/assign", authMiddleware, assignTestHandler);
 // ---------- ADD SUBJECT ----------
 router.post("/add-subject", async (req, res) => {
@@ -324,6 +322,5 @@ async function getStudentTestsHandler(req, res) {
     res.status(500).json({ error: "Failed to fetch tests" });
   }
 }
-router.get("/get-tests", getStudentTestsHandler);
 router.get("/api/student/tests", getStudentTestsHandler);
 module.exports = router;

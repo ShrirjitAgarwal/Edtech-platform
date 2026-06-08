@@ -799,7 +799,6 @@ const existingQuestion = await Question.findOne({
     });
   }
 }
-router.post("/save-question", authMiddleware, saveQuestionHandler);
 router.post("/api/teacher/questions/save", authMiddleware, saveQuestionHandler);
 // ---------- MY QUESTIONS ----------
 router.get("/my-questions", authMiddleware, async (req, res) => {
@@ -1083,6 +1082,5 @@ await Question.deleteOne({
     });
   }
 }
-router.post("/delete-question", authMiddleware, deleteQuestionHandler);
 router.post("/api/teacher/questions/delete", authMiddleware, deleteQuestionHandler);
 module.exports = router;

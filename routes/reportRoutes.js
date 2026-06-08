@@ -4,21 +4,9 @@ const authMiddleware = require("../middleware/auth");
 const reportController = require("../controllers/reportController");
 
 router.post(
-  "/download-report",
-  authMiddleware,
-  reportController.downloadReport
-);
-
-router.post(
   "/api/reports/student/download",
   authMiddleware,
   reportController.downloadReport
-);
-
-router.post(
-  "/download-class-report",
-  authMiddleware,
-  reportController.downloadClassReport
 );
 
 router.post(

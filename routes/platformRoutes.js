@@ -238,11 +238,13 @@ router.get(
   platformAdminMiddleware,
   platformController.importPage
 );
+
 router.post(
-  "/platform/import-questions",
+  "/api/platform/questions/import",
   authMiddleware,
   platformAdminMiddleware,
   upload.single("questionFile"),
   platformController.importQuestions
 );
+
 module.exports = router;

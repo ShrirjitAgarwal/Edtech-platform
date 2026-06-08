@@ -4,7 +4,7 @@ importQuestionsFromExcel,
 writeImportReport
 } = require("../utils/questionExcelImporter");
 const {
-logAdminActio
+  logAdminAction
 } = require("../services/adminActionLogger");
 exports.importPage = (req, res) => {
   res.send(`
@@ -79,7 +79,7 @@ document.getElementById("importForm").addEventListener("submit", function(e){
   formData.append("questionFile", fileInput.files[0]);
   resultBox.style.display = "block";
   resultBox.textContent = "Importing...";
-  fetch("/platform/import-questions", {
+fetch("/api/platform/questions/import", {
     method:"POST",
     body: formData
   })

@@ -455,6 +455,5 @@ gradedAnswers.push({
     res.status(500).json({ error: "Failed to submit test" });
   }
 }
-router.post("/submit", submitStudentTestHandler);
 router.post("/api/student/submit", submitStudentTestHandler);
 module.exports = router;

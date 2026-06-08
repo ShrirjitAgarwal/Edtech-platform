@@ -193,7 +193,7 @@ const safeUser = {
     });
   }
 });
-router.post("/platform-admins", authMiddleware, async (req, res) => {
+async function createPlatformAdminHandler(req, res) {
   try {
     if (!req.user || req.user.role !== "platform_admin") {
       return res.status(403).json({
@@ -251,7 +251,8 @@ router.post("/platform-admins", authMiddleware, async (req, res) => {
       error: "Failed to create platform admin"
     });
   }
-});
+}
+router.post("/api/platform/admins/create", authMiddleware, createPlatformAdminHandler);
 router.get("/platform-change-password", authMiddleware, async (req, res) => {
   if (!req.user || req.user.role !== "platform_admin") {
     return res.status(403).send("Platform admin access required");

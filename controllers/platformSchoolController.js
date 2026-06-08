@@ -371,7 +371,7 @@ function createPlatformAdmin(){
     message.textContent = "Name, email, and temporary password are required";
     return;
   }
-  fetch("/platform-admins", {
+fetch("/api/platform/admins/create", {
     method:"POST",
     headers:{
       "Content-Type":"application/json"

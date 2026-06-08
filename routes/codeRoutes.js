@@ -148,8 +148,6 @@ async function runCodeHandler(req, res) {
     activeCodeRuns = Math.max(activeCodeRuns - 1, 0);
   }
 }
-
-router.post("/run-code", runCodeHandler);
 router.post("/api/code/run", runCodeHandler);
 
 module.exports = router;

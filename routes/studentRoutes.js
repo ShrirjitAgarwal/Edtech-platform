@@ -538,7 +538,6 @@ async function studentLookupHandler(req, res) {
     });
   }
 }
-router.post("/student-lookup", studentLookupHandler);
 router.post("/api/student/lookup", studentLookupHandler);
 // ======================================================
 // MY TESTS
@@ -798,7 +797,6 @@ async function getStudentSubjectsHandler(req, res) {
     });
   }
 }
-router.get("/get-subjects", requireStudentApiSession, getStudentSubjectsHandler);
 router.get("/api/student/subjects", requireStudentApiSession, getStudentSubjectsHandler);
 router.get("/get-classes", authMiddleware, async (req, res) => {
   try {

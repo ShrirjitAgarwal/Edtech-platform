@@ -399,7 +399,7 @@ Back
 <script>
 function downloadClassReport(){
 fetch(
-"/download-class-report",
+"/api/reports/class/download",
 {
 method:"POST",
 headers:{

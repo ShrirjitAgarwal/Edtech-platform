@@ -1476,7 +1476,6 @@ res.json({ status: "draft_saved", test: newTest });
     res.status(500).json({ error: "Failed to save test" });
   }
 }
-router.post("/save-test", authMiddleware, saveTestHandler);
 router.post("/api/teacher/tests/save", authMiddleware, saveTestHandler);
 // ---------- TEST SETTINGS PAGE ----------
 router.get("/test-settings", authMiddleware, async (req, res) => {
@@ -1971,7 +1970,6 @@ res.json({
     });
   }
 }
-router.post("/save-test-settings", authMiddleware, saveTestSettingsHandler);
 router.post("/api/teacher/tests/settings/save", authMiddleware, saveTestSettingsHandler);
 // ---------- DELETE TEST ----------
 async function deleteTestHandler(req, res) {
@@ -2021,7 +2019,6 @@ await logAuditEvent(req, {
     res.status(500).json({ error: "Failed to delete test" });
   }
 }
-router.post("/delete-test", authMiddleware, deleteTestHandler);
 router.post("/api/teacher/tests/delete", authMiddleware, deleteTestHandler);
 async function deleteMultipleTestsHandler(req, res) {
   try {
@@ -2071,6 +2068,5 @@ await logAuditEvent(req, {
     res.status(500).json({ error: "Bulk delete failed" });
   }
 }
-router.post("/delete-multiple-tests", authMiddleware, deleteMultipleTestsHandler);
 router.post("/api/teacher/tests/delete-multiple", authMiddleware, deleteMultipleTestsHandler);
 module.exports = router;
