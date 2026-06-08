@@ -11,7 +11,7 @@ function sidebar(active = "", role = "__USER_ROLE__") {
         { key: "my-tests", label: "My Tests", path: "/my-tests" },
         { key: "dashboard", label: "Dashboard", path: "/my-tests" }
       ]
-    : sidebarIsAdmi
+    : sidebarIsAdmin
       ? [
           { key: "admin-dashboard", label: "Admin Dashboard", path: "/admin-dashboard" },
           { key: "admin-settings", label: "Admin Settings", path: "/admin-settings" },
@@ -30,7 +30,7 @@ function sidebar(active = "", role = "__USER_ROLE__") {
         ];
   const sidebarTitle = sidebarIsStudent
     ? "Student"
-    : sidebarIsAdmi
+    : sidebarIsAdmin
       ? "Admin"
       : "Wizdm.io";
   const activeKey = "${active}";
