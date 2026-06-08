@@ -24,8 +24,44 @@ function normalizeSchoolCode(value) {
     .replace(/\s+/g, "-")
     .replace(/[^A-Z0-9-]/g, "");
 }
+function buildPlatformMessage(req) {
+  const errorMessage = String(req.query.error || "").trim();
+  const successMessage = String(req.query.success || "").trim();
+  if (errorMessage) {
+    return `
+      <div style="
+        background:#fee2e2;
+        color:#991b1b;
+        border:1px solid #fecaca;
+        padding:14px 16px;
+        border-radius:10px;
+        font-weight:700;
+        margin-bottom:18px;
+      ">
+        ${escapeHtml(errorMessage)}
+      </div>
+    `;
+  }
+  if (successMessage) {
+    return `
+      <div style="
+        background:#dcfce7;
+        color:#166534;
+        border:1px solid #bbf7d0;
+        padding:14px 16px;
+        border-radius:10px;
+        font-weight:700;
+        margin-bottom:18px;
+      ">
+        ${escapeHtml(successMessage)}
+      </div>
+    `;
+  }
+  return "";
+}
 exports.listSchoolsPage = async (req, res) => {
   try {
+    const platformMessage = buildPlatformMessage(req);
     const schools = await School.find({})
       .sort({ createdAt: -1 })
       .lean();
@@ -232,6 +268,7 @@ exports.listSchoolsPage = async (req, res) => {
         </button>
       </div>
     </div>
+    ${platformMessage}
  <div
  id="platformAdminForm"
  style="
@@ -274,7 +311,6 @@ exports.listSchoolsPage = async (req, res) => {
  </button>
  <p id="platformAdminMessage" style="font-weight:700;"></p>
  </div>
-
  <div style="
  background:#f8fafc;
  border:1px solid #e5e7eb;
@@ -318,29 +354,23 @@ exports.listSchoolsPage = async (req, res) => {
 <script>
 function togglePlatformAdminForm(){
   const form = document.getElementById("platformAdminForm");
-
   if(!form){
     return;
   }
-
   form.style.display =
     form.style.display === "none" ? "block" : "none";
 }
-
 function createPlatformAdmin(){
   const name = document.getElementById("platformAdminName").value.trim();
   const email = document.getElementById("platformAdminEmail").value.trim();
   const password = document.getElementById("platformAdminPassword").value.trim();
   const message = document.getElementById("platformAdminMessage");
-
   message.style.color = "#dc2626";
   message.textContent = "";
-
   if(!name || !email || !password){
     message.textContent = "Name, email, and temporary password are required";
     return;
   }
-
   fetch("/platform-admins", {
     method:"POST",
     headers:{
@@ -355,13 +385,11 @@ function createPlatformAdmin(){
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      message.textContent = data.error;
+      message.textContent = data.error.message || data.error;
       return;
     }
-
     message.style.color = "#16a34a";
     message.textContent = "Platform admin created. They must change password after first login.";
-
     document.getElementById("platformAdminName").value = "";
     document.getElementById("platformAdminEmail").value = "";
     document.getElementById("platformAdminPassword").value = "";
@@ -383,24 +411,39 @@ exports.createSchool = async (req, res) => {
     const name = String(req.body.name || "").trim();
     const code = normalizeSchoolCode(req.body.code);
     if (!name || !code) {
-      return res.status(400).send("School name and code are required");
+      return res.redirect(
+        "/platform/schools?error=" +
+          encodeURIComponent("School name and code are required.")
+      );
     }
     const existingSchool = await School.findOne({ code }).lean();
     if (existingSchool) {
-      return res.status(409).send("School code already exists");
+      return res.redirect(
+        "/platform/schools?error=" +
+          encodeURIComponent("School code already exists.")
+      );
     }
     await School.create({
       name,
       code,
       status: "active"
     });
-    res.redirect("/platform/schools");
+        res.redirect(
+      "/platform/schools?success=" +
+        encodeURIComponent("School created successfully.")
+    );
   } catch (err) {
     console.error("CREATE SCHOOL ERROR:", err);
     if (err.code === 11000) {
-      return res.status(409).send("School code already exists");
+      return res.redirect(
+        "/platform/schools?error=" +
+          encodeURIComponent("School code already exists.")
+      );
     }
-    res.status(500).send("Failed to create school");
+    res.redirect(
+      "/platform/schools?error=" +
+        encodeURIComponent("School could not be created. Please try again.")
+    );
   }
 };
 exports.updateSchool = async (req, res) => {
@@ -521,19 +564,31 @@ exports.createAdminForSchool = async (req, res) => {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
     if (!schoolId || !name || !email || !password) {
-      return res.status(400).send("Admin name, email, and password are required");
+      return res.redirect(
+        "/platform/schools?error=" +
+          encodeURIComponent("Admin name, email, and temporary password are required.")
+      );
     }
- const passwordPolicyError = validatePasswordPolicy(password);
- if (passwordPolicyError) {
-   return res.status(400).send(passwordPolicyError);
- }
+    const passwordPolicyError = validatePasswordPolicy(password);
+    if (passwordPolicyError) {
+      return res.redirect(
+        "/platform/schools?error=" +
+          encodeURIComponent(passwordPolicyError)
+      );
+    }
     const school = await School.findById(schoolId).lean();
     if (!school) {
-      return res.status(404).send("School not found");
+      return res.redirect(
+        "/platform/schools?error=" +
+          encodeURIComponent("School not found.")
+      );
     }
     const existingUser = await User.findOne({ email }).lean();
     if (existingUser) {
-      return res.status(409).send("A user with this email already exists");
+      return res.redirect(
+        "/platform/schools?error=" +
+          encodeURIComponent("A user with this email already exists.")
+      );
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     await User.create({
@@ -546,9 +601,15 @@ exports.createAdminForSchool = async (req, res) => {
       createdBy: String(req.user.id || req.user._id || ""),
       createdByName: req.user.name || req.user.email || "Platform Admin"
     });
-    res.redirect("/platform/schools");
+       res.redirect(
+      "/platform/schools?success=" +
+        encodeURIComponent("School admin created successfully.")
+    );
   } catch (err) {
     console.error("CREATE SCHOOL ADMIN ERROR:", err);
-    res.status(500).send("Failed to create school admin");
+        res.redirect(
+      "/platform/schools?error=" +
+        encodeURIComponent("School admin could not be created. Please try again.")
+    );
   }
 };

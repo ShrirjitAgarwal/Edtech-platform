@@ -991,6 +991,25 @@ const adminClassOptions = ${safeJsonForScript(adminClassOptionsData)};
 const adminSubjectOptions = ${safeJsonForScript(adminSubjectOptionsData)};
 const adminTeacherOptions = ${safeJsonForScript(adminTeacherOptionsData)};
 const studentDropdowns = ${safeJsonForScript(studentDropdownData)};
+function getErrorMessage(errorValue){
+  if(!errorValue){
+    return "Something went wrong";
+  }
+
+  if(typeof errorValue === "string"){
+    return errorValue;
+  }
+
+  if(errorValue.message){
+    return errorValue.message;
+  }
+
+  if(errorValue.code && errorValue.message){
+    return errorValue.code + ": " + errorValue.message;
+  }
+
+  return "Something went wrong";
+}
 function closeCustomDropdowns(){
   document.querySelectorAll("[id$='Menu']").forEach(menu => {
     menu.style.display = "none";
@@ -1271,7 +1290,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Subject created");
@@ -1297,7 +1316,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Subject deleted");
@@ -1329,7 +1348,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Class created");
@@ -1355,7 +1374,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Class deleted");
@@ -1394,7 +1413,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Student updated");
@@ -1420,7 +1439,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Student deleted");
@@ -1487,7 +1506,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert((data.createdCount || students.length) + " students created");
@@ -1526,7 +1545,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Mapping saved");
@@ -1557,7 +1576,7 @@ function deleteMapping(mappingId){
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Mapping deleted");
@@ -1592,7 +1611,7 @@ function deleteMapping(mappingId){
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("User deleted");
@@ -1643,7 +1662,7 @@ function addUserWithRole(role, prefix){
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert(
@@ -1669,7 +1688,11 @@ exports.adminSettingsData = async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({
-        error: "Access denied"
+        success: false,
+        error: {
+          code: "ACCESS_DENIED",
+          message: "Access denied"
+        }
       });
     }
 
@@ -1677,7 +1700,11 @@ exports.adminSettingsData = async (req, res) => {
 
     if (!schoolId) {
       return res.status(400).json({
-        error: "School context missing"
+        success: false,
+        error: {
+          code: "SCHOOL_CONTEXT_MISSING",
+          message: "School context missing"
+        }
       });
     }
 
@@ -1927,12 +1954,20 @@ exports.adminSettingsData = async (req, res) => {
     }
 
     return res.status(400).json({
-      error: "Invalid admin settings entity"
+      success: false,
+      error: {
+        code: "INVALID_ADMIN_SETTINGS_ENTITY",
+        message: "Invalid admin settings entity"
+      }
     });
   } catch (err) {
     console.error("ADMIN SETTINGS DATA API ERROR:", err);
     res.status(500).json({
-      error: "Failed to load admin settings data"
+      success: false,
+      error: {
+        code: "ADMIN_SETTINGS_DATA_LOAD_FAILED",
+        message: "Failed to load admin settings data"
+      }
     });
   }
 };

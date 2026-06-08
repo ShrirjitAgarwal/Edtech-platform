@@ -20,6 +20,19 @@ const loginLimiter = rateLimit({
     error: "Too many login attempts. Please try again after 15 minutes."
   }
 });
+
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many registration attempts. Please try again after 15 minutes."
+  }
+});
+
+const DUMMY_PASSWORD_HASH =
+  "$2b$10$CwTycUXWue0Thq9StjUM0uJ8q7pFEd5QxjZ2vZp7PvWjW7M8mKxNe";
 function hashToken(token) {
   return crypto
     .createHash("sha256")
@@ -30,7 +43,7 @@ function hashToken(token) {
 // Public self-registration is disabled.
 // Teachers/admins must be created by an authorized school admin.
 // Platform admins must be created through the platform admin setup flow.
-router.post("/register", async (req, res) => {
+router.post("/register", registerLimiter, async (req, res) => {
   await logAuditEvent(req, {
     event: "public_registration_blocked",
     status: "blocked",
@@ -48,122 +61,121 @@ router.post("/register", async (req, res) => {
 // ---------- LOGIN ----------
 router.post("/login", loginLimiter, async (req, res) => {
   const emailInput = (req.body.email || "").trim().toLowerCase();
-const passwordInput = (req.body.password || "").trim();
+  const passwordInput = (req.body.password || "").trim();
+
   try {
-const user = await User.findOne({ email: emailInput });
-if (!user) {
-  await logAuditEvent(req, {
-    event: "login_failed",
-    status: "failed",
-    metadata: {
-      email: emailInput,
-      reason: "user_not_found"
-    },
-    error: "Invalid credentials"
-  });
-  return res.status(401).json({ error: "Invalid credentials" });
-}
-let isMatch = false;
-// 🔍 CHECK IF PASSWORD IS HASHED
-if (user.password.startsWith("$2b$")) {
-  // ✅ NEW USERS (HASHED)
-  isMatch = await bcrypt.compare(passwordInput, user.password);
-} else {
-  // ⚠️ OLD USERS (PLAIN TEXT)
-  isMatch = passwordInput === user.password;
-  if (isMatch) {
-    // 🔐 UPGRADE TO HASH
-    const newHashed = await bcrypt.hash(passwordInput, 10);
-    user.password = newHashed;
-    await user.save();
-  }
-}
-// ❌ INVALID PASSWORD
-if (!isMatch) {
-  await logAuditEvent(req, {
-    event: "login_failed",
-    status: "failed",
-    actor: user,
-    metadata: {
-      email: emailInput,
-      reason: "password_mismatch"
-    },
-    error: "Invalid credentials"
-  });
-  return res.status(401).json({ error: "Invalid credentials" });
-}
-if (user.role === "platform_admin") {
-await logAuditEvent(req, {
- event: "login_failed",
- status: "failed",
- actor: user,
- metadata: {
- email: emailInput,
- reason: "platform_admin_used_normal_login"
- },
- error: "Use platform admin login"
-});
-return res.status(403).json({
- error: "Use platform admin login"
-});
-}
-const token = jwt.sign(
-{
-  id: user._id,
-  email: user.email,
-  role: user.role,
-  schoolId: user.schoolId || null,
-  schoolCode: user.schoolCode || null
-},
-  process.env.JWT_SECRET,
-  { expiresIn: "7d" }
-);
-const safeUser = {
-  _id: user._id,
-  name: user.name,
-  email: user.email,
-  role: user.role,
-  schoolId: user.schoolId || null,
-  schoolCode: user.schoolCode || null
-};
-// 🔥 ADD THIS
-const Student = require("../models/Student");
-let studentData = null;
-if (user.role === "student") {
-  studentData = await Student.findOne({
-    $or: [
-      { userId: user._id },
-      { email: user.email },
-      { name: user.name }
-    ]
-  });
-}
-res.cookie("authToken", token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000
-});
-await logAuditEvent(req, {
-  event: "login_success",
-  status: "success",
-  actor: user,
-  metadata: {
-    email: user.email,
-    role: user.role,
-    schoolId: user.schoolId || null,
-    schoolCode: user.schoolCode || null
-  }
-});
-// 🔁 UPDATED RESPONSE
-res.json({
-  status: "success",
-  token,
-  user: safeUser,
-  student: studentData
-});
+    const user = await User.findOne({ email: emailInput });
+    const passwordHashForCompare =
+      user && String(user.password || "").startsWith("$2b$")
+        ? user.password
+        : DUMMY_PASSWORD_HASH;
+
+    let isMatch = await bcrypt.compare(passwordInput, passwordHashForCompare);
+
+    if (user && !String(user.password || "").startsWith("$2b$")) {
+      isMatch = passwordInput === user.password;
+
+      if (isMatch) {
+        const newHashed = await bcrypt.hash(passwordInput, 10);
+        user.password = newHashed;
+        await user.save();
+      }
+    }
+
+    if (!user || !isMatch) {
+      await logAuditEvent(req, {
+        event: "login_failed",
+        status: "failed",
+        actor: user || null,
+        metadata: {
+          email: emailInput,
+          reason: user ? "password_mismatch" : "user_not_found"
+        },
+        error: "Invalid credentials"
+      });
+
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    if (user.role === "platform_admin") {
+      await logAuditEvent(req, {
+        event: "login_failed",
+        status: "failed",
+        actor: user,
+        metadata: {
+          email: emailInput,
+          reason: "platform_admin_used_normal_login"
+        },
+        error: "Use platform admin login"
+      });
+
+      return res.status(403).json({
+        error: "Use platform admin login"
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        schoolId: user.schoolId || null,
+        schoolCode: user.schoolCode || null
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    const safeUser = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      schoolId: user.schoolId || null,
+      schoolCode: user.schoolCode || null
+    };
+
+    const Student = require("../models/Student");
+    let studentData = null;
+
+    if (user.role === "student") {
+      studentData = await Student.findOne({
+        $or: [
+          { userId: user._id },
+          { email: user.email },
+          { name: user.name }
+        ]
+      });
+    }
+
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    await logAuditEvent(req, {
+      event: "login_success",
+      status: "success",
+      actor: user,
+      metadata: {
+        email: user.email,
+        role: user.role,
+        schoolId: user.schoolId || null,
+        schoolCode: user.schoolCode || null
+      }
+    });
+
+    res.json({
+      status: "success",
+      token,
+      user: safeUser,
+      student: studentData
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({ error: "Login failed" });
   }
 });
 router.post(

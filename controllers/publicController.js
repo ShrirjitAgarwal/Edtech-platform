@@ -114,6 +114,21 @@ window.addEventListener("pageshow", function(event){
     window.location.reload();
   }
 });
+function getErrorMessage(errorValue){
+if(!errorValue){
+return "Something went wrong";
+}
+if(typeof errorValue === "string"){
+return errorValue;
+}
+if(errorValue.message){
+return errorValue.message;
+}
+if(errorValue.code && errorValue.message){
+return errorValue.code + ": " + errorValue.message;
+}
+return "Something went wrong";
+}
 function login(){
 const email = document.getElementById("email").value.trim();
 const password = document.getElementById("password").value.trim();
@@ -129,7 +144,7 @@ body: JSON.stringify({ email, password })
 .then(res => res.json())
 .then(data => {
 if(data.error){
-alert(data.error);
+alert(getErrorMessage(data.error));
 return;
 }
 localStorage.setItem("user", JSON.stringify(data.user));
@@ -193,6 +208,21 @@ Back to Login
 </button>
 </div>
 <script>
+function getErrorMessage(errorValue){
+if(!errorValue){
+return "Something went wrong";
+}
+if(typeof errorValue === "string"){
+return errorValue;
+}
+if(errorValue.message){
+return errorValue.message;
+}
+if(errorValue.code && errorValue.message){
+return errorValue.code + ": " + errorValue.message;
+}
+return "Something went wrong";
+}
 function register(){
 const name = document.getElementById("name").value;
 const email = document.getElementById("email").value;
@@ -206,7 +236,7 @@ body: JSON.stringify({ name,email,password,role })
 .then(res => res.json())
 .then(data => {
 if(data.error){
-alert(data.error);
+alert(getErrorMessage(data.error));
 return;
 }
 alert("Account created! Please login.");
@@ -248,6 +278,21 @@ Login
 </button>
 </div>
 <script>
+function getErrorMessage(errorValue){
+if(!errorValue){
+return "Something went wrong";
+}
+if(typeof errorValue === "string"){
+return errorValue;
+}
+if(errorValue.message){
+return errorValue.message;
+}
+if(errorValue.code && errorValue.message){
+return errorValue.code + ": " + errorValue.message;
+}
+return "Something went wrong";
+}
 function loginAdmin(){
 const email = document.getElementById("email").value;
 const password = document.getElementById("password").value;
@@ -259,7 +304,7 @@ body: JSON.stringify({ email,password })
 .then(res => res.json())
 .then(data => {
 if(data.error){
-alert(data.error);
+alert(getErrorMessage(data.error));
 return;
 }
 if(data.user.role !== "admin"){

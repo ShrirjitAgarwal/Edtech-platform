@@ -121,6 +121,15 @@ box-sizing:border-box;
       function jsString(value){
         return JSON.stringify(String(value || ""));
       }
+      function getErrorMessage(error){
+        if(!error){
+          return "Something went wrong";
+        }
+        if(typeof error === "string"){
+          return error;
+        }
+        return error.message || "Something went wrong";
+      }
       window.onload = function(){
         const user = JSON.parse(localStorage.getItem("user") || "null");
         if(!user){
@@ -355,7 +364,7 @@ headers:{
         .then(res => res.json())
         .then(data => {
           if(data.error){
-            alert(data.error);
+            alert(getErrorMessage(data.error));
             return;
           }
           alert(data.message || "Test assigned");
@@ -375,7 +384,7 @@ headers:{
         .then(res => res.json())
         .then(data => {
           if(data.error){
-            alert(data.error);
+            alert(getErrorMessage(data.error));
             return;
           }
           alert("Test deleted");
@@ -405,7 +414,7 @@ headers:{
         .then(res => res.json())
         .then(data => {
           if(data.error){
-            alert(data.error);
+            alert(getErrorMessage(data.error));
             return;
           }
           alert("Deleted successfully");
@@ -869,6 +878,15 @@ function escapeHtml(value){
 function jsString(value){
  return JSON.stringify(String(value || ""));
 }
+function getErrorMessage(error){
+ if(!error){
+   return "Something went wrong";
+ }
+ if(typeof error === "string"){
+   return error;
+ }
+ return error.message || "Something went wrong";
+}
 function getQuestionId(q){
  return String(q._id);
 }
@@ -1308,7 +1326,7 @@ body: JSON.stringify({
  })
  .then(res => res.json())
  .then(data => {
- if(data.error) return alert(data.error);
+ if(data.error) return alert(getErrorMessage(data.error));
  localStorage.removeItem("selectedQuestions");
  alert(editingTestId ? "Draft updated!" : "Test saved as draft!");
  window.location.replace("/teacher-tests");
@@ -1317,22 +1335,16 @@ body: JSON.stringify({
 }
 function clearFilters(){
   document.getElementById("questionSearch").value = "";
-
   document.getElementById("questionSubjectFilter").value = "all";
   document.getElementById("questionSubjectFilterLabel").textContent = "All Subjects";
-
   document.getElementById("questionBoardFilter").value = "all";
   document.getElementById("questionBoardFilterLabel").textContent = "All Boards";
-
   document.getElementById("questionDifficultyFilter").value = "all";
   document.getElementById("questionDifficultyFilterLabel").textContent = "All Difficulty";
-
   document.getElementById("questionTypeFilter").value = "all";
   document.getElementById("questionTypeFilterLabel").textContent = "All Types";
-
   document.getElementById("questionScopeFilter").value = "all";
   document.getElementById("questionScopeFilterLabel").textContent = "All Sources";
-
   closeCustomDropdowns();
   filterQuestions();
 }
@@ -1555,6 +1567,15 @@ function escapeHtml(value){
   const div = document.createElement("div");
   div.textContent = String(value || "");
   return div.innerHTML;
+}
+function getErrorMessage(error){
+  if(!error){
+    return "Something went wrong";
+  }
+  if(typeof error === "string"){
+    return error;
+  }
+  return error.message || "Something went wrong";
 }
 function closeCustomDropdowns(){
   document.querySelectorAll("[id$='Menu']").forEach(menu => {
@@ -1835,7 +1856,7 @@ headers:{
   .then(res => res.json())
 .then(data => {
   if(data.error){
-    alert(data.error);
+    alert(getErrorMessage(data.error));
     return;
   }
   const index = tests.findIndex(t =>

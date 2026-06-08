@@ -452,6 +452,21 @@ if(!pageUser || pageUser.role !== "teacher"){
 <script>
 const subjectOptionsForQuestionBuilder = ${JSON.stringify(subjectOptionsForQuestionBuilder)};
 const boardOptionsForQuestionBuilder = ${JSON.stringify(boardOptionsForQuestionBuilder)};
+function getErrorMessage(errorValue){
+  if(!errorValue){
+    return "Something went wrong";
+  }
+  if(typeof errorValue === "string"){
+    return errorValue;
+  }
+  if(errorValue.message){
+    return errorValue.message;
+  }
+  if(errorValue.code && errorValue.message){
+    return errorValue.code + ": " + errorValue.message;
+  }
+  return "Something went wrong";
+}
 function closeCustomDropdowns(){
   document.querySelectorAll("[id$='Menu']").forEach(menu => {
     menu.style.display = "none";
@@ -657,7 +672,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Question saved");
@@ -849,6 +864,21 @@ if(!pageUser || pageUser.role !== "teacher"){
   </div>
 </div>
 <script>
+function getErrorMessage(errorValue){
+  if(!errorValue){
+    return "Something went wrong";
+  }
+  if(typeof errorValue === "string"){
+    return errorValue;
+  }
+  if(errorValue.message){
+    return errorValue.message;
+  }
+  if(errorValue.code && errorValue.message){
+    return errorValue.code + ": " + errorValue.message;
+  }
+  return "Something went wrong";
+}
 const allQuestions = ${JSON.stringify(questions)};
 const user = JSON.parse(localStorage.getItem("user") || "null");
 const teacherId = user?._id || user?.id;
@@ -964,7 +994,7 @@ headers:{
   .then(res => res.json())
   .then(data => {
     if(data.error){
-      alert(data.error);
+      alert(getErrorMessage(data.error));
       return;
     }
     alert("Question deleted");
