@@ -130,17 +130,29 @@ async function requireStudentPageSession(req, res, next) {
 // ======================================================
 // STUDENT DETAIL PAGE
 // ======================================================
-router.get("/student", async (req, res) => {
+router.get("/student", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      return res.status(403).send("<h2>Access denied</h2>");
+    }
     const studentId = String(req.query.studentId || "").trim();
     if (!studentId) {
       return res.send("<h2>Missing student ID</h2>");
     }
-    let results = await Result.find({ studentId })
-  .select("studentId name class testId testName score total date")
-  .sort({ date: -1 })
-  .limit(100)
-  .lean();
+    const resultFilter = {
+      studentId
+    };
+    if (req.user.role === "teacher") {
+      resultFilter.teacherId = String(req.user.id);
+    }
+    if (req.user.schoolId) {
+      resultFilter.schoolId = req.user.schoolId;
+    }
+    let results = await Result.find(resultFilter)
+      .select("studentId name class testId testName score total date teacherId schoolId")
+      .sort({ date: -1 })
+      .limit(100)
+      .lean();
     if (!results.length) {
       return res.send("<h2>No results found for this student</h2>");
     }
@@ -219,13 +231,19 @@ fetch("/api/reports/student/download", {
   },
   body: JSON.stringify({ studentId })
 })
-  .then(res => res.blob())
+  .then(res => {
+    if(!res.ok){
+      throw new Error("Download failed");
+    }
+    return res.blob();
+  })
   .then(blob => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "report.csv";
     a.click();
+    URL.revokeObjectURL(url);
   })
   .catch(() => alert("Download failed"));
 }
@@ -1008,19 +1026,22 @@ async function getStudentSubjectsHandler(req, res) {
 router.get("/api/student/subjects", requireStudentApiSession, getStudentSubjectsHandler);
 router.get("/get-classes", authMiddleware, async (req, res) => {
   try {
-        if (!req.user || (req.user.role !== "admin" && req.user.role !== "teacher")) {
+    if (!req.user || (req.user.role !== "admin" && req.user.role !== "teacher")) {
       return res.status(403).json({
         error: "Access denied"
       });
     }
-    const teacherId =
-      String(req.query.teacherId || "").trim();
-    let classes;
-    if (teacherId) {
-      classes = await Student.find({ teacherId }).distinct("class");
-    } else {
-      classes = await Student.distinct("class");
+    const filter = {};
+    if (req.user.role === "teacher") {
+      filter.teacherId = String(req.user.id);
     }
+    if (req.user.role === "admin" && req.query.teacherId) {
+      filter.teacherId = String(req.query.teacherId || "").trim();
+    }
+    if (req.user.schoolId) {
+      filter.schoolId = req.user.schoolId;
+    }
+    const classes = await Student.find(filter).distinct("class");
     res.json(classes);
   } catch (err) {
     console.error(err);
@@ -1029,7 +1050,7 @@ router.get("/get-classes", authMiddleware, async (req, res) => {
 });
 router.get("/get-students", authMiddleware, async (req, res) => {
   try {
-        if (!req.user || (req.user.role !== "admin" && req.user.role !== "teacher")) {
+    if (!req.user || (req.user.role !== "admin" && req.user.role !== "teacher")) {
       return res.status(403).json({
         error: "Access denied"
       });
@@ -1039,13 +1060,25 @@ router.get("/get-students", authMiddleware, async (req, res) => {
     if (!className) {
       return res.status(400).json({ error: "Class required" });
     }
-const students = await Student.find(
-  { class: className },
-  { studentId: 1, name: 1, teacherId: 1, _id: 0 }
-)
-  .sort({ name: 1 })
-  .limit(1000)
-  .lean();
+    const filter = {
+      class: className
+    };
+    if (req.user.role === "teacher") {
+      filter.teacherId = String(req.user.id);
+    }
+    if (req.user.role === "admin" && req.query.teacherId) {
+      filter.teacherId = String(req.query.teacherId || "").trim();
+    }
+    if (req.user.schoolId) {
+      filter.schoolId = req.user.schoolId;
+    }
+    const students = await Student.find(
+      filter,
+      { studentId: 1, name: 1, teacherId: 1, _id: 0 }
+    )
+      .sort({ name: 1 })
+      .limit(1000)
+      .lean();
     res.json(students);
   } catch (err) {
     console.error(err);
