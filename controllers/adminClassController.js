@@ -1,5 +1,5 @@
 const {
-  logAdminActio
+  logAdminAction
 } = require("../services/adminActionLogger");
 function sendSuccess(res, message, data = {}) {
   return res.json({
