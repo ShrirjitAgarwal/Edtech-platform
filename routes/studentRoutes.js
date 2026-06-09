@@ -1261,7 +1261,7 @@ return `
         >
           Run Code
         </button>
-        <spa
+        <span
           class="language-badge"
           data-question-id="${qid}"
           style="
@@ -1366,8 +1366,242 @@ return `
 </div>
 `;
     }).join("");
+        const studentNameForPage =
+      student.fullName || student.name || "Student";
+    const studentClassForPage =
+      student.class || "N/A";
+    const studentIdForPage =
+      student.studentId || studentId || "N/A";
+    const questionSidebarHtml = testQuestions.map((q, i) => {
+      return `
+        <div
+          class="student-test-question-pill"
+          data-sidebar-question-index="${i}"
+        >
+          ${i + 1}
+        </div>
+      `;
+    }).join("");
     res.send(`
-<body style="margin:0;font-family:Arial;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(test.name)} | WZDM Test</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #0f172a;
+    background: #eef2ff;
+  }
+
+  .student-test-shell {
+    min-height: 100vh;
+    display: flex;
+    background:
+      radial-gradient(circle at top left, rgba(79, 70, 229, 0.10), transparent 34%),
+      linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  }
+
+  .student-test-sidebar {
+    width: 280px;
+    min-height: 100vh;
+    background: #0f172a;
+    color: white;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .student-test-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .student-test-brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+  }
+
+  .student-test-sidebar-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .student-test-sidebar-label {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+
+  .student-test-sidebar-value {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    word-break: break-word;
+  }
+
+  .student-test-sidebar-value:last-child {
+    margin-bottom: 0;
+  }
+
+  .student-test-question-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .student-test-question-pill {
+    height: 36px;
+    border-radius: 10px;
+    background: #334155;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+  }
+
+  .student-test-content {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: auto;
+    padding: 28px;
+  }
+
+  .student-test-header {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+  }
+
+  .student-test-header-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+  }
+
+  .student-test-title {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+  }
+
+  .student-test-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .student-test-chip {
+    background: #eef2ff;
+    border: 1px solid #dbe4ff;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 8px 11px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .student-test-student-box {
+    text-align: right;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .student-test-student-box b {
+    color: #0f172a;
+  }
+
+  .student-test-main-card {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+  }
+
+  .student-test-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    align-items: center;
+  }
+
+  #submitBtn,
+  #nextQuestionBtn {
+    padding: 12px 16px;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 800;
+  }
+
+  #nextQuestionBtn {
+    background: #4f46e5;
+  }
+
+  #submitBtn {
+    background: #16a34a;
+  }
+
+  @media (max-width: 900px) {
+    .student-test-shell {
+      flex-direction: column;
+    }
+
+    .student-test-sidebar {
+      width: 100%;
+      min-height: auto;
+    }
+
+    .student-test-content {
+      height: auto;
+      padding: 18px;
+    }
+
+    .student-test-header-top {
+      flex-direction: column;
+    }
+
+    .student-test-student-box {
+      text-align: left;
+    }
+  }
+</style>
+</head>
+<body>
 <div id="examGate" style="
 position:fixed;
 top:0;
@@ -1394,68 +1628,97 @@ cursor:pointer;
 Click to Start
 </button>
 </div>
-<div style="display:flex;height:100vh;">
-  <div style="width:220px;background:#1e293b;color:white;padding:20px;">
-    <h2>Student</h2>
-  </div>
-  <div style="flex:1;padding:30px;background:#eef2ff;overflow:auto;">
-    <h1>${escapeHtml(test.name)}</h1>
-    <p style="color:#64748b;">
-      Duration: ${test.durationMinutes || 60} minutes
-    </p>
-    <p style="color:#64748b;">
-      Type: ${test.testType || "practice"}
-    </p>
-    <div
-      id="questionTimerPanel"
-      style="
-        display:none;
-        background:white;
-        padding:16px 20px;
-        border-radius:12px;
-        margin:16px 0;
-        border:1px solid #e5e7eb;
-      "
-    >
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div>
-          <b id="questionProgressText">Question 1 of ${testQuestions.length}</b>
-          <div id="questionTimerNote" style="font-size:13px;color:#64748b;margin-top:4px;">
-            Answer the question before the timer ends.
-          </div>
-        </div>
-        <div
-          id="questionTimerText"
-          style="
-            font-size:22px;
-            font-weight:800;
-            color:#dc2626;
-          "
-        >
-          00:00
-        </div>
+
+<div class="student-test-shell">
+  <aside class="student-test-sidebar">
+    <div class="student-test-brand">
+      <div class="student-test-brand-mark">W</div>
+      <div>WZDM Test</div>
+    </div>
+
+    <div class="student-test-sidebar-card">
+      <div class="student-test-sidebar-label">Student</div>
+      <div class="student-test-sidebar-value">${escapeHtml(studentNameForPage)}</div>
+
+      <div class="student-test-sidebar-label">Class</div>
+      <div class="student-test-sidebar-value">${escapeHtml(studentClassForPage)}</div>
+
+      <div class="student-test-sidebar-label">Student ID</div>
+      <div class="student-test-sidebar-value">${escapeHtml(studentIdForPage)}</div>
+    </div>
+
+    <div class="student-test-sidebar-card">
+      <div class="student-test-sidebar-label">Questions</div>
+      <div class="student-test-question-grid">
+        ${questionSidebarHtml}
       </div>
     </div>
+  </aside>
+
+  <main class="student-test-content">
+    <section class="student-test-header">
+      <div class="student-test-header-top">
+        <div>
+          <h1 class="student-test-title">${escapeHtml(test.name)}</h1>
+          <div class="student-test-meta">
+            <span class="student-test-chip">Duration: ${test.durationMinutes || 60} minutes</span>
+            <span class="student-test-chip">Type: ${escapeHtml(test.testType || "practice")}</span>
+            <span class="student-test-chip">${testQuestions.length} questions</span>
+          </div>
+        </div>
+
+        <div class="student-test-student-box">
+          <div><b>${escapeHtml(studentNameForPage)}</b></div>
+          <div>Class: ${escapeHtml(studentClassForPage)}</div>
+          <div>ID: ${escapeHtml(studentIdForPage)}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="student-test-main-card">
+      <div
+        id="questionTimerPanel"
+        style="
+          display:none;
+          background:#f8fafc;
+          padding:16px 20px;
+          border-radius:12px;
+          margin:0 0 16px;
+          border:1px solid #e2e8f0;
+        "
+      >
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <div>
+            <b id="questionProgressText">Question 1 of ${testQuestions.length}</b>
+            <div id="questionTimerNote" style="font-size:13px;color:#64748b;margin-top:4px;">
+              Answer the question before the timer ends.
+            </div>
+          </div>
+          <div
+            id="questionTimerText"
+            style="
+              font-size:22px;
+              font-weight:800;
+              color:#dc2626;
+            "
+          >
+            00:00
+          </div>
+        </div>
+      </div>
     ${html}
-    <button
-      id="nextQuestionBtn"
-      onclick="goToNextQuestion('answered')"
-      style="
-        display:none;
-        padding:10px 14px;
-        background:#4f46e5;
-        color:white;
-        border:none;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:700;
-        margin-right:10px;
-      "
-    >
-      Next Question
-    </button>
-    <button id="submitBtn" onclick="submitTest()">Submit</button>
-  </div>
+    <div class="student-test-actions">
+      <button
+        id="nextQuestionBtn"
+        onclick="goToNextQuestion('answered')"
+        style="display:none;"
+      >
+        Next Question
+      </button>
+      <button id="submitBtn" onclick="submitTest()">Submit</button>
+    </div>
+    </section>
+  </main>
 </div>
 <script>
 const qs = ${safeJsonForScript(testQuestions)};
@@ -1811,7 +2074,7 @@ function submitTest(){
   const btn = document.getElementById("submitBtn");
   if(btn){
     btn.disabled = true;
-    btn.innerText = window.__submitReaso
+    btn.innerText = window.__submitReason
       ? "Auto-submitting..."
       : "Submitting...";
     btn.style.opacity = "0.7";
@@ -1891,8 +2154,8 @@ function submitTest(){
       localStorage.removeItem("code_answer_" + testId + "_" + questionId);
       localStorage.removeItem("code_language_" + testId + "_" + questionId);
     });
-        alert(window.__submitReaso
-      ? "Test submitted automatically: " + window.__submitReaso
+        alert(window.__submitReason
+      ? "Test submitted automatically: " + window.__submitReason
       : "Submitted"
     );
     window.location.replace("/my-tests");
@@ -2020,6 +2283,7 @@ window.getCodeAnswer = function(qid){
 };
 </script>
 </body>
+</html>
 `);
   } catch (err) {
     console.error(err);
