@@ -862,22 +862,13 @@ if(
 ){
  window.location.replace("/");
 }
-const teacherId = user._id || user.id;
 const assignedClassSubjects = ${safeJsonForScript(classSubjectMappings)};
 const editingTestId = ${safeJsonForScript(String(editTest?._id || ""))};
 const editingQuestionIds = ${safeJsonForScript((editTest?.questionIds || []).map(id => String(id)))};
 if(editingTestId){
  localStorage.setItem("selectedQuestions", JSON.stringify(editingQuestionIds));
 }
-const allQuestions = ${safeJsonForScript(questions)};
-const questions = allQuestions.filter(q =>
- q.scope === "public" ||
- String(q.scope || "").trim() === "" ||
- (
-   q.scope === "teacher" &&
-   String(q.teacherId) === String(teacherId)
- )
-);
+const questions = ${safeJsonForScript(questions)};
 function escapeHtml(value){
  const div = document.createElement("div");
  div.textContent = String(value || "");
@@ -1566,11 +1557,7 @@ if(
 ){
   window.location.replace("/");
 }
-const teacherId = pageUser._id || pageUser.id;
-const allTests = ${JSON.stringify(tests)};
-const tests = allTests.filter(t =>
-  String(t.teacherId) === String(teacherId)
-);
+const tests = ${JSON.stringify(tests)};
 let selectedTestId = "${selectedTestId}";
 function escapeHtml(value){
   const div = document.createElement("div");

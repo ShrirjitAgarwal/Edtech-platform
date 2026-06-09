@@ -900,12 +900,7 @@ function getErrorMessage(errorValue){
   }
   return "Something went wrong";
 }
-const allQuestions = ${safeJsonForScript(questions)};
-const user = JSON.parse(localStorage.getItem("user") || "null");
-const teacherId = user?._id || user?.id;
-const questions = allQuestions.filter(q =>
-  String(q.teacherId) === String(teacherId)
-);
+const questions = ${safeJsonForScript(questions)};
 function toTitleCase(value){
   return String(value || "")
     .replace(/[_-]/g, " ")
