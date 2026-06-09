@@ -266,11 +266,9 @@ router.get("/student-entry", (req, res) => {
     --shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
     --radius: 18px;
   }
-
   * {
     box-sizing: border-box;
   }
-
   body {
     margin: 0;
     min-height: 100vh;
@@ -281,13 +279,11 @@ router.get("/student-entry", (req, res) => {
       radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.10), transparent 30%),
       linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
   }
-
   .page {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
   }
-
   .topbar {
     height: 72px;
     padding: 0 28px;
@@ -295,7 +291,6 @@ router.get("/student-entry", (req, res) => {
     align-items: center;
     justify-content: space-between;
   }
-
   .brand {
     display: flex;
     align-items: center;
@@ -304,7 +299,6 @@ router.get("/student-entry", (req, res) => {
     color: var(--text);
     letter-spacing: -0.02em;
   }
-
   .brand-mark {
     width: 36px;
     height: 36px;
@@ -316,14 +310,12 @@ router.get("/student-entry", (req, res) => {
     justify-content: center;
     font-weight: 800;
   }
-
   .toplink {
     color: var(--primary);
     text-decoration: none;
     font-size: 14px;
     font-weight: 700;
   }
-
   .main {
     flex: 1;
     display: flex;
@@ -331,7 +323,6 @@ router.get("/student-entry", (req, res) => {
     justify-content: center;
     padding: 32px 18px 48px;
   }
-
   .card {
     width: 100%;
     max-width: 480px;
@@ -341,7 +332,6 @@ router.get("/student-entry", (req, res) => {
     box-shadow: var(--shadow);
     padding: 30px;
   }
-
   .badge {
     width: 56px;
     height: 56px;
@@ -355,7 +345,6 @@ router.get("/student-entry", (req, res) => {
     font-size: 24px;
     font-weight: 800;
   }
-
   h1 {
     margin: 0;
     text-align: center;
@@ -363,7 +352,6 @@ router.get("/student-entry", (req, res) => {
     line-height: 1.2;
     letter-spacing: -0.03em;
   }
-
   .subtitle {
     margin: 10px auto 26px;
     max-width: 360px;
@@ -372,13 +360,11 @@ router.get("/student-entry", (req, res) => {
     line-height: 1.5;
     font-size: 15px;
   }
-
   .form {
     display: flex;
     flex-direction: column;
     gap: 14px;
   }
-
   .field label {
     display: block;
     font-size: 13px;
@@ -386,7 +372,6 @@ router.get("/student-entry", (req, res) => {
     margin-bottom: 7px;
     color: #334155;
   }
-
   .field input {
     width: 100%;
     border: 1px solid var(--border);
@@ -396,12 +381,10 @@ router.get("/student-entry", (req, res) => {
     outline: none;
     background: white;
   }
-
   .field input:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
   }
-
   .primary-btn,
   .success-btn,
   .secondary-btn {
@@ -414,23 +397,18 @@ router.get("/student-entry", (req, res) => {
     font-weight: 800;
     cursor: pointer;
   }
-
   .primary-btn {
     background: var(--primary);
   }
-
   .primary-btn:hover {
     background: var(--primary-dark);
   }
-
   .success-btn {
     background: var(--success);
   }
-
   .secondary-btn {
     background: var(--secondary);
   }
-
   .error {
     display: none;
     margin: 0 0 14px;
@@ -442,7 +420,6 @@ router.get("/student-entry", (req, res) => {
     font-weight: 700;
     text-align: left;
   }
-
   .confirm-box {
     display: none;
     margin-top: 20px;
@@ -451,31 +428,26 @@ router.get("/student-entry", (req, res) => {
     border-radius: 14px;
     border: 1px solid var(--border);
   }
-
   .confirm-box h3 {
     margin: 0 0 12px;
     font-size: 18px;
   }
-
   .confirm-row {
     margin: 8px 0;
     color: #334155;
     line-height: 1.45;
   }
-
   .confirm-actions {
     display: flex;
     gap: 10px;
     margin-top: 18px;
   }
-
   .secondary-actions {
     margin-top: 22px;
     padding-top: 18px;
     border-top: 1px solid var(--border);
     text-align: center;
   }
-
   .secondary-actions button {
     border: none;
     background: transparent;
@@ -485,34 +457,28 @@ router.get("/student-entry", (req, res) => {
     font-size: 14px;
     font-weight: 800;
   }
-
   .help-text {
     margin: 12px 0 0;
     color: var(--muted);
     font-size: 13px;
     line-height: 1.45;
   }
-
   .footer {
     padding: 18px;
     text-align: center;
     color: var(--muted);
     font-size: 12px;
   }
-
   @media (max-width: 520px) {
     .topbar {
       padding: 0 18px;
     }
-
     .card {
       padding: 24px 18px;
     }
-
     h1 {
       font-size: 25px;
     }
-
     .confirm-actions {
       flex-direction: column;
     }
@@ -528,15 +494,12 @@ router.get("/student-entry", (req, res) => {
     </div>
     <a class="toplink" href="/login">Login Options</a>
   </header>
-
   <main class="main">
     <section class="card">
       <div class="badge">S</div>
       <h1>Student Login</h1>
       <p class="subtitle">Enter your name and student ID to find your record and continue to your assigned tests.</p>
-
       <p id="errorBox" class="error"></p>
-
       <div id="lookupForm" class="form">
         <div class="field">
           <label for="firstName">First Name</label>
@@ -552,54 +515,44 @@ router.get("/student-entry", (req, res) => {
         </div>
         <button class="primary-btn" type="button" onclick="lookupStudent()">Find My Record</button>
       </div>
-
       <div id="confirmBox" class="confirm-box"></div>
-
       <div class="secondary-actions">
         <button type="button" onclick="window.location.replace('/login')">← Back to login options</button>
         <p class="help-text">Having trouble signing in? Please contact your teacher or school admin.</p>
       </div>
     </section>
   </main>
-
   <footer class="footer">
     © 2026 WZDM Assessment Platform. All rights reserved.
   </footer>
 </div>
-
 <script>
 localStorage.clear();
 let matchedStudent = null;
-
 function escapeHtml(value){
   const div = document.createElement("div");
   div.textContent = String(value || "");
   return div.innerHTML;
 }
-
 function showError(message){
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "block";
   errorBox.innerText = message;
 }
-
 function clearError(){
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "none";
   errorBox.innerText = "";
 }
-
 function lookupStudent(){
   clearError();
   const firstName = document.getElementById("firstName").value.trim();
   const lastName = document.getElementById("lastName").value.trim();
   const studentId = document.getElementById("studentId").value.trim();
-
   if(!firstName || !lastName || !studentId){
     showError("Please enter first name, last name, and student ID.");
     return;
   }
-
   fetch("/api/student/lookup", {
     method:"POST",
     headers:{
@@ -619,7 +572,6 @@ function lookupStudent(){
       showError(data.error);
       return;
     }
-
     matchedStudent = data.student;
     const confirmBox = document.getElementById("confirmBox");
     confirmBox.style.display = "block";
@@ -638,13 +590,11 @@ function lookupStudent(){
     showError("Lookup failed. Please try again.");
   });
 }
-
 function resetLookup(){
   matchedStudent = null;
   document.getElementById("confirmBox").style.display = "none";
   clearError();
 }
-
 function confirmStudent(){
   if(!matchedStudent){
     showError("No student record selected.");
@@ -1376,7 +1326,6 @@ return `
       const questionPreview = String(q.question || "")
         .replace(/\s+/g, " ")
         .trim();
-
       return `
         <div
           class="student-test-question-row"
@@ -1402,7 +1351,6 @@ return `
   * {
     box-sizing: border-box;
   }
-
   body {
     margin: 0;
     min-height: 100vh;
@@ -1410,7 +1358,6 @@ return `
     color: #0f172a;
     background: #eef2ff;
   }
-
   .student-test-shell {
     min-height: 100vh;
     display: flex;
@@ -1418,7 +1365,6 @@ return `
       radial-gradient(circle at top left, rgba(79, 70, 229, 0.10), transparent 34%),
       linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
   }
-
   .student-test-sidebar {
     width: 280px;
     min-height: 100vh;
@@ -1429,7 +1375,6 @@ return `
     flex-direction: column;
     gap: 20px;
   }
-
   .student-test-brand {
     display: flex;
     align-items: center;
@@ -1437,7 +1382,6 @@ return `
     font-weight: 800;
     letter-spacing: -0.02em;
   }
-
   .student-test-brand-mark {
     width: 36px;
     height: 36px;
@@ -1448,39 +1392,33 @@ return `
     justify-content: center;
     font-weight: 800;
   }
-
   .student-test-sidebar-card {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 16px;
     padding: 16px;
   }
-
   .student-test-sidebar-label {
     font-size: 12px;
     color: #94a3b8;
     font-weight: 700;
     margin-bottom: 5px;
   }
-
   .student-test-sidebar-value {
     font-size: 15px;
     font-weight: 800;
     margin-bottom: 12px;
     word-break: break-word;
   }
-
   .student-test-sidebar-value:last-child {
     margin-bottom: 0;
   }
-
   .student-test-question-grid {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-top: 12px;
   }
-
   .student-test-question-row {
     display: grid;
     grid-template-columns: 44px 1fr;
@@ -1491,7 +1429,6 @@ return `
     background: #1e293b;
     border: 1px solid rgba(255, 255, 255, 0.10);
   }
-
   .student-test-question-number {
     height: 34px;
     border-radius: 10px;
@@ -1503,7 +1440,6 @@ return `
     font-weight: 800;
     font-size: 13px;
   }
-
   .student-test-question-preview {
     color: #e2e8f0;
     font-size: 12px;
@@ -1514,7 +1450,6 @@ return `
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
   .student-test-content {
     flex: 1;
     min-width: 0;
@@ -1522,7 +1457,6 @@ return `
     overflow: auto;
     padding: 28px;
   }
-
   .student-test-header {
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid #e2e8f0;
@@ -1531,28 +1465,24 @@ return `
     margin-bottom: 18px;
     box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
   }
-
   .student-test-header-top {
     display: flex;
     justify-content: space-between;
     gap: 18px;
     align-items: flex-start;
   }
-
   .student-test-title {
     margin: 0;
     font-size: 30px;
     line-height: 1.2;
     letter-spacing: -0.03em;
   }
-
   .student-test-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     margin-top: 14px;
   }
-
   .student-test-chip {
     background: #eef2ff;
     border: 1px solid #dbe4ff;
@@ -1562,18 +1492,15 @@ return `
     font-size: 13px;
     font-weight: 800;
   }
-
   .student-test-student-box {
     text-align: right;
     color: #475569;
     font-size: 13px;
     line-height: 1.5;
   }
-
   .student-test-student-box b {
     color: #0f172a;
   }
-
   .student-test-main-card {
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid #e2e8f0;
@@ -1581,14 +1508,12 @@ return `
     padding: 22px;
     box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
   }
-
   .student-test-actions {
     display: flex;
     gap: 10px;
     margin-top: 18px;
     align-items: center;
   }
-
   #submitBtn,
   #nextQuestionBtn {
     padding: 12px 16px;
@@ -1598,34 +1523,27 @@ return `
     cursor: pointer;
     font-weight: 800;
   }
-
   #nextQuestionBtn {
     background: #4f46e5;
   }
-
   #submitBtn {
     background: #16a34a;
   }
-
   @media (max-width: 900px) {
     .student-test-shell {
       flex-direction: column;
     }
-
     .student-test-sidebar {
       width: 100%;
       min-height: auto;
     }
-
     .student-test-content {
       height: auto;
       padding: 18px;
     }
-
     .student-test-header-top {
       flex-direction: column;
     }
-
     .student-test-student-box {
       text-align: left;
     }
@@ -1659,25 +1577,20 @@ cursor:pointer;
 Click to Start
 </button>
 </div>
-
 <div class="student-test-shell">
   <aside class="student-test-sidebar">
     <div class="student-test-brand">
       <div class="student-test-brand-mark">W</div>
       <div>WZDM Test</div>
     </div>
-
     <div class="student-test-sidebar-card">
       <div class="student-test-sidebar-label">Student</div>
       <div class="student-test-sidebar-value">${escapeHtml(studentNameForPage)}</div>
-
       <div class="student-test-sidebar-label">Class</div>
       <div class="student-test-sidebar-value">${escapeHtml(studentClassForPage)}</div>
-
       <div class="student-test-sidebar-label">Student ID</div>
       <div class="student-test-sidebar-value">${escapeHtml(studentIdForPage)}</div>
     </div>
-
     <div class="student-test-sidebar-card">
       <div class="student-test-sidebar-label">Questions</div>
       <div class="student-test-question-grid">
@@ -1685,7 +1598,6 @@ Click to Start
       </div>
     </div>
   </aside>
-
   <main class="student-test-content">
     <section class="student-test-header">
       <div class="student-test-header-top">
@@ -1697,7 +1609,6 @@ Click to Start
             <span class="student-test-chip">${testQuestions.length} questions</span>
           </div>
         </div>
-
         <div class="student-test-student-box">
           <div><b>${escapeHtml(studentNameForPage)}</b></div>
           <div>Class: ${escapeHtml(studentClassForPage)}</div>
@@ -1705,7 +1616,6 @@ Click to Start
         </div>
       </div>
     </section>
-
     <section class="student-test-main-card">
       <div
         id="questionTimerPanel"
@@ -1760,6 +1670,23 @@ window.__testId = testId;
 const testName = ${safeJsonForScript(test.name)};
 const studentId = ${safeJsonForScript(studentId)};
 window.codeMirrorEditors = window.codeMirrorEditors || {};
+function blockTestClipboardAction(event){
+  event.preventDefault();
+  return false;
+}
+["copy", "paste", "cut", "contextmenu", "dragstart", "drop"].forEach(eventName => {
+  document.addEventListener(eventName, blockTestClipboardAction);
+});
+document.addEventListener("keydown", function(event){
+  const key = String(event.key || "").toLowerCase();
+  if (
+    (event.ctrlKey || event.metaKey) &&
+    ["c", "v", "x"].includes(key)
+  ) {
+    event.preventDefault();
+    return false;
+  }
+});
 window.getCodeAnswer = function(qid){
   const editor = window.codeMirrorEditors?.[qid];
   if(editor){
