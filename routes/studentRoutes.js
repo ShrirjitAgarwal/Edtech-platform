@@ -1373,12 +1373,21 @@ return `
     const studentIdForPage =
       student.studentId || studentId || "N/A";
     const questionSidebarHtml = testQuestions.map((q, i) => {
+      const questionPreview = String(q.question || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
       return `
         <div
-          class="student-test-question-pill"
+          class="student-test-question-row"
           data-sidebar-question-index="${i}"
         >
-          ${i + 1}
+          <div class="student-test-question-number">
+            Q${i + 1}
+          </div>
+          <div class="student-test-question-preview">
+            ${escapeHtml(questionPreview || "Question")}
+          </div>
         </div>
       `;
     }).join("");
@@ -1466,14 +1475,25 @@ return `
   }
 
   .student-test-question-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     margin-top: 12px;
   }
 
-  .student-test-question-pill {
-    height: 36px;
+  .student-test-question-row {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 10px;
+    border-radius: 12px;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  .student-test-question-number {
+    height: 34px;
     border-radius: 10px;
     background: #334155;
     color: white;
@@ -1482,6 +1502,17 @@ return `
     justify-content: center;
     font-weight: 800;
     font-size: 13px;
+  }
+
+  .student-test-question-preview {
+    color: #e2e8f0;
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 700;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .student-test-content {
