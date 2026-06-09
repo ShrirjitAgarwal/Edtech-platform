@@ -243,92 +243,363 @@ ${pageReloadScript()}
 // ======================================================
 router.get("/student-entry", (req, res) => {
   res.send(`
-<body style="font-family:Arial;background:#eef2ff;padding:40px;">
-<div style="
-max-width:460px;
-margin:auto;
-background:white;
-padding:30px;
-border-radius:12px;
-">
-<h2>Student Login</h2>
-<div id="lookupForm">
-  <input
-    id="firstName"
-    placeholder="First Name"
-    style="width:100%;padding:10px;margin-bottom:15px;box-sizing:border-box;"
-  />
-  <input
-    id="lastName"
-    placeholder="Last Name"
-    style="width:100%;padding:10px;margin-bottom:15px;box-sizing:border-box;"
-  />
-  <input
-    id="studentId"
-    placeholder="Student ID"
-    style="width:100%;padding:10px;margin-bottom:15px;box-sizing:border-box;"
-  />
-  <button onclick="lookupStudent()" style="
-    width:100%;
-    padding:12px;
-    background:#4f46e5;
-    color:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    font-weight:700;
-  ">
-    Find My Record
-  </button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Login | WZDM</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --bg-soft: #eef2ff;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --success: #16a34a;
+    --secondary: #64748b;
+    --danger-bg: #fef2f2;
+    --danger-text: #991b1b;
+    --shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
+    --radius: 18px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(79, 70, 229, 0.12), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.10), transparent 30%),
+      linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  }
+
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    height: 72px;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+  }
+
+  .toplink {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 18px 48px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 480px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 30px;
+  }
+
+  .badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+  }
+
+  .subtitle {
+    margin: 10px auto 26px;
+    max-width: 360px;
+    text-align: center;
+    color: var(--muted);
+    line-height: 1.5;
+    font-size: 15px;
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 7px;
+    color: #334155;
+  }
+
+  .field input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 14px;
+    font-size: 15px;
+    outline: none;
+    background: white;
+  }
+
+  .field input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  }
+
+  .primary-btn,
+  .success-btn,
+  .secondary-btn {
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    color: white;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .primary-btn {
+    background: var(--primary);
+  }
+
+  .primary-btn:hover {
+    background: var(--primary-dark);
+  }
+
+  .success-btn {
+    background: var(--success);
+  }
+
+  .secondary-btn {
+    background: var(--secondary);
+  }
+
+  .error {
+    display: none;
+    margin: 0 0 14px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .confirm-box {
+    display: none;
+    margin-top: 20px;
+    background: #f8fafc;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+
+  .confirm-box h3 {
+    margin: 0 0 12px;
+    font-size: 18px;
+  }
+
+  .confirm-row {
+    margin: 8px 0;
+    color: #334155;
+    line-height: 1.45;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .secondary-actions {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .secondary-actions button {
+    border: none;
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .help-text {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .footer {
+    padding: 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  @media (max-width: 520px) {
+    .topbar {
+      padding: 0 18px;
+    }
+
+    .card {
+      padding: 24px 18px;
+    }
+
+    h1 {
+      font-size: 25px;
+    }
+
+    .confirm-actions {
+      flex-direction: column;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">W</div>
+      <div>WZDM</div>
+    </div>
+    <a class="toplink" href="/login">Login Options</a>
+  </header>
+
+  <main class="main">
+    <section class="card">
+      <div class="badge">S</div>
+      <h1>Student Login</h1>
+      <p class="subtitle">Enter your name and student ID to find your record and continue to your assigned tests.</p>
+
+      <p id="errorBox" class="error"></p>
+
+      <div id="lookupForm" class="form">
+        <div class="field">
+          <label for="firstName">First Name</label>
+          <input id="firstName" placeholder="Enter first name" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label for="lastName">Last Name</label>
+          <input id="lastName" placeholder="Enter last name" autocomplete="family-name">
+        </div>
+        <div class="field">
+          <label for="studentId">Student ID</label>
+          <input id="studentId" placeholder="Enter student ID" autocomplete="off">
+        </div>
+        <button class="primary-btn" type="button" onclick="lookupStudent()">Find My Record</button>
+      </div>
+
+      <div id="confirmBox" class="confirm-box"></div>
+
+      <div class="secondary-actions">
+        <button type="button" onclick="window.location.replace('/login')">← Back to login options</button>
+        <p class="help-text">Having trouble signing in? Please contact your teacher or school admin.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    © 2026 WZDM Assessment Platform. All rights reserved.
+  </footer>
 </div>
-<div
-  id="errorBox"
-  style="
-    display:none;
-    margin-top:16px;
-    color:#dc2626;
-    font-weight:700;
-  "
-></div>
-<div
-  id="confirmBox"
-  style="
-    display:none;
-    margin-top:20px;
-    background:#f8fafc;
-    padding:18px;
-    border-radius:12px;
-    border:1px solid #e5e7eb;
-  "
-></div>
-</div>
+
 <script>
 localStorage.clear();
 let matchedStudent = null;
+
 function escapeHtml(value){
   const div = document.createElement("div");
   div.textContent = String(value || "");
   return div.innerHTML;
 }
+
 function showError(message){
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "block";
   errorBox.innerText = message;
 }
+
 function clearError(){
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "none";
   errorBox.innerText = "";
 }
+
 function lookupStudent(){
   clearError();
   const firstName = document.getElementById("firstName").value.trim();
   const lastName = document.getElementById("lastName").value.trim();
   const studentId = document.getElementById("studentId").value.trim();
+
   if(!firstName || !lastName || !studentId){
     showError("Please enter first name, last name, and student ID.");
     return;
   }
+
   fetch("/api/student/lookup", {
     method:"POST",
     headers:{
@@ -348,46 +619,32 @@ function lookupStudent(){
       showError(data.error);
       return;
     }
+
     matchedStudent = data.student;
-    document.getElementById("confirmBox").style.display = "block";
-    document.getElementById("confirmBox").innerHTML =
-      "<h3 style='margin-top:0;'>Confirm Your Details</h3>" +
-      "<p><b>Name:</b> " + escapeHtml(matchedStudent.name) + "</p>" +
-      "<p><b>Class ID:</b> " + escapeHtml(matchedStudent.class) + "</p>" +
-      "<p><b>Student ID:</b> " + escapeHtml(matchedStudent.studentId) + "</p>" +
-      "<p><b>School:</b> " + escapeHtml(matchedStudent.schoolName) + "</p>" +
-      "<div style='display:flex;gap:10px;margin-top:18px;'>" +
-        "<button onclick='confirmStudent()' style='" +
-          "flex:1;" +
-          "padding:12px;" +
-          "background:#16a34a;" +
-          "color:white;" +
-          "border:none;" +
-          "border-radius:8px;" +
-          "cursor:pointer;" +
-          "font-weight:700;" +
-        "'>Confirm</button>" +
-        "<button onclick='resetLookup()' style='" +
-          "flex:1;" +
-          "padding:12px;" +
-          "background:#64748b;" +
-          "color:white;" +
-          "border:none;" +
-          "border-radius:8px;" +
-          "cursor:pointer;" +
-          "font-weight:700;" +
-        "'>Go Back</button>" +
+    const confirmBox = document.getElementById("confirmBox");
+    confirmBox.style.display = "block";
+    confirmBox.innerHTML =
+      "<h3>Confirm Your Details</h3>" +
+      "<p class='confirm-row'><b>Name:</b> " + escapeHtml(matchedStudent.name) + "</p>" +
+      "<p class='confirm-row'><b>Class ID:</b> " + escapeHtml(matchedStudent.class) + "</p>" +
+      "<p class='confirm-row'><b>Student ID:</b> " + escapeHtml(matchedStudent.studentId) + "</p>" +
+      "<p class='confirm-row'><b>School:</b> " + escapeHtml(matchedStudent.schoolName) + "</p>" +
+      "<div class='confirm-actions'>" +
+        "<button class='success-btn' type='button' onclick='confirmStudent()'>Confirm</button>" +
+        "<button class='secondary-btn' type='button' onclick='resetLookup()'>Go Back</button>" +
       "</div>";
   })
   .catch(() => {
     showError("Lookup failed. Please try again.");
   });
 }
+
 function resetLookup(){
   matchedStudent = null;
   document.getElementById("confirmBox").style.display = "none";
   clearError();
 }
+
 function confirmStudent(){
   if(!matchedStudent){
     showError("No student record selected.");
@@ -400,6 +657,7 @@ function confirmStudent(){
 </script>
 ${pageReloadScript()}
 </body>
+</html>
 `);
 });
 // ======================================================
