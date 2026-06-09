@@ -1429,22 +1429,18 @@ return `
     background: #1e293b;
     border: 1px solid rgba(255, 255, 255, 0.10);
   }
-
   .student-test-question-row.is-current {
     border-color: #818cf8;
     background: rgba(79, 70, 229, 0.22);
   }
-
   .student-test-question-row.is-answered {
     border-color: rgba(34, 197, 94, 0.65);
     background: rgba(22, 163, 74, 0.18);
   }
-
   .student-test-question-row.is-skipped {
     border-color: rgba(234, 179, 8, 0.75);
     background: rgba(234, 179, 8, 0.18);
   }
-
   .student-test-question-number {
     height: 34px;
     border-radius: 10px;
@@ -1456,15 +1452,12 @@ return `
     font-weight: 800;
     font-size: 13px;
   }
-
   .student-test-question-row.is-current .student-test-question-number {
     background: #4f46e5;
   }
-
   .student-test-question-row.is-answered .student-test-question-number {
     background: #16a34a;
   }
-
   .student-test-question-row.is-skipped .student-test-question-number {
     background: #ca8a04;
   }
@@ -1543,6 +1536,8 @@ return `
     align-items: center;
   }
   #submitBtn,
+  #previousQuestionBtn,
+  #skipQuestionBtn,
   #nextQuestionBtn {
     padding: 12px 16px;
     color: white;
@@ -1554,8 +1549,21 @@ return `
   #nextQuestionBtn {
     background: #4f46e5;
   }
+  #previousQuestionBtn {
+    background: #64748b;
+  }
+  #skipQuestionBtn {
+    background: #ca8a04;
+  }
   #submitBtn {
     background: #16a34a;
+  }
+  #previousQuestionBtn:disabled,
+  #skipQuestionBtn:disabled,
+  #nextQuestionBtn:disabled,
+  #submitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
   @media (max-width: 900px) {
     .student-test-shell {
@@ -1677,6 +1685,20 @@ Click to Start
       </div>
     ${html}
     <div class="student-test-actions">
+      <button
+        id="previousQuestionBtn"
+        onclick="goToPreviousQuestion()"
+        style="display:none;"
+      >
+        Previous Question
+      </button>
+      <button
+        id="skipQuestionBtn"
+        onclick="skipCurrentQuestion()"
+        style="display:none;"
+      >
+        Skip Question
+      </button>
       <button
         id="nextQuestionBtn"
         onclick="goToNextQuestion('answered')"
@@ -1839,6 +1861,8 @@ document.querySelectorAll(".code-editor").forEach(editor => {
   }
   editor.addEventListener("input", function(){
     localStorage.setItem(storageKey, editor.value);
+    answeredQuestions[String(questionId)] = true;
+    delete skippedQuestions[String(questionId)];
     updateQuestionCompletion(questionId);
   });
 });
@@ -1847,31 +1871,26 @@ let questionTimerInterval = null;
 let questionTimeRemaining = 0;
 let timedOutQuestions = {};
 let skippedQuestions = {};
-
+let answeredQuestions = {};
 function updateSidebarQuestionStatus(){
   document.querySelectorAll(".student-test-question-row").forEach(row => {
     const index = Number(row.dataset.sidebarQuestionIndex);
     const q = qs[index];
-
     row.classList.remove("is-current", "is-answered", "is-skipped");
-
     if(!q){
       return;
     }
-
     const qid = String(q._id);
-
+    if(index === currentQuestionIndex && currentQuestionIndex < qs.length){
+      row.classList.add("is-current");
+      return;
+    }
     if(skippedQuestions[qid]){
       row.classList.add("is-skipped");
       return;
     }
-
     if(isQuestionAnswered(qid)){
       row.classList.add("is-answered");
-    }
-
-    if(index === currentQuestionIndex && currentQuestionIndex < qs.length){
-      row.classList.add("is-current");
     }
   });
 }
@@ -1896,36 +1915,38 @@ function isQuestionAnswered(qid){
     return false;
   }
   if(q.type === "coding"){
-    return String(window.getCodeAnswer(qid) || "").trim().length > 0;
+    return Boolean(answeredQuestions[String(qid)]) &&
+      String(window.getCodeAnswer(qid) || "").trim().length > 0;
   }
   const checked = document.querySelectorAll('input[name="q' + qid + '"]:checked');
   return checked.length > 0;
 }
 function updateQuestionCompletion(qid){
+  const qidKey = String(qid);
+  if(isQuestionAnswered(qidKey)){
+    answeredQuestions[qidKey] = true;
+    delete skippedQuestions[qidKey];
+  }
   updateSidebarQuestionStatus();
-
   if(!questionTimersEnabled){
     return;
   }
-
   const currentQuestion = qs[currentQuestionIndex];
-
   if(!currentQuestion || String(currentQuestion._id) !== String(qid)){
     return;
   }
-
   const nextBtn = document.getElementById("nextQuestionBtn");
-
   if(!nextBtn){
     return;
   }
-
   nextBtn.style.display = isQuestionAnswered(qid) ? "inline-block" : "none";
 }
 function showCurrentQuestion(){
   const cards = document.querySelectorAll(".test-question-card");
   const timerPanel = document.getElementById("questionTimerPanel");
   const nextBtn = document.getElementById("nextQuestionBtn");
+  const previousBtn = document.getElementById("previousQuestionBtn");
+  const skipBtn = document.getElementById("skipQuestionBtn");
   const submitBtn = document.getElementById("submitBtn");
   cards.forEach(card => {
     card.style.display = "none";
@@ -1936,6 +1957,13 @@ function showCurrentQuestion(){
   }
   if(timerPanel){
     timerPanel.style.display = "block";
+  }
+  if(previousBtn){
+    previousBtn.style.display = questionTimersEnabled ? "inline-block" : "none";
+    previousBtn.disabled = currentQuestionIndex <= 0;
+  }
+  if(skipBtn){
+    skipBtn.style.display = questionTimersEnabled ? "inline-block" : "none";
   }
   if(nextBtn){
     nextBtn.style.display = "none";
@@ -1984,21 +2012,64 @@ function startQuestionTimer(q){
     }
   }, 1000);
 }
+function goToQuestionIndex(index){
+  if(!questionTimersEnabled){
+    return;
+  }
+  if(index < 0 || index >= qs.length){
+    return;
+  }
+  clearInterval(questionTimerInterval);
+  currentQuestionIndex = index;
+  showCurrentQuestion();
+}
+function goToPreviousQuestion(){
+  goToQuestionIndex(currentQuestionIndex - 1);
+}
+function skipCurrentQuestion(){
+  if(!questionTimersEnabled){
+    return;
+  }
+  const currentQuestion = qs[currentQuestionIndex];
+  if(currentQuestion){
+    const qid = String(currentQuestion._id);
+    if(!isQuestionAnswered(qid)){
+      skippedQuestions[qid] = true;
+    }
+  }
+  goToNextQuestion("skipped");
+}
 function goToNextQuestion(reason){
   if(!questionTimersEnabled){
     return;
+  }
+  const currentQuestion = qs[currentQuestionIndex];
+  if(currentQuestion && reason === "answered"){
+    const qid = String(currentQuestion._id);
+    if(isQuestionAnswered(qid)){
+      answeredQuestions[qid] = true;
+      delete skippedQuestions[qid];
+    }
   }
   clearInterval(questionTimerInterval);
   currentQuestionIndex++;
   if(currentQuestionIndex >= qs.length){
     const timerPanel = document.getElementById("questionTimerPanel");
     const nextBtn = document.getElementById("nextQuestionBtn");
+    const previousBtn = document.getElementById("previousQuestionBtn");
+    const skipBtn = document.getElementById("skipQuestionBtn");
     const submitBtn = document.getElementById("submitBtn");
     document.querySelectorAll(".test-question-card").forEach(card => {
       card.style.display = "block";
     });
     if(timerPanel){
       timerPanel.style.display = "none";
+    }
+    if(previousBtn){
+      previousBtn.style.display = "none";
+    }
+    if(skipBtn){
+      skipBtn.style.display = "none";
     }
     if(nextBtn){
       nextBtn.style.display = "none";
@@ -2021,10 +2092,21 @@ function initializeQuestionTimers(){
       if(!card){
         return;
       }
+      const qid = String(card.dataset.questionId || "");
+      if(qid){
+        answeredQuestions[qid] = true;
+        delete skippedQuestions[qid];
+      }
       updateQuestionCompletion(card.dataset.questionId);
     });
   });
   showCurrentQuestion();
+    document.querySelectorAll(".student-test-question-row").forEach(row => {
+    row.addEventListener("click", function(){
+      const index = Number(row.dataset.sidebarQuestionIndex);
+      goToQuestionIndex(index);
+    });
+  });
   updateSidebarQuestionStatus();
   window.updateQuestionCompletion = updateQuestionCompletion;
 }
@@ -2274,6 +2356,8 @@ const savedLanguage = question?.codingMeta?.language || "javascript";
           if(textarea){
             textarea.value = value;
           }
+          answeredQuestions[String(questionId)] = true;
+          delete skippedQuestions[String(questionId)];
           if(typeof window.updateQuestionCompletion === "function"){
             window.updateQuestionCompletion(questionId);
           }
