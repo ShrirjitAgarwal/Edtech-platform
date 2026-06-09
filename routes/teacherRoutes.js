@@ -130,11 +130,11 @@ document.addEventListener("click", function(event){
     closeCustomDropdowns();
   }
 });
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  if(!user){
-    return window.location.replace("/");
-  }
-  const teacherId = user._id || user.id;
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user){
+return window.location.replace("/");
+}
+const teacherId = user._id || user.id;
   document.getElementById("dashboard").innerHTML =
     "<p style='color:#64748b;'>Loading dashboard...</p>";
 fetch("/api/teacher-dashboard-data")
@@ -635,11 +635,10 @@ window.onload = function(){
     div.textContent = String(value || "");
     return div.innerHTML;
   }
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  if(!user){
-    return window.location.replace("/");
-  }
-  const teacherId = user._id || user.id;
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user){
+return window.location.replace("/");
+}
   const students = ${safeJsonForScript(students)};
   const teachers = ${safeJsonForScript(teachers)};
   const teacherMap = {};
@@ -856,9 +855,8 @@ document.addEventListener("click", function(event){
 });
 const user = JSON.parse(localStorage.getItem("user") || "null");
 if(!user){
-  return window.location.replace("/");
+return window.location.replace("/");
 }
-const teacherId = user._id || user.id;
 let classesData = [];
 let studentsData = [];
 let teachersData = [];
@@ -936,20 +934,17 @@ function renderClasses(){
     teacherMap[t._id] = t.name;
   });
   const selected = document.getElementById("classFilter").value || "all";
-  const teacherResults = resultsData.filter(r =>
-    String(r.teacherId) === String(teacherId)
-  );
+const teacherResults = resultsData;
   const visibleClasses = classesData.filter(c => {
     if(selected === "all") return true;
     return String(c.name || "") === String(selected);
   });
   let html = "";
   visibleClasses.forEach(c => {
-    const classStudents = studentsData.filter(s =>
-      String(s.class || "").trim().toUpperCase() ===
-      String(c.name || "").trim().toUpperCase() &&
-      String(s.teacherId) === String(teacherId)
-    );
+const classStudents = studentsData.filter(s =>
+ String(s.class || "").trim().toUpperCase() ===
+ String(c.name || "").trim().toUpperCase()
+);
     const studentCards = classStudents.length
       ? classStudents.map(s => {
         const safeStudentId = jsString(s.studentId);
