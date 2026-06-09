@@ -1429,6 +1429,22 @@ return `
     background: #1e293b;
     border: 1px solid rgba(255, 255, 255, 0.10);
   }
+
+  .student-test-question-row.is-current {
+    border-color: #818cf8;
+    background: rgba(79, 70, 229, 0.22);
+  }
+
+  .student-test-question-row.is-answered {
+    border-color: rgba(34, 197, 94, 0.65);
+    background: rgba(22, 163, 74, 0.18);
+  }
+
+  .student-test-question-row.is-skipped {
+    border-color: rgba(234, 179, 8, 0.75);
+    background: rgba(234, 179, 8, 0.18);
+  }
+
   .student-test-question-number {
     height: 34px;
     border-radius: 10px;
@@ -1439,6 +1455,18 @@ return `
     justify-content: center;
     font-weight: 800;
     font-size: 13px;
+  }
+
+  .student-test-question-row.is-current .student-test-question-number {
+    background: #4f46e5;
+  }
+
+  .student-test-question-row.is-answered .student-test-question-number {
+    background: #16a34a;
+  }
+
+  .student-test-question-row.is-skipped .student-test-question-number {
+    background: #ca8a04;
   }
   .student-test-question-preview {
     color: #e2e8f0;
@@ -1818,6 +1846,35 @@ let currentQuestionIndex = 0;
 let questionTimerInterval = null;
 let questionTimeRemaining = 0;
 let timedOutQuestions = {};
+let skippedQuestions = {};
+
+function updateSidebarQuestionStatus(){
+  document.querySelectorAll(".student-test-question-row").forEach(row => {
+    const index = Number(row.dataset.sidebarQuestionIndex);
+    const q = qs[index];
+
+    row.classList.remove("is-current", "is-answered", "is-skipped");
+
+    if(!q){
+      return;
+    }
+
+    const qid = String(q._id);
+
+    if(skippedQuestions[qid]){
+      row.classList.add("is-skipped");
+      return;
+    }
+
+    if(isQuestionAnswered(qid)){
+      row.classList.add("is-answered");
+    }
+
+    if(index === currentQuestionIndex && currentQuestionIndex < qs.length){
+      row.classList.add("is-current");
+    }
+  });
+}
 function getQuestionDurationSeconds(q){
   const difficulty = String(q.difficulty || "medium").toLowerCase();
   if(difficulty === "easy"){
@@ -1845,17 +1902,24 @@ function isQuestionAnswered(qid){
   return checked.length > 0;
 }
 function updateQuestionCompletion(qid){
+  updateSidebarQuestionStatus();
+
   if(!questionTimersEnabled){
     return;
   }
+
   const currentQuestion = qs[currentQuestionIndex];
+
   if(!currentQuestion || String(currentQuestion._id) !== String(qid)){
     return;
   }
+
   const nextBtn = document.getElementById("nextQuestionBtn");
+
   if(!nextBtn){
     return;
   }
+
   nextBtn.style.display = isQuestionAnswered(qid) ? "inline-block" : "none";
 }
 function showCurrentQuestion(){
@@ -1898,6 +1962,7 @@ function showCurrentQuestion(){
     }
   }
   updateQuestionCompletion(String(currentQuestion._id));
+  updateSidebarQuestionStatus();
   startQuestionTimer(currentQuestion);
 }
 function startQuestionTimer(q){
@@ -1941,6 +2006,7 @@ function goToNextQuestion(reason){
     if(submitBtn){
       submitBtn.style.display = "inline-block";
     }
+    updateSidebarQuestionStatus();
     return;
   }
   showCurrentQuestion();
@@ -1959,6 +2025,7 @@ function initializeQuestionTimers(){
     });
   });
   showCurrentQuestion();
+  updateSidebarQuestionStatus();
   window.updateQuestionCompletion = updateQuestionCompletion;
 }
 document.getElementById("startExamBtn").onclick = function(){
