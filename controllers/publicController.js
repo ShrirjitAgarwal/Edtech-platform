@@ -23,7 +23,6 @@ exports.loginPage = (req, res) => {
       ? "T"
       : "W";
   const roleScriptValue = JSON.stringify(selectedRole || "all");
-
   res.send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -44,11 +43,9 @@ exports.loginPage = (req, res) => {
     --shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
     --radius: 18px;
   }
-
   * {
     box-sizing: border-box;
   }
-
   body {
     margin: 0;
     min-height: 100vh;
@@ -59,13 +56,11 @@ exports.loginPage = (req, res) => {
       radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.10), transparent 30%),
       linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
   }
-
   .page {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
   }
-
   .topbar {
     height: 72px;
     padding: 0 28px;
@@ -73,7 +68,6 @@ exports.loginPage = (req, res) => {
     align-items: center;
     justify-content: space-between;
   }
-
   .brand {
     display: flex;
     align-items: center;
@@ -82,7 +76,6 @@ exports.loginPage = (req, res) => {
     color: var(--text);
     letter-spacing: -0.02em;
   }
-
   .brand-mark {
     width: 36px;
     height: 36px;
@@ -94,14 +87,12 @@ exports.loginPage = (req, res) => {
     justify-content: center;
     font-weight: 800;
   }
-
   .toplink {
     color: var(--primary);
     text-decoration: none;
     font-size: 14px;
     font-weight: 700;
   }
-
   .main {
     flex: 1;
     display: flex;
@@ -109,7 +100,6 @@ exports.loginPage = (req, res) => {
     justify-content: center;
     padding: 32px 18px 48px;
   }
-
   .card {
     width: 100%;
     max-width: 480px;
@@ -119,7 +109,6 @@ exports.loginPage = (req, res) => {
     box-shadow: var(--shadow);
     padding: 30px;
   }
-
   .badge {
     width: 56px;
     height: 56px;
@@ -133,7 +122,6 @@ exports.loginPage = (req, res) => {
     font-size: 24px;
     font-weight: 800;
   }
-
   h1 {
     margin: 0;
     text-align: center;
@@ -141,7 +129,6 @@ exports.loginPage = (req, res) => {
     line-height: 1.2;
     letter-spacing: -0.03em;
   }
-
   .subtitle {
     margin: 10px auto 26px;
     max-width: 360px;
@@ -150,13 +137,11 @@ exports.loginPage = (req, res) => {
     line-height: 1.5;
     font-size: 15px;
   }
-
   .role-list {
     display: flex;
     flex-direction: column;
     gap: 14px;
   }
-
   .role-card {
     width: 100%;
     border: 1px solid var(--border);
@@ -171,19 +156,16 @@ exports.loginPage = (req, res) => {
     text-align: left;
     transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
-
   .role-card:hover {
     border-color: var(--primary);
     transform: translateY(-1px);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   }
-
   .role-left {
     display: flex;
     align-items: center;
     gap: 14px;
   }
-
   .role-icon {
     width: 42px;
     height: 42px;
@@ -196,14 +178,12 @@ exports.loginPage = (req, res) => {
     font-weight: 800;
     flex: 0 0 auto;
   }
-
   .role-title {
     display: block;
     font-size: 16px;
     font-weight: 800;
     color: var(--text);
   }
-
   .role-copy {
     display: block;
     margin-top: 3px;
@@ -211,18 +191,15 @@ exports.loginPage = (req, res) => {
     color: var(--muted);
     line-height: 1.35;
   }
-
   .arrow {
     color: var(--muted);
     font-weight: 800;
   }
-
   .form {
     display: flex;
     flex-direction: column;
     gap: 14px;
   }
-
   .field label {
     display: block;
     font-size: 13px;
@@ -230,7 +207,6 @@ exports.loginPage = (req, res) => {
     margin-bottom: 7px;
     color: #334155;
   }
-
   .field input {
     width: 100%;
     border: 1px solid var(--border);
@@ -240,12 +216,10 @@ exports.loginPage = (req, res) => {
     outline: none;
     background: white;
   }
-
   .field input:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
   }
-
   .primary-btn {
     width: 100%;
     border: none;
@@ -258,18 +232,15 @@ exports.loginPage = (req, res) => {
     cursor: pointer;
     margin-top: 4px;
   }
-
   .primary-btn:hover {
     background: var(--primary-dark);
   }
-
   .secondary-actions {
     margin-top: 22px;
     padding-top: 18px;
     border-top: 1px solid var(--border);
     text-align: center;
   }
-
   .secondary-actions a,
   .secondary-actions button {
     border: none;
@@ -280,14 +251,12 @@ exports.loginPage = (req, res) => {
     font-size: 14px;
     font-weight: 800;
   }
-
   .help-text {
     margin: 12px 0 0;
     color: var(--muted);
     font-size: 13px;
     line-height: 1.45;
   }
-
   .error {
     display: none;
     margin: 0 0 14px;
@@ -299,23 +268,19 @@ exports.loginPage = (req, res) => {
     font-weight: 700;
     text-align: left;
   }
-
   .footer {
     padding: 18px;
     text-align: center;
     color: var(--muted);
     font-size: 12px;
   }
-
   @media (max-width: 520px) {
     .topbar {
       padding: 0 18px;
     }
-
     .card {
       padding: 24px 18px;
     }
-
     h1 {
       font-size: 25px;
     }
@@ -331,13 +296,11 @@ exports.loginPage = (req, res) => {
     </div>
     <a class="toplink" href="/platform-login">Platform Admin</a>
   </header>
-
   <main class="main">
     <section class="card">
       <div class="badge">${badgeText}</div>
       <h1>${pageTitle}</h1>
       <p class="subtitle">${pageSubtitle}</p>
-
       ${
         isRoleForm
           ? `
@@ -370,7 +333,6 @@ exports.loginPage = (req, res) => {
                 </span>
                 <span class="arrow">›</span>
               </button>
-
               <button class="role-card" type="button" onclick="goTeacher()">
                 <span class="role-left">
                   <span class="role-icon">T</span>
@@ -381,7 +343,6 @@ exports.loginPage = (req, res) => {
                 </span>
                 <span class="arrow">›</span>
               </button>
-
               <button class="role-card" type="button" onclick="goAdmin()">
                 <span class="role-left">
                   <span class="role-icon">A</span>
@@ -393,7 +354,6 @@ exports.loginPage = (req, res) => {
                 <span class="arrow">›</span>
               </button>
             </div>
-
             <div class="secondary-actions">
               <a href="mailto:support@wzdm.io">Need help? Contact support</a>
               <p class="help-text">New to the platform? Request a demo from the WZDM team.</p>
@@ -402,23 +362,18 @@ exports.loginPage = (req, res) => {
       }
     </section>
   </main>
-
   <footer class="footer">
     © 2026 WZDM Assessment Platform. All rights reserved.
   </footer>
 </div>
-
 <script>
 localStorage.clear();
-
 window.addEventListener("pageshow", function(event){
   if(event.persisted){
     window.location.reload();
   }
 });
-
 const selectedRole = ${roleScriptValue};
-
 function showError(message){
   const errorBox = document.getElementById("errorBox");
   if(!errorBox){
@@ -428,7 +383,6 @@ function showError(message){
   errorBox.style.display = "block";
   errorBox.textContent = message;
 }
-
 function getErrorMessage(errorValue){
   if(!errorValue){
     return "Something went wrong";
@@ -444,28 +398,22 @@ function getErrorMessage(errorValue){
   }
   return "Something went wrong";
 }
-
 function goStudent(){
   window.location.replace("/student-entry");
 }
-
 function goTeacher(){
   window.location.replace("/login?role=teacher");
 }
-
 function goAdmin(){
   window.location.replace("/login?role=admin");
 }
-
 function login(){
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
-
   if(!email || !password){
     showError("Enter email and password");
     return;
   }
-
   fetch("/login", {
     method:"POST",
     headers:{
@@ -482,33 +430,26 @@ function login(){
       showError(getErrorMessage(data.error));
       return;
     }
-
     if(selectedRole === "admin" && data.user.role !== "admin"){
       showError("This is not an admin account.");
       return;
     }
-
     if(selectedRole === "teacher" && data.user.role !== "teacher"){
       showError("This is not a teacher account.");
       return;
     }
-
     localStorage.setItem("user", JSON.stringify(data.user));
-
     if(data.student){
       localStorage.setItem("student", JSON.stringify(data.student));
     }
-
     if(data.user.role === "admin"){
       window.location.replace("/school-dashboard");
       return;
     }
-
     if(data.user.role === "teacher"){
       window.location.replace("/teacher");
       return;
     }
-
     window.location.replace("/my-tests");
   })
   .catch(() => {

@@ -1270,7 +1270,6 @@ window.loadResultPreview = function(testId, studentId, className){
         '<div>' +
         body +
         '</div>';
-
       const backButton = document.getElementById("backToStudentButton");
       if(backButton){
         backButton.addEventListener("click", function(){
