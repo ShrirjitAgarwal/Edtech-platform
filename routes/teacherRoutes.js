@@ -48,7 +48,7 @@ function safeJsonForScript(value) {
     .replace(/\u2029/g, "\\u2029");
 }
 // ---------- TEACHER DASHBOARD ----------
-router.get("/teacher", async (req, res) => {
+router.get("/teacher", authMiddleware, async (req, res) => {
   try {
     const content = `
 ${teacherGuardScript()}
@@ -600,18 +600,39 @@ const classes = mappedClassDocs.map(mappedClass => ({
   }
 });
 // ---------- VIEW STUDENTS ----------
-router.get("/students", async (req, res) => {
+router.get("/students", authMiddleware, async (req, res) => {
   try {
-    const studentsRaw = await Student.find();
-    const teachers = await User.find({ role: "teacher" });
-    const students = studentsRaw.map(s => ({
-      name: s.name,
-      class: s.class,
-      studentId: s.studentId,
-      teacherId: String(s.teacherId)
-    }));
+    if (!req.user || req.user.role !== "teacher") {
+      return res.status(403).send("Access denied");
+    }
+
+    const teacherId = String(req.user.id);
+    const schoolId = req.user.schoolId || null;
+
+    const students = await Student.find({
+      teacherId,
+      ...(schoolId ? { schoolId } : {})
+    })
+      .select("name class studentId teacherId")
+      .sort({ class: 1, name: 1 })
+      .lean();
+
+    const rows = students.map(s => {
+      const studentIdForJs = safeJsonForScript(String(s.studentId || ""));
+      return `
+<tr
+style="cursor:pointer;"
+onclick='viewStudent(${studentIdForJs})'
+>
+<td>${escapeHtml(s.name || "-")}</td>
+<td>${escapeHtml(s.class || "-")}</td>
+<td>${escapeHtml(s.studentId || "-")}</td>
+<td>${escapeHtml(req.user.name || req.user.email || "Teacher")}</td>
+</tr>
+`;
+    }).join("");
+
     const content = `
-${teacherGuardScript()}
 <h1 style="margin-bottom:20px;">Students</h1>
 <table border="1" cellpadding="10"
 style="
@@ -627,42 +648,11 @@ overflow:hidden;
 <th>Student ID</th>
 <th>Teacher</th>
 </tr>
-<tbody id="studentBody"></tbody>
+<tbody>
+${rows || "<tr><td colspan='4'>No students found</td></tr>"}
+</tbody>
 </table>
 <script>
-window.onload = function(){
-  function escapeClientHtml(value){
-    const div = document.createElement("div");
-    div.textContent = String(value || "");
-    return div.innerHTML;
-  }
-const user = JSON.parse(localStorage.getItem("user") || "null");
-if(!user){
-return window.location.replace("/");
-}
-  const students = ${safeJsonForScript(students)};
-  const teachers = ${safeJsonForScript(teachers)};
-  const teacherMap = {};
-  teachers.forEach(t => {
-    teacherMap[t._id] = t.name;
-  });
-  const filtered = students.filter(s =>
-    String(s.teacherId) === String(teacherId)
-  );
-  const rows = filtered.map(s => \`
-<tr
-style="cursor:pointer;"
-onclick='viewStudent(\${JSON.stringify(String(s.studentId || ""))})'
->
-<td>\${escapeClientHtml(s.name)}</td>
-<td>\${escapeClientHtml(s.class)}</td>
-<td>\${escapeClientHtml(s.studentId)}</td>
-<td>\${escapeClientHtml(teacherMap[s.teacherId] || "Unknown")}</td>
-</tr>
-\`).join("");
-  document.getElementById("studentBody").innerHTML =
-    rows || "<tr><td colspan='4'>No students found</td></tr>";
-};
 function viewStudent(studentId){
   window.location.replace(
     "/student?studentId=" + encodeURIComponent(studentId)
@@ -672,12 +662,12 @@ function viewStudent(studentId){
 `;
     res.send(layout(content, "students"));
   } catch (err) {
-    console.error(err);
+    console.error("TEACHER STUDENTS PAGE ERROR:", err);
     res.send("Error loading students");
   }
 });
 // ---------- VIEW CLASSES ----------
-router.get("/classes", async (req, res) => {
+router.get("/classes", authMiddleware, async (req, res) => {
   try {
     const content = `
 ${teacherGuardScript()}
