@@ -1123,7 +1123,7 @@ margin-bottom:15px;
     <p style="margin:0;color:#64748b;">ID: \${escapeHtml(student.studentId)}</p>
     <p style="margin:4px 0 0 0;color:#64748b;">Class: \${escapeHtml(student.class)}</p>
   </div>
-  <button onclick="downloadStudentReport(\${safeStudentId})" style="
+  <button onclick='downloadStudentReport(\${safeStudentId})' style="
     padding:10px 14px;
     background:#4f46e5;
     color:white;
