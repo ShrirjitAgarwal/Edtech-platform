@@ -302,6 +302,7 @@ async function getStudentTestsHandler(req, res) {
       .lean();
     const attempted = await Result.find({
       studentId,
+      teacherId,
       ...(student.schoolId ? { schoolId: student.schoolId } : {})
     })
       .select("testId")

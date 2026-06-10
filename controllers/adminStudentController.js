@@ -297,6 +297,7 @@ exports.updateStudentClassFromAdmin = async (req, res) => {
     const Student = require("../models/Student");
     const ClassModel = require("../models/Class");
     const User = require("../models/User");
+    const Result = require("../models/Result");
     const studentMongoId = String(req.body.studentMongoId || "").trim();
     const className = String(req.body.className || "").trim().toUpperCase();
     const teacherId = String(req.body.teacherId || "").trim();
@@ -341,9 +342,23 @@ exports.updateStudentClassFromAdmin = async (req, res) => {
     const previousClassName = student.class;
     const previousTeacherId = student.teacherId;
     const studentId = student.studentId;
+
     student.class = className;
     student.teacherId = teacherId;
     await student.save();
+
+    await Result.updateMany(
+      {
+        studentId,
+        ...schoolFilter
+      },
+      {
+        $set: {
+          class: className,
+          teacherId
+        }
+      }
+    );
     if (previousClassName && previousClassName !== className) {
       await ClassModel.updateOne(
         {
