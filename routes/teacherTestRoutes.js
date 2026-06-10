@@ -26,6 +26,13 @@ function safeJsonForScript(value) {
     .replace(/\u2028/g, "\\u2028")
     .replace(/\u2029/g, "\\u2029");
 }
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildExactNameRegex(value) {
+  return new RegExp("^" + escapeRegExp(String(value || "").trim()) + "$", "i");
+}
 // ---------- TEACHER TEST LIST ----------
 router.get("/teacher-tests", authMiddleware, async (req, res) => {
   const content = `
@@ -1380,9 +1387,10 @@ res.send("Error loading create test");
 async function saveTestHandler(req, res) {
   try {
     const { testId, name, questionIds, className, subject } = req.body;
-    if (!name || !Array.isArray(questionIds) || !questionIds.length) {
-  return res.status(400).json({ error: "Invalid test data" });
-}
+    const normalizedName = String(name || "").trim();
+    if (!normalizedName || !Array.isArray(questionIds) || !questionIds.length) {
+      return res.status(400).json({ error: "Invalid test data" });
+    }
     if (!className || !subject) {
       return res.status(400).json({ error: "Class and subject required" });
     }
@@ -1401,7 +1409,28 @@ const mapping = await ClassSubject.findOne({
         error: "You are not assigned to this class and subject"
       });
     }
-        if (testId) {
+
+    const duplicateNameFilter = {
+      name: buildExactNameRegex(normalizedName),
+      teacherId: String(req.user.id),
+      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+    };
+
+    if (testId) {
+      duplicateNameFilter._id = { $ne: testId };
+    }
+
+    const duplicateTest = await Test.findOne(duplicateNameFilter)
+      .select("_id name")
+      .lean();
+
+    if (duplicateTest) {
+      return res.status(409).json({
+        error: "You already have a test with this name. Please choose a different test name."
+      });
+    }
+
+    if (testId) {
 const existingTest = await Test.findOne({
   _id: testId,
   teacherId: String(req.user.id),
@@ -1413,7 +1442,7 @@ const existingTest = await Test.findOne({
           error: "Draft test not found or cannot be edited"
         });
       }
-      existingTest.name = name;
+      existingTest.name = normalizedName;
       existingTest.questionIds = questionIds;
       existingTest.className = normalizedClass;
       existingTest.subject = normalizedSubject;
@@ -1439,7 +1468,7 @@ return res.json({
  });
     }
 const newTest = await Test.create({
-  name,
+  name: normalizedName,
   questionIds,
   teacherId: req.user.id,
   schoolId: req.user.schoolId || null,
