@@ -292,6 +292,7 @@ async function submitStudentTestHandler(req, res) {
     const existing = await Result.findOne({
       studentId,
       testId,
+      teacherId: String(test.teacherId || student.teacherId || ""),
       ...(student.schoolId ? { schoolId: student.schoolId } : {})
     });
     if (existing) {

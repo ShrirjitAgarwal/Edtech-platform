@@ -1135,6 +1135,7 @@ router.get("/test", requireStudentPageSession, async (req, res) => {
 const alreadyAttempted = await Result.findOne({
   studentId,
   testId: id,
+  teacherId: String(student.teacherId || ""),
   ...(student.schoolId ? { schoolId: student.schoolId } : {})
 })
   .select("_id")
