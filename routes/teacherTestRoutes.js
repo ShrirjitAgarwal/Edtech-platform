@@ -268,12 +268,13 @@ box-sizing:border-box;
           let passed = 0;
           let failed = 0;
           let totalPercent = 0;
+          const passingPercentage = Number(test.passingPercentage ?? 50);
           testResults.forEach(r => {
             const percent = r.total
               ? Math.round((r.score / r.total) * 100)
               : 0;
             totalPercent += percent;
-            if(percent >= 50){
+            if(percent >= passingPercentage){
               passed++;
             } else {
               failed++;
@@ -350,7 +351,7 @@ box-sizing:border-box;
               </div>
             </div>
             <p style="color:#64748b;">
-              Passing score is 50% and above.
+              Passing score is \${passingPercentage}% and above.
             </p>
           \`;
         };
@@ -455,7 +456,7 @@ const schoolScopedFilter = schoolId
     const [tests, totalTests, assignments, students, results] =
       await Promise.all([
         Test.find(schoolScopedFilter)
-          .select("name subject className status teacherId testType durationMinutes scheduledAt createdAt publishedAt")
+          .select("name subject className status teacherId testType durationMinutes scheduledAt passingPercentage createdAt publishedAt")
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
@@ -1478,7 +1479,7 @@ const tests = await Test.find({
   teacherId,
   ...(schoolId ? { schoolId } : {})
 })
-  .select("name className subject status teacherId scheduledAt durationMinutes testType questionTimersEnabled createdAt")
+  .select("name className subject status teacherId scheduledAt durationMinutes testType questionTimersEnabled passingPercentage createdAt")
   .sort({ createdAt: -1 })
   .limit(1000)
   .lean();
@@ -1761,6 +1762,27 @@ function loadSelectedTest(){
         <input id="testType" type="hidden" value="\${test.testType || "practice"}">
       </div>
     </div>
+        <div style="margin-bottom:16px;">
+      <label style="font-weight:700;">Pass / Fail Cutoff (%)</label><br>
+      <input
+        id="passingPercentage"
+        type="number"
+        min="0"
+        max="100"
+        value="\${test.passingPercentage ?? 50}"
+        style="
+          width:100%;
+          padding:12px;
+          border-radius:8px;
+          border:1px solid #cbd5e1;
+          box-sizing:border-box;
+          margin-top:6px;
+        "
+      />
+      <p style="color:#64748b;font-size:13px;margin-top:6px;">
+        Students scoring this percentage or above will be counted as passed.
+      </p>
+    </div>
     <div style="
       margin-bottom:22px;
       background:#f8fafc;
@@ -1828,6 +1850,7 @@ function saveSettings(){
   const scheduledAt = document.getElementById("scheduledAt").value;
   const durationMinutes = Number(document.getElementById("durationMinutes").value);
     const testType = document.getElementById("testType").value;
+  const passingPercentage = Number(document.getElementById("passingPercentage").value);
   const questionTimersEnabled =
     document.getElementById("questionTimersEnabled")?.checked || false;
   if(!durationMinutes || durationMinutes < 1){
@@ -1835,6 +1858,9 @@ function saveSettings(){
   }
   if(durationMinutes > 1440){
     return alert("Duration cannot exceed 1440 minutes");
+  }
+  if(Number.isNaN(passingPercentage) || passingPercentage < 0 || passingPercentage > 100){
+    return alert("Pass / Fail cutoff must be between 0 and 100");
   }
   fetch("/api/teacher/tests/settings/save", {
     method:"POST",
@@ -1845,7 +1871,8 @@ headers:{
       testId: selectedTestId,
       scheduledAt,
       durationMinutes,
-    testType,
+      testType,
+      passingPercentage,
       questionTimersEnabled
     })
   })
@@ -1901,6 +1928,7 @@ async function saveTestSettingsHandler(req, res) {
       scheduledAt,
       durationMinutes,
       testType,
+      passingPercentage,
       questionTimersEnabled
     } = req.body;
     if (!testId) {
@@ -1917,6 +1945,12 @@ async function saveTestSettingsHandler(req, res) {
         error: "Invalid test type"
       });
     }
+    const cutoff = Number(passingPercentage);
+    if (Number.isNaN(cutoff) || cutoff < 0 || cutoff > 100) {
+      return res.status(400).json({
+        error: "Pass / Fail cutoff must be between 0 and 100"
+      });
+    }
 const test = await Test.findOne({
   _id: testId,
   teacherId: String(req.user.id),
@@ -1930,6 +1964,7 @@ const test = await Test.findOne({
     test.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
     test.durationMinutes = duration;
     test.testType = testType;
+    test.passingPercentage = cutoff;
     test.questionTimersEnabled = !!questionTimersEnabled;
 await test.save();
 await logAuditEvent(req, {
@@ -1941,6 +1976,7 @@ await logAuditEvent(req, {
     scheduledAt: test.scheduledAt,
     durationMinutes: test.durationMinutes,
     testType: test.testType,
+    passingPercentage: test.passingPercentage,
     questionTimersEnabled: test.questionTimersEnabled,
     schoolId: test.schoolId || null,
     schoolCode: test.schoolCode || null

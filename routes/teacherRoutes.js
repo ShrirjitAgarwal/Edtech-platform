@@ -196,12 +196,13 @@ fetch("/api/teacher-dashboard-data")
     let totalPercent = 0;
     let passed = 0;
     let failed = 0;
+    const passingPercentage = Number(test.passingPercentage ?? 50);
     testResults.forEach(r => {
       const percent = r.total
         ? Math.round((r.score / r.total) * 100)
         : 0;
       totalPercent += percent;
-      if(percent >= 50){
+      if(percent >= passingPercentage){
         passed++;
       } else {
         failed++;
@@ -558,7 +559,7 @@ const mappedClassDocs = assignedClassNames.map(className => ({
   createdAt: null
 }));
     const tests = await Test.find(schoolScopedFilter)
-      .select("name subject className teacherId createdAt")
+      .select("name subject className teacherId passingPercentage createdAt")
       .sort({ createdAt: -1 })
       .limit(1000)
       .lean();

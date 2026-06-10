@@ -40,6 +40,12 @@ schoolCode: String,
     type: Boolean,
     default: false
   },
+  passingPercentage: {
+    type: Number,
+    default: 50,
+    min: 0,
+    max: 100
+  },
   assignedStudents: {
     type: [String],
     default: []
