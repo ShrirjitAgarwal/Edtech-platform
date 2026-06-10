@@ -184,38 +184,6 @@ async function assignTestHandler(req, res) {
   }
 }
 router.post("/api/teacher/tests/assign", authMiddleware, assignTestHandler);
-// ---------- ADD SUBJECT ----------
-router.post("/add-subject", async (req, res) => {
-  try {
-    const { className, subject } = req.body;
-    const teacherId = String(req.body.teacherId || "").trim();
-    if (!className || !subject || !teacherId) {
-      return res.status(400).json({ error: "Missing fields" });
-    }
-    const ClassSubject = require("../models/ClassSubject");
-    const classNameClean = String(className || "").trim().toUpperCase();
-    const subjectClean =
-      String(subject || "").trim().charAt(0).toUpperCase() +
-      String(subject || "").trim().slice(1).toLowerCase();
-    const exists = await ClassSubject.findOne({
-      className: classNameClean,
-      subject: subjectClean,
-      teacherId
-    });
-    if (exists) {
-      return res.json({ message: "Subject already exists" });
-    }
-    const newSubject = await ClassSubject.create({
-      className: classNameClean,
-      subject: subjectClean,
-      teacherId
-    });
-    res.json({ status: "created", subject: newSubject });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to create subject" });
-  }
-});
 // ---------- GET TESTS FOR STUDENT ----------
 async function getStudentTestsHandler(req, res) {
   try {
