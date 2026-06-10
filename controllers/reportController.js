@@ -152,21 +152,37 @@ exports.resultPage = async (req, res) => {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
+  if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+    return res.status(403).send("<h2>Access denied</h2>");
+  }
   let result;
   try {
-    const student = await Student.findOne({
+    const studentFilter = {
       studentId: String(studentId)
-    })
-      .select("studentId schoolId")
+    };
+    if (req.user.role === "teacher") {
+      studentFilter.teacherId = String(req.user.id);
+    }
+    if (req.user.schoolId) {
+      studentFilter.schoolId = req.user.schoolId;
+    }
+    const student = await Student.findOne(studentFilter)
+      .select("studentId teacherId schoolId")
       .lean();
     if (!student) {
       return res.send("<h2>No result found</h2>");
     }
-    result = await Result.findOne({
+    const resultFilter = {
       testId: String(testId),
-      studentId: String(studentId),
-      ...(student.schoolId ? { schoolId: student.schoolId } : {})
-    }).lean();
+      studentId: String(studentId)
+    };
+    if (req.user.role === "teacher") {
+      resultFilter.teacherId = String(req.user.id);
+    }
+    if (req.user.schoolId) {
+      resultFilter.schoolId = req.user.schoolId;
+    }
+    result = await Result.findOne(resultFilter).lean();
   } catch (err) {
     console.error(err);
   }

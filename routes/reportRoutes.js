@@ -14,6 +14,7 @@ router.post(
 );
 router.get(
   "/result",
+  authMiddleware,
   reportController.resultPage
 );
 module.exports = router;
