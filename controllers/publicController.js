@@ -314,16 +314,16 @@ exports.loginPage = (req, res) => {
                 <label for="password">Password</label>
                 <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password">
               </div>
-              <button class="primary-btn" type="button" onclick="login()">Login</button>
+              <button id="publicLoginButton" class="primary-btn" type="button">Login</button>
             </div>
             <div class="secondary-actions">
-              <button type="button" onclick="window.location.replace('/login')">← Back to login options</button>
+              <button id="publicBackToLoginButton" type="button">← Back to login options</button>
               <p class="help-text">Forgot password? Please contact your school admin.</p>
             </div>
           `
           : `
             <div class="role-list">
-              <button class="role-card" type="button" onclick="goStudent()">
+              <button id="studentRoleButton" class="role-card" type="button">
                 <span class="role-left">
                   <span class="role-icon">S</span>
                   <span>
@@ -333,7 +333,7 @@ exports.loginPage = (req, res) => {
                 </span>
                 <span class="arrow">›</span>
               </button>
-              <button class="role-card" type="button" onclick="goTeacher()">
+              <button id="teacherRoleButton" class="role-card" type="button">
                 <span class="role-left">
                   <span class="role-icon">T</span>
                   <span>
@@ -343,7 +343,7 @@ exports.loginPage = (req, res) => {
                 </span>
                 <span class="arrow">›</span>
               </button>
-              <button class="role-card" type="button" onclick="goAdmin()">
+              <button id="adminRoleButton" class="role-card" type="button">
                 <span class="role-left">
                   <span class="role-icon">A</span>
                   <span>
@@ -397,6 +397,32 @@ function getErrorMessage(errorValue){
     return errorValue.code + ": " + errorValue.message;
   }
   return "Something went wrong";
+}
+  const publicLoginButton = document.getElementById("publicLoginButton");
+if(publicLoginButton){
+  publicLoginButton.addEventListener("click", login);
+}
+
+const publicBackToLoginButton = document.getElementById("publicBackToLoginButton");
+if(publicBackToLoginButton){
+  publicBackToLoginButton.addEventListener("click", function(){
+    window.location.replace("/login");
+  });
+}
+
+const studentRoleButton = document.getElementById("studentRoleButton");
+if(studentRoleButton){
+  studentRoleButton.addEventListener("click", goStudent);
+}
+
+const teacherRoleButton = document.getElementById("teacherRoleButton");
+if(teacherRoleButton){
+  teacherRoleButton.addEventListener("click", goTeacher);
+}
+
+const adminRoleButton = document.getElementById("adminRoleButton");
+if(adminRoleButton){
+  adminRoleButton.addEventListener("click", goAdmin);
 }
 function goStudent(){
   window.location.replace("/student-entry");
@@ -478,7 +504,7 @@ text-align:center;
 <input id="email" placeholder="Email" style="width:100%;padding:10px;margin-bottom:10px;"><br>
 <input id="password" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:20px;"><br>
 <input type="hidden" id="role" value="teacher">
-<button onclick="register()" style="
+<button id="registerButton" style="
 width:100%;
 padding:10px;
 background:#4f46e5;
@@ -490,7 +516,7 @@ margin-bottom:10px;
 ">
 Register
 </button>
-<button onclick="goLogin()" style="
+<button id="registerBackToLoginButton" style="
 width:100%;
 padding:10px;
 background:#6b7280;
@@ -517,6 +543,15 @@ if(errorValue.code && errorValue.message){
 return errorValue.code + ": " + errorValue.message;
 }
 return "Something went wrong";
+}
+const registerButton = document.getElementById("registerButton");
+if(registerButton){
+  registerButton.addEventListener("click", register);
+}
+
+const registerBackToLoginButton = document.getElementById("registerBackToLoginButton");
+if(registerBackToLoginButton){
+  registerBackToLoginButton.addEventListener("click", goLogin);
 }
 function register(){
 const name = document.getElementById("name").value;

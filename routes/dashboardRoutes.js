@@ -17,13 +17,13 @@ function navbar() {
  width:100%;
  box-sizing:border-box;
 ">
-  <button onclick="go('/')" class="nav-btn">Home</button>
-  <button onclick="go('/tests')" class="nav-btn">Tests</button>
-  <button onclick="go('/library')" class="nav-btn">Library</button>
-  <button onclick="go('/teacher')" class="nav-btn">Teacher</button>
-  <button onclick="go('/question-builder')" class="nav-btn">Create Question</button>
-  <button onclick="go('/dashboard')" class="nav-btn">Dashboard</button>
-  <button onclick="logout()" class="nav-btn logout">Logout</button>
+  <button data-path="/" class="nav-btn dashboard-nav-btn">Home</button>
+  <button data-path="/tests" class="nav-btn dashboard-nav-btn">Tests</button>
+  <button data-path="/library" class="nav-btn dashboard-nav-btn">Library</button>
+  <button data-path="/teacher" class="nav-btn dashboard-nav-btn">Teacher</button>
+  <button data-path="/question-builder" class="nav-btn dashboard-nav-btn">Create Question</button>
+  <button data-path="/dashboard" class="nav-btn dashboard-nav-btn">Dashboard</button>
+  <button id="dashboardLogoutButton" class="nav-btn logout">Logout</button>
 </div>
 <style>
   .nav-btn {
@@ -49,6 +49,19 @@ function logout(){
     window.location.href = "/";
   });
 }
+
+document.addEventListener("click", function(event){
+  const navButton = event.target.closest(".dashboard-nav-btn");
+  if(navButton){
+    go(navButton.dataset.path || "/");
+    return;
+  }
+
+  const logoutButton = event.target.closest("#dashboardLogoutButton");
+  if(logoutButton){
+    logout();
+  }
+});
 </script>
 `;
 }
@@ -105,7 +118,8 @@ router.get("/dashboard", authMiddleware, async (req, res) => {
         <button
           id="testFilterButton"
           type="button"
-          onclick="toggleCustomDropdown('testFilter')"
+          class="dashboard-dropdown-toggle"
+          data-dropdown-id="testFilter"
           style="
             width:100%;
             padding:10px 12px;
@@ -169,7 +183,7 @@ router.get("/dashboard", authMiddleware, async (req, res) => {
       <h2>Student Performance</h2>
       <div id="studentStats"></div>
       <h2>Student Results</h2>
-      <button onclick="sortScores()">Sort by Highest Score</button>
+      <button id="sortScoresButton">Sort by Highest Score</button>
       <table style="width:100%;margin-top:10px;">
         <thead>
           <tr>
@@ -245,14 +259,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-    option.onclick = function(){
+    option.addEventListener("click", function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
       closeCustomDropdowns();
       if(typeof onSelect === "function"){
         onSelect(optionData.value);
       }
-    };
+    });
     menu.appendChild(option);
   });
   const selectedOption = options.find(optionData =>
@@ -267,6 +281,18 @@ function setCustomDropdownOptions(inputId, options, onSelect){
   }
 }
 document.addEventListener("click", function(event){
+  const dropdownToggle = event.target.closest(".dashboard-dropdown-toggle");
+  if(dropdownToggle){
+    toggleCustomDropdown(dropdownToggle.dataset.dropdownId || "");
+    return;
+  }
+
+  const sortScoresButton = event.target.closest("#sortScoresButton");
+  if(sortScoresButton){
+    sortScores();
+    return;
+  }
+
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
     event.target.closest("[id$='Menu']");

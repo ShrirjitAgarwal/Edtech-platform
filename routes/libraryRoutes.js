@@ -17,7 +17,7 @@ margin-bottom:20px;
 <h1 style="margin:0;">Questions Library</h1>
 <div style="display:flex;gap:10px;align-items:center;">
 ${backButton("/teacher")}
-<button onclick="go('/create-question')" style="
+<button id="libraryCreateQuestionButton" style="
 padding:10px 14px;
 background:#4f46e5;
 color:white;
@@ -28,7 +28,7 @@ cursor:pointer;
 ">
 + Create Question
 </button>
-<button onclick="go('/my-questions')" style="
+<button id="libraryManageQuestionsButton" style="
 padding:10px 14px;
 background:#0f172a;
 color:white;
@@ -79,7 +79,8 @@ box-sizing:border-box;
   <button
     id="subjectFilterButton"
     type="button"
-    onclick="toggleCustomDropdown('subjectFilter')"
+    class="library-dropdown-toggle"
+    data-dropdown-id="subjectFilter"
     style="
       width:100%;
       padding:7px 8px;
@@ -124,7 +125,8 @@ box-sizing:border-box;
   <button
     id="boardFilterButton"
     type="button"
-    onclick="toggleCustomDropdown('boardFilter')"
+    class="library-dropdown-toggle"
+    data-dropdown-id="boardFilter"
     style="
       width:100%;
       padding:7px 8px;
@@ -169,7 +171,8 @@ box-sizing:border-box;
   <button
     id="difficultyFilterButton"
     type="button"
-    onclick="toggleCustomDropdown('difficultyFilter')"
+    class="library-dropdown-toggle"
+    data-dropdown-id="difficultyFilter"
     style="
       width:100%;
       padding:7px 8px;
@@ -214,7 +217,8 @@ box-sizing:border-box;
   <button
     id="attemptFilterButton"
     type="button"
-    onclick="toggleCustomDropdown('attemptFilter')"
+    class="library-dropdown-toggle"
+    data-dropdown-id="attemptFilter"
     style="
       width:100%;
       padding:7px 8px;
@@ -259,7 +263,8 @@ box-sizing:border-box;
   <button
     id="scopeFilterButton"
     type="button"
-    onclick="toggleCustomDropdown('scopeFilter')"
+    class="library-dropdown-toggle"
+    data-dropdown-id="scopeFilter"
     style="
       width:100%;
       padding:7px 8px;
@@ -423,12 +428,12 @@ option.style.background = "#eef2ff";
 option.onmouseleave = function(){
 option.style.background = "white";
 };
-option.onclick = function(){
+option.addEventListener("click", function(){
 input.value = optionData.value;
 label.textContent = optionData.label;
 closeCustomDropdowns();
 loadLibrary(1);
-};
+});
 menu.appendChild(option);
 });
 const selectedOption = options.find(optionData =>
@@ -572,7 +577,7 @@ const attempted = Number(q.analytics?.attempted || 0);
 const completed = Number(q.analytics?.correct || 0);
 const incomplete = Number(q.analytics?.incorrect || 0);
 return "" +
-"<div onclick='previewQuestion(" + questionId + ")' style='" +
+"<div class='library-question-card' data-question-id=" + questionId + " style='" +
 "background:#f8fafc;" +
 "padding:18px;" +
 "margin:12px 0;" +
@@ -600,7 +605,7 @@ escapeHtml(sourceLabel) +
 "Incomplete: " + incomplete +
 "</p>" +
 "</div>" +
-"<button onclick='event.stopPropagation(); addToTest(" + questionId + ")' style='" +
+"<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
 "padding:10px 14px;" +
 "background:#4f46e5;" +
 "color:white;" +
@@ -658,7 +663,7 @@ optionsHtml +
 "Completed: " + Number(q.analytics?.correct || 0) + "<br>" +
 "Incomplete: " + Number(q.analytics?.incorrect || 0) +
 "</div>" +
- "<button onclick='addToTest(" + questionId + ")' style='" +
+ "<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
  "margin-top:18px;" +
  "padding:10px 14px;" +
  "background:#4f46e5;" +
@@ -690,7 +695,8 @@ paginationBox.innerHTML =
 "<div style='display:flex;gap:8px;'>" +
 "<button " +
 (libraryPagination.hasPrevPage ? "" : "disabled ") +
-"onclick='loadLibrary(" + (page - 1) + ")' " +
+"class='library-pagination-button' " +
+"data-page='" + (page - 1) + "' " +
 "style='padding:8px 12px;border:none;border-radius:8px;background:#334155;color:white;cursor:pointer;font-weight:700;" +
 (libraryPagination.hasPrevPage ? "" : "opacity:0.45;cursor:not-allowed;") +
 "'>" +
@@ -698,7 +704,8 @@ paginationBox.innerHTML =
 "</button>" +
 "<button " +
 (libraryPagination.hasNextPage ? "" : "disabled ") +
-"onclick='loadLibrary(" + (page + 1) + ")' " +
+"class='library-pagination-button' " +
+"data-page='" + (page + 1) + "' " +
 "style='padding:8px 12px;border:none;border-radius:8px;background:#4f46e5;color:white;cursor:pointer;font-weight:700;" +
 (libraryPagination.hasNextPage ? "" : "opacity:0.45;cursor:not-allowed;") +
 "'>" +

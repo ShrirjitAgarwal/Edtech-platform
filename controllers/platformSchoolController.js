@@ -233,7 +233,7 @@ exports.listSchoolsPage = async (req, res) => {
     ">
       <h1 style="margin:0;">School Onboarding</h1>
       <div style="display:flex;gap:10px;">
- <button onclick="window.location.replace('/platform-import')" style="
+ <button id="platformQuestionImportButton" style="
  padding:10px 14px;
  background:#4f46e5;
  color:white;
@@ -244,7 +244,7 @@ exports.listSchoolsPage = async (req, res) => {
  ">
  Question Import
  </button>
- <button onclick="togglePlatformAdminForm()" style="
+ <button id="togglePlatformAdminFormButton" style="
  padding:10px 14px;
  background:#111827;
  color:white;
@@ -255,7 +255,7 @@ exports.listSchoolsPage = async (req, res) => {
  ">
  New Platform Admin
  </button>
-        <button onclick="window.location.replace('/school-dashboard')" style="
+        <button id="platformSchoolBackButton" style="
           padding:10px 14px;
           background:#64748b;
           color:white;
@@ -298,7 +298,7 @@ exports.listSchoolsPage = async (req, res) => {
  placeholder="Temporary password"
  style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
  />
- <button onclick="createPlatformAdmin()" style="
+ <button id="createPlatformAdminButton" style="
  padding:12px 18px;
  background:#111827;
  color:white;
@@ -352,6 +352,29 @@ exports.listSchoolsPage = async (req, res) => {
     }
 </div>
 <script>
+const platformQuestionImportButton = document.getElementById("platformQuestionImportButton");
+if(platformQuestionImportButton){
+  platformQuestionImportButton.addEventListener("click", function(){
+    window.location.replace("/platform-import");
+  });
+}
+
+const togglePlatformAdminFormButton = document.getElementById("togglePlatformAdminFormButton");
+if(togglePlatformAdminFormButton){
+  togglePlatformAdminFormButton.addEventListener("click", togglePlatformAdminForm);
+}
+
+const platformSchoolBackButton = document.getElementById("platformSchoolBackButton");
+if(platformSchoolBackButton){
+  platformSchoolBackButton.addEventListener("click", function(){
+    window.location.replace("/school-dashboard");
+  });
+}
+
+const createPlatformAdminButton = document.getElementById("createPlatformAdminButton");
+if(createPlatformAdminButton){
+  createPlatformAdminButton.addEventListener("click", createPlatformAdmin);
+}
 function togglePlatformAdminForm(){
   const form = document.getElementById("platformAdminForm");
   if(!form){

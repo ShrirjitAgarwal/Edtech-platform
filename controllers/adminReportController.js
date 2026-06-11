@@ -82,7 +82,7 @@ margin-bottom:20px;
 <h3>Performance History</h3>
 ${rows}
 <button
-onclick="downloadReport()"
+id="downloadStudentReportButton"
 style="
 margin-top:20px;
 padding:10px 16px;
@@ -96,7 +96,7 @@ Download Report
 </button>
 <br><br>
 <button
-onclick="goBack()"
+id="studentReportBackButton"
 style="
 padding:10px 16px;
 background:#64748b;
@@ -109,6 +109,15 @@ Back
 </button>
 </div>
 <script>
+const downloadStudentReportButton = document.getElementById("downloadStudentReportButton");
+if(downloadStudentReportButton){
+  downloadStudentReportButton.addEventListener("click", downloadReport);
+}
+
+const studentReportBackButton = document.getElementById("studentReportBackButton");
+if(studentReportBackButton){
+  studentReportBackButton.addEventListener("click", goBack);
+}
 function goBack(){
 window.location.replace("/admin-dashboard");
 }
@@ -270,9 +279,8 @@ Not Attempted
         }
         rows += `
 <tr
-onclick="
-goToStudent('${escapeAttribute(id)}')
-"
+class="class-report-student-row"
+data-student-id="${escapeAttribute(id)}"
 style="cursor:pointer;"
 >
 <td style="
@@ -369,7 +377,7 @@ ${rows ||
 "<tr><td colspan='4'>No data</td></tr>"}
 </table>
 <button
-onclick="downloadClassReport()"
+id="downloadClassReportButton"
 style="
 margin-top:20px;
 margin-right:10px;
@@ -383,7 +391,7 @@ cursor:pointer;
 Download Class Report
 </button>
 <button
-onclick="goBack()"
+id="classReportBackButton"
 style="
 margin-top:20px;
 padding:10px 16px;
@@ -434,6 +442,21 @@ alert(
 "Download failed"
 );
 });
+}
+document.querySelectorAll(".class-report-student-row").forEach(row => {
+  row.addEventListener("click", function(){
+    goToStudent(this.dataset.studentId || "");
+  });
+});
+
+const downloadClassReportButton = document.getElementById("downloadClassReportButton");
+if(downloadClassReportButton){
+  downloadClassReportButton.addEventListener("click", downloadClassReport);
+}
+
+const classReportBackButton = document.getElementById("classReportBackButton");
+if(classReportBackButton){
+  classReportBackButton.addEventListener("click", goBack);
 }
 function goBack(){
 window.location.replace("/admin-dashboard");

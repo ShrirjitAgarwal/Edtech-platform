@@ -67,7 +67,7 @@ router.get("/platform-login", (req, res) => {
         "
       />
       <button
-        onclick="platformLogin()"
+        id="platformLoginButton"
         style="
           width:100%;
           padding:12px;
@@ -85,6 +85,10 @@ router.get("/platform-login", (req, res) => {
     </div>
   </div>
 <script>
+const platformLoginButton = document.getElementById("platformLoginButton");
+if(platformLoginButton){
+  platformLoginButton.addEventListener("click", platformLogin);
+}
 function platformLogin(){
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
@@ -306,7 +310,7 @@ router.get("/platform-change-password", authMiddleware, async (req, res) => {
       "
     />
     <button
-      onclick="changePassword()"
+      id="changePasswordButton"
       style="
         width:100%;
         padding:12px;
@@ -324,6 +328,10 @@ router.get("/platform-change-password", authMiddleware, async (req, res) => {
   </div>
 </div>
 <script>
+const changePasswordButton = document.getElementById("changePasswordButton");
+if(changePasswordButton){
+  changePasswordButton.addEventListener("click", changePassword);
+}
 function changePassword(){
   const newPassword = document.getElementById("newPassword").value.trim();
   const confirmPassword = document.getElementById("confirmPassword").value.trim();

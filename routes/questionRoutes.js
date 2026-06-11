@@ -130,7 +130,8 @@ if(!pageUser || pageUser.role !== "teacher"){
         <button
           id="questionTypeButton"
           type="button"
-          onclick="toggleCustomDropdown('questionType')"
+          class="question-dropdown-toggle"
+          data-dropdown-id="questionType"
           style="
             width:100%;
             padding:12px;
@@ -174,7 +175,8 @@ if(!pageUser || pageUser.role !== "teacher"){
         <button
           id="difficultyButton"
           type="button"
-          onclick="toggleCustomDropdown('difficulty')"
+          class="question-dropdown-toggle"
+          data-dropdown-id="difficulty"
           style="
             width:100%;
             padding:12px;
@@ -242,7 +244,8 @@ if(!pageUser || pageUser.role !== "teacher"){
         <button
           id="subjectButton"
           type="button"
-          onclick="toggleCustomDropdown('subject')"
+          class="question-dropdown-toggle"
+          data-dropdown-id="subject"
           style="
             width:100%;
             padding:12px;
@@ -286,7 +289,8 @@ if(!pageUser || pageUser.role !== "teacher"){
         <button
           id="boardButton"
           type="button"
-          onclick="toggleCustomDropdown('board')"
+          class="question-dropdown-toggle"
+          data-dropdown-id="board"
           style="
             width:100%;
             padding:12px;
@@ -391,7 +395,8 @@ if(!pageUser || pageUser.role !== "teacher"){
   <button
     id="languageButton"
     type="button"
-    onclick="toggleCustomDropdown('language')"
+    class="question-dropdown-toggle"
+    data-dropdown-id="language"
     style="
       width:100%;
       padding:12px;
@@ -455,7 +460,7 @@ if(!pageUser || pageUser.role !== "teacher"){
       <input id="testOutput4" value="${escapeAttribute(editQuestion?.testCases?.[3]?.expectedOutput || "")}" placeholder="Test Case 4 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
     </div>
   </div>
-  <button onclick="saveQuestion()" style="
+  <button id="saveQuestionButton" style="
     margin-top:24px;
     padding:14px 20px;
     background:#4f46e5;
@@ -528,14 +533,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-    option.onclick = function(){
+    option.addEventListener("click", function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
       closeCustomDropdowns();
       if(typeof onSelect === "function"){
         onSelect(optionData.value);
       }
-    };
+    });
     menu.appendChild(option);
   });
   const selectedOption = options.find(optionData =>
@@ -550,6 +555,18 @@ function setCustomDropdownOptions(inputId, options, onSelect){
   }
 }
 document.addEventListener("click", function(event){
+  const dropdownToggle = event.target.closest(".question-dropdown-toggle");
+  if(dropdownToggle){
+    toggleCustomDropdown(dropdownToggle.dataset.dropdownId || "");
+    return;
+  }
+
+  const saveQuestionButton = event.target.closest("#saveQuestionButton");
+  if(saveQuestionButton){
+    saveQuestion();
+    return;
+  }
+
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
     event.target.closest("[id$='Menu']");
@@ -854,7 +871,7 @@ if(!pageUser || pageUser.role !== "teacher"){
       margin-bottom:18px;
     ">
       <h2 style="margin:0;">My Questions</h2>
-      <button onclick="go('/create-question')" style="
+      <button id="createQuestionButton" style="
         padding:10px 14px;
         background:#4f46e5;
         color:white;
@@ -921,8 +938,9 @@ function renderMyQuestions(){
     return;
   }
   list.innerHTML = questions.map(q => {
+    const questionId = escapeClientHtml(q._id || "");
     return "" +
-      "<div onclick=\\"previewQuestion('" + q._id + "')\\" style=\\"" +
+      "<div class=\\"my-question-card\\" data-question-id=\\"" + questionId + "\\" style=\\"" +
         "background:#f8fafc;" +
         "padding:16px;" +
         "border-radius:12px;" +
@@ -951,12 +969,36 @@ function renderMyQuestions(){
           "</div>" +
         "</div>" +
         "<div style=\\"display:flex;gap:10px;flex-shrink:0;align-items:center;\\">" +
-          "<button onclick=\\"event.stopPropagation(); editQuestion('" + q._id + "')\\" style=\\"padding:8px 12px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Edit</button>" +
-          "<button onclick=\\"event.stopPropagation(); deleteQuestion('" + q._id + "')\\" style=\\"padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Delete</button>" +
+          "<button class=\\"edit-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 12px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Edit</button>" +
+          "<button class=\\"delete-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Delete</button>" +
         "</div>" +
       "</div>";
   }).join("");
 }
+  document.addEventListener("click", function(event){
+  const createQuestionButton = event.target.closest("#createQuestionButton");
+  if(createQuestionButton){
+    go("/create-question");
+    return;
+  }
+
+  const editQuestionButton = event.target.closest(".edit-question-button");
+  if(editQuestionButton){
+    editQuestion(editQuestionButton.dataset.questionId || "");
+    return;
+  }
+
+  const deleteQuestionButton = event.target.closest(".delete-question-button");
+  if(deleteQuestionButton){
+    deleteQuestion(deleteQuestionButton.dataset.questionId || "");
+    return;
+  }
+
+  const questionCard = event.target.closest(".my-question-card");
+  if(questionCard){
+    previewQuestion(questionCard.dataset.questionId || "");
+  }
+});
 function previewQuestion(id){
   const q = questions.find(item =>
     String(item._id) === String(id)

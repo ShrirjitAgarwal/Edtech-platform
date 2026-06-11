@@ -170,8 +170,11 @@ router.get("/student", authMiddleware, async (req, res) => {
           : percent >= 40
           ? "#ca8a04"
           : "#dc2626";
-      return `
-<div onclick="viewResult('${escapeAttribute(r.testId)}')" style="
+return `
+<div
+class="student-result-card"
+data-test-id="${escapeAttribute(r.testId)}"
+style="
 background:white;
 padding:20px;
 margin:15px 0;
@@ -199,7 +202,7 @@ cursor:pointer;
 <body style="font-family:Arial;background:#eef2ff;padding:20px;">
 <div style="display:flex;justify-content:space-between;align-items:center;">
   <h1>Student Details</h1>
-  <button onclick="downloadReport()" style="
+  <button id="downloadStudentReportButton" style="
     padding:10px 16px;
     background:#4f46e5;
     color:white;
@@ -219,8 +222,25 @@ ${resultsHTML}
 function viewResult(testId){
   const params = new URLSearchParams(window.location.search);
   const studentId = params.get("studentId");
-  go("/result?testId=" + testId + "&studentId=" + studentId);
+  go(
+    "/result?testId=" +
+    encodeURIComponent(testId || "") +
+    "&studentId=" +
+    encodeURIComponent(studentId || "")
+  );
 }
+
+document.querySelectorAll(".student-result-card").forEach(card => {
+  card.addEventListener("click", function(){
+    viewResult(this.dataset.testId || "");
+  });
+});
+
+const downloadStudentReportButton = document.getElementById("downloadStudentReportButton");
+if (downloadStudentReportButton) {
+  downloadStudentReportButton.addEventListener("click", downloadReport);
+}
+
 function downloadReport(){
   const params = new URLSearchParams(window.location.search);
   const studentId = params.get("studentId");
@@ -531,11 +551,11 @@ router.get("/student-entry", (req, res) => {
           <label for="studentId">Student ID</label>
           <input id="studentId" placeholder="Enter student ID" autocomplete="off">
         </div>
-        <button class="primary-btn" type="button" onclick="lookupStudent()">Find My Record</button>
+        <button id="lookupStudentButton" class="primary-btn" type="button">Find My Record</button>
       </div>
       <div id="confirmBox" class="confirm-box"></div>
       <div class="secondary-actions">
-        <button type="button" onclick="window.location.replace('/login')">← Back to login options</button>
+        <button id="studentBackToLoginButton" type="button">← Back to login options</button>
         <p class="help-text">Having trouble signing in? Please contact your teacher or school admin.</p>
       </div>
     </section>
@@ -600,8 +620,8 @@ function lookupStudent(){
       "<p class='confirm-row'><b>Student ID:</b> " + escapeHtml(matchedStudent.studentId) + "</p>" +
       "<p class='confirm-row'><b>School:</b> " + escapeHtml(matchedStudent.schoolName) + "</p>" +
       "<div class='confirm-actions'>" +
-        "<button class='success-btn' type='button' onclick='confirmStudent()'>Confirm</button>" +
-        "<button class='secondary-btn' type='button' onclick='resetLookup()'>Go Back</button>" +
+        "<button id='confirmStudentButton' class='success-btn' type='button'>Confirm</button>" +
+        "<button id='resetLookupButton' class='secondary-btn' type='button'>Go Back</button>" +
       "</div>";
   })
   .catch(() => {
@@ -613,6 +633,32 @@ function resetLookup(){
   document.getElementById("confirmBox").style.display = "none";
   clearError();
 }
+
+document.addEventListener("click", function(event){
+  const lookupStudentButton = event.target.closest("#lookupStudentButton");
+  if(lookupStudentButton){
+    lookupStudent();
+    return;
+  }
+
+  const studentBackToLoginButton = event.target.closest("#studentBackToLoginButton");
+  if(studentBackToLoginButton){
+    window.location.replace("/login");
+    return;
+  }
+
+  const confirmStudentButton = event.target.closest("#confirmStudentButton");
+  if(confirmStudentButton){
+    confirmStudent();
+    return;
+  }
+
+  const resetLookupButton = event.target.closest("#resetLookupButton");
+  if(resetLookupButton){
+    resetLookup();
+  }
+});
+
 function confirmStudent(){
   if(!matchedStudent){
     showError("No student record selected.");
@@ -802,7 +848,6 @@ res.send(`
   <button
     id="subjectDropdownButton"
     type="button"
-    onclick="toggleSubjectDropdown()"
     style="
       width:100%;
       padding:12px 14px;
@@ -915,9 +960,9 @@ window.onload = function(){
           const br = document.createElement("br");
           const btn = document.createElement("button");
           btn.innerText = "Start";
-          btn.onclick = function() {
+          btn.addEventListener("click", function(){
             startTest(t._id);
-          };
+          });
           card.appendChild(title);
           card.appendChild(br);
           card.appendChild(btn);
@@ -936,6 +981,12 @@ window.onload = function(){
         ? "none"
         : "block";
   };
+
+  const subjectDropdownButton = document.getElementById("subjectDropdownButton");
+  if(subjectDropdownButton){
+    subjectDropdownButton.addEventListener("click", toggleSubjectDropdown);
+  }
+
   window.selectSubjectOption = function(subject){
     subjectSelect.value = subject;
     selectedSubjectLabel.innerText = subject || "Select Subject";
@@ -964,9 +1015,9 @@ window.onload = function(){
         const option = document.createElement("button");
         option.type = "button";
         option.innerText = sub;
-        option.onclick = function(){
+        option.addEventListener("click", function(){
           selectSubjectOption(sub);
-        };
+        });
         option.style.width = "100%";
         option.style.padding = "12px 14px";
         option.style.border = "none";
@@ -1230,8 +1281,9 @@ return `
         align-items:center;
       ">
         <button
-        id="run-${qid}"
-      onclick="runCode('${escapeAttribute(qid)}')"
+          id="run-${escapeAttribute(qid)}"
+          class="run-code-button"
+          data-question-id="${escapeAttribute(qid)}"
           style="
             padding:6px 12px;
             background:#16a34a;
@@ -1721,26 +1773,23 @@ Click to Start
     <div class="student-test-actions">
       <button
         id="previousQuestionBtn"
-        onclick="goToPreviousQuestion()"
         style="display:none;"
       >
         Previous Question
       </button>
       <button
         id="skipQuestionBtn"
-        onclick="skipCurrentQuestion()"
         style="display:none;"
       >
         Skip Question
       </button>
       <button
         id="nextQuestionBtn"
-        onclick="goToNextQuestion('answered')"
         style="display:none;"
       >
         Next Question
       </button>
-      <button id="submitBtn" onclick="submitTest()">Submit</button>
+      <button id="submitBtn">Submit</button>
     </div>
     </section>
   </main>
@@ -1779,6 +1828,11 @@ window.getCodeAnswer = function(qid){
   const textarea = document.getElementById("code-" + qid);
   return textarea ? textarea.value : "";
 };
+document.querySelectorAll(".run-code-button").forEach(button => {
+  button.addEventListener("click", function(){
+    window.runCode(this.dataset.questionId || "");
+  });
+});
 window.runCode = async function(qid){
   const q = (window.__testQuestions || []).find(item =>
     String(item._id) === String(qid)
@@ -2116,6 +2170,27 @@ function goToNextQuestion(reason){
   }
   showCurrentQuestion();
 }
+  const previousQuestionBtn = document.getElementById("previousQuestionBtn");
+if(previousQuestionBtn){
+  previousQuestionBtn.addEventListener("click", goToPreviousQuestion);
+}
+
+const skipQuestionBtn = document.getElementById("skipQuestionBtn");
+if(skipQuestionBtn){
+  skipQuestionBtn.addEventListener("click", skipCurrentQuestion);
+}
+
+const nextQuestionBtn = document.getElementById("nextQuestionBtn");
+if(nextQuestionBtn){
+  nextQuestionBtn.addEventListener("click", function(){
+    goToNextQuestion("answered");
+  });
+}
+
+const submitBtn = document.getElementById("submitBtn");
+if(submitBtn){
+  submitBtn.addEventListener("click", submitTest);
+}
 function initializeQuestionTimers(){
   if(!questionTimersEnabled){
     return;
@@ -2144,25 +2219,28 @@ function initializeQuestionTimers(){
   updateSidebarQuestionStatus();
   window.updateQuestionCompletion = updateQuestionCompletion;
 }
-document.getElementById("startExamBtn").onclick = function(){
-  const startBtn = document.getElementById("startExamBtn");
-  if(startBtn){
-    startBtn.disabled = true;
-    startBtn.innerText = "Starting...";
-  }
-  const startNow = function(){
-    startExamMode();
-    initializeQuestionTimers();
-    document.getElementById("examGate").remove();
-  };
-  if(document.documentElement.requestFullscreen){
-    document.documentElement.requestFullscreen()
-      .then(startNow)
-      .catch(startNow);
-  } else {
-    startNow();
-  }
-};
+const startExamBtn = document.getElementById("startExamBtn");
+if(startExamBtn){
+  startExamBtn.addEventListener("click", function(){
+    const startBtn = document.getElementById("startExamBtn");
+    if(startBtn){
+      startBtn.disabled = true;
+      startBtn.innerText = "Starting...";
+    }
+    const startNow = function(){
+      startExamMode();
+      initializeQuestionTimers();
+      document.getElementById("examGate").remove();
+    };
+    if(document.documentElement.requestFullscreen){
+      document.documentElement.requestFullscreen()
+        .then(startNow)
+        .catch(startNow);
+    } else {
+      startNow();
+    }
+  });
+}
 function startExamMode(){
   window.__examTriggered = false;
   history.pushState(null, null, location.href);

@@ -55,7 +55,7 @@ exports.importPage = (req, res) => {
       font-size:13px;
     "></div>
     <br>
-    <button onclick="window.location.replace('/school-dashboard')" style="
+    <button id="platformImportBackButton" style="
       padding:10px 14px;
       background:#64748b;
       color:white;
@@ -67,6 +67,13 @@ exports.importPage = (req, res) => {
     </button>
   </div>
 <script>
+const platformImportBackButton = document.getElementById("platformImportBackButton");
+if(platformImportBackButton){
+  platformImportBackButton.addEventListener("click", function(){
+    window.location.replace("/school-dashboard");
+  });
+}
+
 document.getElementById("importForm").addEventListener("submit", function(e){
   e.preventDefault();
   const fileInput = document.getElementById("questionFile");

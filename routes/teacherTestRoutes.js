@@ -47,7 +47,7 @@ router.get("/teacher-tests", authMiddleware, async (req, res) => {
   ${backButton("/teacher")}
 </div>
     <div style="margin-bottom:20px;">
-      <button onclick="go('/create-test')" style="
+      <button id="createTestFromListButton" style="
         padding:14px 20px;
         background:linear-gradient(135deg,#4f46e5,#6366f1);
         color:white;
@@ -60,7 +60,7 @@ router.get("/teacher-tests", authMiddleware, async (req, res) => {
       ">
         + Create Test
       </button>
-      <button onclick="openSelectedSettings()" style="
+      <button id="openSelectedSettingsButton" style="
   margin-left:10px;
   padding:12px 16px;
   background:#334155;
@@ -72,7 +72,7 @@ router.get("/teacher-tests", authMiddleware, async (req, res) => {
 ">
   Test Settings
 </button>
-      <button onclick="deleteSelected()" style="
+      <button id="deleteSelectedTestsButton" style="
         margin-left:10px;
         padding:12px 16px;
         background:#dc3545;
@@ -173,7 +173,8 @@ box-sizing:border-box;
           const editUrl = "/create-test?id=" + encodeURIComponent(String(t._id || ""));
           return \`
           <div
-          onclick='previewTest(\${testId})'
+            class="teacher-test-card"
+            data-test-id="\${escapeHtml(t._id || "")}"
             style="
               background:#f8fafc;
               padding:18px 20px;
@@ -191,7 +192,6 @@ box-sizing:border-box;
                 type="checkbox"
                 class="testCheckbox"
                 value="\${escapeHtml(t._id)}"
-                onclick="event.stopPropagation()"
               >
               <div>
                 <div style="font-size:18px;font-weight:700;">
@@ -233,13 +233,17 @@ box-sizing:border-box;
             </div>
 <div style="display:flex;gap:10px;align-items:center;">
   \${t.status !== "published" ? \`
-    <button onclick="event.stopPropagation(); go('\${editUrl}')"
+    <button
+      class="edit-test-button"
+      data-edit-url="\${escapeHtml(editUrl)}"
       style="padding:10px 16px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
       Edit
     </button>
   \` : ""}
-    <button onclick='event.stopPropagation(); assignTest(\${testId})'
-    style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
+    <button
+      class="assign-test-button"
+      data-test-id="\${escapeHtml(t._id || "")}"
+      style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
     \${t.status === "published" ? "Published" : "Publish"}
   </button>
 </div>
@@ -248,6 +252,36 @@ box-sizing:border-box;
         }).join("");
         document.getElementById("testList").innerHTML =
           html || "<p>No tests found</p>";
+
+          const testList = document.getElementById("testList");
+          if(testList){
+            testList.addEventListener("click", function(event){
+              const checkbox = event.target.closest(".testCheckbox");
+              if(checkbox){
+                return;
+              }
+
+              const editButton = event.target.closest(".edit-test-button");
+              if(editButton){
+                event.stopPropagation();
+                go(editButton.dataset.editUrl || "/teacher-tests");
+                return;
+              }
+
+              const assignButton = event.target.closest(".assign-test-button");
+              if(assignButton){
+                event.stopPropagation();
+                assignTest(assignButton.dataset.testId || "");
+                return;
+              }
+
+              const testCard = event.target.closest(".teacher-test-card");
+              if(testCard){
+                previewTest(testCard.dataset.testId || "");
+              }
+            });
+          }
+
           window.previewTest = function(testId){
           const test = myTests.find(t =>
             String(t._id) === String(testId)
@@ -411,6 +445,24 @@ headers:{
 function openSelectedSettings(){
   window.location.replace("/test-settings");
 }
+
+const createTestFromListButton = document.getElementById("createTestFromListButton");
+if(createTestFromListButton){
+  createTestFromListButton.addEventListener("click", function(){
+    go("/create-test");
+  });
+}
+
+const openSelectedSettingsButton = document.getElementById("openSelectedSettingsButton");
+if(openSelectedSettingsButton){
+  openSelectedSettingsButton.addEventListener("click", openSelectedSettings);
+}
+
+const deleteSelectedTestsButton = document.getElementById("deleteSelectedTestsButton");
+if(deleteSelectedTestsButton){
+  deleteSelectedTestsButton.addEventListener("click", deleteSelected);
+}
+
       function deleteSelected(){
         const selected = Array.from(
           document.querySelectorAll(".testCheckbox:checked")
@@ -611,7 +663,8 @@ ${noMappingsNotice}
         <button
           id="classNameButton"
           type="button"
-          onclick="toggleCustomDropdown('className')"
+          class="custom-dropdown-toggle"
+          data-dropdown-id="className"
           style="
             width:100%;
             padding:13px 14px;
@@ -659,7 +712,8 @@ ${noMappingsNotice}
         <button
           id="subjectButton"
           type="button"
-          onclick="toggleCustomDropdown('subject')"
+          class="custom-dropdown-toggle"
+          data-dropdown-id="subject"
           style="
             width:100%;
             padding:13px 14px;
@@ -731,7 +785,7 @@ ${noMappingsNotice}
           0 selected
         </p>
       </div>
-      <button onclick="clearFilters()" style="
+      <button id="clearQuestionFiltersButton" style="
         padding:9px 12px;
         background:#fee2e2;
         color:#991b1b;
@@ -766,7 +820,7 @@ ${noMappingsNotice}
       margin-bottom:10px;
     ">
       <div style="position:relative;width:100%;">
-        <button id="questionSubjectFilterButton" type="button" onclick="toggleCustomDropdown('questionSubjectFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+                <button id="questionSubjectFilterButton" type="button" class="custom-dropdown-toggle" data-dropdown-id="questionSubjectFilter" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
           <span id="questionSubjectFilterLabel">All Subjects</span>
           <span>▾</span>
         </button>
@@ -774,7 +828,7 @@ ${noMappingsNotice}
         <input id="questionSubjectFilter" type="hidden" value="all">
       </div>
       <div style="position:relative;width:100%;">
-        <button id="questionBoardFilterButton" type="button" onclick="toggleCustomDropdown('questionBoardFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+         <button id="questionBoardFilterButton" type="button" class="custom-dropdown-toggle" data-dropdown-id="questionBoardFilter" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
           <span id="questionBoardFilterLabel">All Boards</span>
           <span>▾</span>
         </button>
@@ -782,7 +836,7 @@ ${noMappingsNotice}
         <input id="questionBoardFilter" type="hidden" value="all">
       </div>
       <div style="position:relative;width:100%;">
-        <button id="questionDifficultyFilterButton" type="button" onclick="toggleCustomDropdown('questionDifficultyFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+        <button id="questionDifficultyFilterButton" type="button" class="custom-dropdown-toggle" data-dropdown-id="questionDifficultyFilter" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
           <span id="questionDifficultyFilterLabel">All Difficulty</span>
           <span>▾</span>
         </button>
@@ -797,7 +851,7 @@ ${noMappingsNotice}
       margin-bottom:14px;
     ">
       <div style="position:relative;width:100%;">
-        <button id="questionTypeFilterButton" type="button" onclick="toggleCustomDropdown('questionTypeFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+        <button id="questionTypeFilterButton" type="button" class="custom-dropdown-toggle" data-dropdown-id="questionTypeFilter" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
           <span id="questionTypeFilterLabel">All Types</span>
           <span>▾</span>
         </button>
@@ -805,7 +859,7 @@ ${noMappingsNotice}
         <input id="questionTypeFilter" type="hidden" value="all">
       </div>
       <div style="position:relative;width:100%;">
-        <button id="questionScopeFilterButton" type="button" onclick="toggleCustomDropdown('questionScopeFilter')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
+        <button id="questionScopeFilterButton" type="button" class="custom-dropdown-toggle" data-dropdown-id="questionScopeFilter" style="width:100%;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;box-sizing:border-box;">
           <span id="questionScopeFilterLabel">All Sources</span>
           <span>▾</span>
         </button>
@@ -824,7 +878,7 @@ ${noMappingsNotice}
     >
       <p style="color:#64748b;">Loading questions...</p>
     </div>
-    <button id="saveTestButton" onclick="saveTest()" style="
+    <button id="saveTestButton" style="
       margin-top:18px;
       width:100%;
       padding:14px;
@@ -934,7 +988,6 @@ function getBadge(label, background, color){
 }
 function buildQuestionRow(q){
   const id = getQuestionId(q);
-  const idForJs = jsString(id);
   const idForAttribute = escapeHtml(id);
   const questionText = escapeHtml(q.question || "Untitled question");
   const type = getQuestionType(q);
@@ -953,7 +1006,8 @@ function buildQuestionRow(q){
       : "MCQ";
   return \`
     <label
-    onclick='previewQuestion(\${idForJs})'
+      class="question-preview-card"
+      data-question-id="\${idForAttribute}"
       style="
         display:block;
         padding:14px;
@@ -972,7 +1026,6 @@ function buildQuestionRow(q){
           value="\${idForAttribute}"
           class="qbox"
           \${selected ? "checked" : ""}
-          onclick="event.stopPropagation()"
           style="margin-top:4px;width:16px;height:16px;"
         >
         <div style="min-width:0;flex:1;">
@@ -1038,14 +1091,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-    option.onclick = function(){
+    option.addEventListener("click", function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
       closeCustomDropdowns();
       if(typeof onSelect === "function"){
         onSelect(optionData.value);
       }
-    };
+    });
     menu.appendChild(option);
   });
   const selectedOption = options.find(optionData =>
@@ -1060,6 +1113,24 @@ function setCustomDropdownOptions(inputId, options, onSelect){
   }
 }
 document.addEventListener("click", function(event){
+  const dropdownToggle = event.target.closest(".custom-dropdown-toggle");
+  if(dropdownToggle){
+    toggleCustomDropdown(dropdownToggle.dataset.dropdownId || "");
+    return;
+  }
+
+  const saveTestSettingsButton = event.target.closest("#saveTestSettingsButton");
+  if(saveTestSettingsButton){
+    saveSettings();
+    return;
+  }
+
+  const backToTeacherTestsButton = event.target.closest("#backToTeacherTestsButton");
+  if(backToTeacherTestsButton){
+    go("/teacher-tests");
+    return;
+  }
+
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
     event.target.closest("[id$='Menu']");
@@ -1536,7 +1607,8 @@ const tests = await Test.find({
       <button
         id="testSelectorButton"
         type="button"
-        onclick="toggleCustomDropdown('testSelector')"
+        class="custom-dropdown-toggle"
+        data-dropdown-id="testSelector"
         style="
           width:100%;
           padding:12px;
@@ -1644,14 +1716,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-    option.onclick = function(){
+    option.addEventListener("click", function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
       closeCustomDropdowns();
       if(typeof onSelect === "function"){
         onSelect(optionData.value);
       }
-    };
+    });
     menu.appendChild(option);
   });
   const selectedOption = options.find(optionData =>
@@ -1753,7 +1825,8 @@ function loadSelectedTest(){
         <button
           id="testTypeButton"
           type="button"
-          onclick="toggleCustomDropdown('testType')"
+          class="custom-dropdown-toggle"
+          data-dropdown-id="testType"
           style="
             width:100%;
             padding:12px;
@@ -1839,7 +1912,7 @@ function loadSelectedTest(){
       </p>
     </div>
     <div style="display:flex;gap:12px;">
-      <button onclick="saveSettings()" style="
+      <button id="saveTestSettingsButton" style="
         padding:12px 18px;
         background:#4f46e5;
         color:white;
@@ -1850,7 +1923,7 @@ function loadSelectedTest(){
       ">
         Save Settings
       </button>
-      <button onclick="go('/teacher-tests')" style="
+      <button id="backToTeacherTestsButton" style="
         padding:12px 18px;
         background:#64748b;
         color:white;

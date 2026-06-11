@@ -28,7 +28,8 @@ function safeJsonForScript(value) {
   <button
     id="${escapeAttribute(id)}Button"
     type="button"
-    onclick="toggleCustomDropdown('${escapeAttribute(id)}')"
+    class="admin-custom-dropdown-toggle"
+    data-dropdown-id="${escapeAttribute(id)}"
     style="
       width:100%;
       padding:8px;
@@ -193,7 +194,8 @@ const studentDropdownData = students.map(s => {
   }</td>
   <td>
     <button
-      onclick="deleteSubject('${escapeAttribute(s._id)}')"
+      class="delete-subject-button"
+      data-subject-id="${escapeAttribute(s._id)}"
       style="
         background:#dc2626;
         color:white;
@@ -223,7 +225,8 @@ const studentDropdownData = students.map(s => {
   <td>${escapeHtml(teacherDisplay)}</td>
   <td>
     <button
-      onclick="deleteMapping('${escapeAttribute(m._id)}')"
+      class="delete-mapping-button"
+      data-mapping-id="${escapeAttribute(m._id)}"
       style="
         background:#dc2626;
         color:white;
@@ -256,7 +259,8 @@ const teacherRows = teachers.map(t => `
         ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
         : `
           <button
-            onclick="deleteUser('${escapeAttribute(t._id)}')"
+            class="delete-teacher-button"
+            data-teacher-id="${escapeAttribute(t._id)}"
             style="
               background:#dc2626;
               color:white;
@@ -314,7 +318,8 @@ const studentRows = students.map(s => {
   </td>
   <td>
     <button
-      onclick="updateStudentClass('${escapeAttribute(s._id)}')"
+      class="update-student-class-button"
+      data-student-record-id="${escapeAttribute(s._id)}"
       style="
         background:#4f46e5;
         color:white;
@@ -328,7 +333,8 @@ const studentRows = students.map(s => {
       Save
     </button>
     <button
-      onclick="deleteStudent('${escapeAttribute(s._id)}')"
+      class="delete-student-button"
+      data-student-record-id="${escapeAttribute(s._id)}"
       style="
         background:#dc2626;
         color:white;
@@ -388,7 +394,8 @@ const classRows = classes.map(c => {
   }</td>
   <td>
     <button
-      onclick="deleteClass('${escapeAttribute(c._id)}')"
+      class="delete-class-button"
+      data-class-id="${escapeAttribute(c._id)}"
       style="
         background:#dc2626;
         color:white;
@@ -421,7 +428,8 @@ const adminRows = admins.map(a => `
         ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
         : `
           <button
-            onclick="deleteUser('${escapeAttribute(a._id)}')"
+            class="delete-user-button"
+            data-user-id="${escapeAttribute(a._id)}"
             style="
               background:#dc2626;
               color:white;
@@ -456,14 +464,14 @@ const adminRows = admins.map(a => `
 ">
     <div>
       <h2>Admin</h2>
-      <div onclick="go('/admin-dashboard')" style="padding:12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">
+      <div class="admin-settings-nav-link" data-href="/admin-dashboard" style="padding:12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">
         Dashboard
       </div>
-      <div onclick="go('/admin-settings')" style="padding:12px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">
+      <div class="admin-settings-nav-link" data-href="/admin-settings" style="padding:12px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">
         Settings
       </div>
     </div>
-    <div onclick="logout()" style="padding:12px;border-radius:8px;cursor:pointer;color:#f87171;">
+    <div id="adminSettingsLogoutButton" style="padding:12px;border-radius:8px;cursor:pointer;color:#f87171;">
       Logout
     </div>
 </aside>
@@ -484,7 +492,7 @@ const adminRows = admins.map(a => `
   margin-bottom:20px;
 ">
   <h1 style="margin:0;">Admin Settings</h1>
-  <button onclick="go('/school-dashboard')" style="
+  <button id="adminSettingsPreviousPageButton" style="
     padding:12px 16px;
     background:#f59e0b;
     color:white;
@@ -513,31 +521,31 @@ const adminRows = admins.map(a => `
         top:20px;
         box-sizing:border-box;
       ">
-        <button class="adminPanelButton" onclick="showAdminPanel('overview', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#334155;color:white;cursor:pointer;text-align:left;font-weight:700;">
+               <button class="adminPanelButton" data-panel="overview" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#334155;color:white;cursor:pointer;text-align:left;font-weight:700;">
           Overview
         </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('teachers', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                <button class="adminPanelButton" data-panel="teachers" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Teachers
         </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('admins', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                <button class="adminPanelButton" data-panel="admins" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Admins
         </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('classes', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                <button class="adminPanelButton" data-panel="classes" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Classes
         </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('subjects', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                <button class="adminPanelButton" data-panel="subjects" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
   Subjects
 </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('students', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                               <button class="adminPanelButton" data-panel="students" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Students
         </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('add-students', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                <button class="adminPanelButton" data-panel="add-students" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Add Students
         </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('mappings', this)" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                <button class="adminPanelButton" data-panel="mappings" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Teacher Mappings
         </button>
-        <button class="adminPanelButton" onclick="showAdminPanel('payments', this)" style="width:100%;padding:14px 14px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
+                <button class="adminPanelButton" data-panel="payments" style="width:100%;padding:14px 14px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
           Payments
         </button>
       </div>
@@ -567,7 +575,7 @@ const adminRows = admins.map(a => `
         ${customDropdownHtml("mapClassName", "Select Class", "", "180px")}
         ${customDropdownHtml("mapSubject", "Select Subject", "", "180px")}
         ${customDropdownHtml("mapTeacherId", "Select Teacher", "", "220px")}
-        <button onclick="saveMapping()" style="
+        <button id="saveMappingButton" style="
           padding:10px 16px;
           background:#4f46e5;
           color:white;
@@ -622,7 +630,7 @@ const adminRows = admins.map(a => `
           <input id="newTeacherName" placeholder="Teacher name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
           <input id="newTeacherEmail" placeholder="Teacher email" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
           <input id="newTeacherPassword" placeholder="Temporary password" type="password" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <button onclick="addUserWithRole('teacher', 'newTeacher')" style="
+          <button class="add-user-role-button" data-role="teacher" data-prefix="newTeacher" style="
             padding:11px 16px;
             background:#16a34a;
             color:white;
@@ -681,7 +689,7 @@ const adminRows = admins.map(a => `
             placeholder="Class name, example C1"
             style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
           />
-          <button onclick="createClass()" style="
+          <button id="createClassButton" style="
             padding:11px 16px;
             background:#16a34a;
             color:white;
@@ -740,7 +748,7 @@ const adminRows = admins.map(a => `
         placeholder="Subject name, example Maths"
         style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
       />
-      <button onclick="createSubject()" style="
+      <button id="createSubjectButton" style="
         padding:11px 16px;
         background:#16a34a;
         color:white;
@@ -823,7 +831,8 @@ const adminRows = admins.map(a => `
           <div style="display:flex;align-items:center;gap:10px;">
             <button
               id="studentPrevPageButton"
-              onclick="changeStudentPage(-1)"
+              class="student-page-button"
+              data-page-delta="-1"
               style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;cursor:pointer;font-weight:700;"
             >
               Previous
@@ -831,7 +840,8 @@ const adminRows = admins.map(a => `
             <span id="studentPageInfo" style="color:#475569;font-weight:700;">Page 1</span>
             <button
               id="studentNextPageButton"
-              onclick="changeStudentPage(1)"
+              class="student-page-button"
+              data-page-delta="1"
               style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;cursor:pointer;font-weight:700;"
             >
               Next
@@ -891,7 +901,7 @@ const adminRows = admins.map(a => `
           <input id="newAdminName" placeholder="Admin name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
           <input id="newAdminEmail" placeholder="Admin email" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
           <input id="newAdminPassword" placeholder="Temporary password" type="password" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <button onclick="addUserWithRole('admin', 'newAdmin')" style="
+          <button class="add-user-role-button" data-role="admin" data-prefix="newAdmin" style="
             padding:11px 16px;
             background:#16a34a;
             color:white;
@@ -953,7 +963,7 @@ const adminRows = admins.map(a => `
           gap:12px;
           margin-top:18px;
         ">
-          <button onclick="addBulkStudentRow()" style="
+          <button id="addBulkStudentRowButton" style="
             padding:11px 16px;
             background:#334155;
             color:white;
@@ -964,7 +974,7 @@ const adminRows = admins.map(a => `
           ">
             Add Row
           </button>
-          <button onclick="saveBulkStudents()" style="
+          <button id="saveBulkStudentsButton" style="
             padding:11px 16px;
             background:#16a34a;
             color:white;
@@ -1051,14 +1061,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-    option.onclick = function(){
+    option.addEventListener("click", function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
       closeCustomDropdowns();
       if(typeof onSelect === "function"){
         onSelect(optionData.value);
       }
-    };
+    });
     menu.appendChild(option);
   });
   const selectedOption = options.find(optionData =>
@@ -1234,6 +1244,119 @@ function applyStudentFilters(){
     nextButton.style.cursor = nextButton.disabled ? "not-allowed" : "pointer";
   }
 }
+document.addEventListener("click", function(event){
+  const dropdownToggle = event.target.closest(".admin-custom-dropdown-toggle");
+  if(dropdownToggle){
+    toggleCustomDropdown(dropdownToggle.dataset.dropdownId || "");
+    return;
+  }
+  const navLink = event.target.closest(".admin-settings-nav-link");
+  if(navLink){
+    go(navLink.dataset.href || "/admin-settings");
+    return;
+  }
+  const logoutButton = event.target.closest("#adminSettingsLogoutButton");
+  if(logoutButton){
+    logout();
+    return;
+  }
+  const previousPageButton = event.target.closest("#adminSettingsPreviousPageButton");
+  if(previousPageButton){
+    go("/school-dashboard");
+    return;
+  }
+  const deleteSubjectButton = event.target.closest(".delete-subject-button");
+  if(deleteSubjectButton){
+    deleteSubject(deleteSubjectButton.dataset.subjectId || "");
+    return;
+  }
+
+  const deleteMappingButton = event.target.closest(".delete-mapping-button");
+  if(deleteMappingButton){
+    deleteMapping(deleteMappingButton.dataset.mappingId || "");
+    return;
+  }
+
+  const deleteUserButton = event.target.closest(".delete-user-button");
+  if(deleteUserButton){
+    deleteUser(deleteUserButton.dataset.userId || "");
+    return;
+  }
+
+  const updateStudentClassButton = event.target.closest(".update-student-class-button");
+  if(updateStudentClassButton){
+    updateStudentClass(updateStudentClassButton.dataset.studentRecordId || "");
+    return;
+  }
+
+  const deleteStudentButton = event.target.closest(".delete-student-button");
+  if(deleteStudentButton){
+    deleteStudent(deleteStudentButton.dataset.studentRecordId || "");
+    return;
+  }
+
+  const deleteClassButton = event.target.closest(".delete-class-button");
+  if(deleteClassButton){
+    deleteClass(deleteClassButton.dataset.classId || "");
+    return;
+  }
+
+  const saveMappingButton = event.target.closest("#saveMappingButton");
+  if(saveMappingButton){
+    saveMapping();
+    return;
+  }
+
+  const addUserRoleButton = event.target.closest(".add-user-role-button");
+  if(addUserRoleButton){
+    addUserWithRole(
+      addUserRoleButton.dataset.role || "",
+      addUserRoleButton.dataset.prefix || ""
+    );
+    return;
+  }
+
+  const createClassButton = event.target.closest("#createClassButton");
+  if(createClassButton){
+    createClass();
+    return;
+  }
+
+  const createSubjectButton = event.target.closest("#createSubjectButton");
+  if(createSubjectButton){
+    createSubject();
+    return;
+  }
+
+  const studentPageButton = event.target.closest(".student-page-button");
+  if(studentPageButton){
+    changeStudentPage(Number(studentPageButton.dataset.pageDelta || 0));
+    return;
+  }
+
+  const addBulkStudentRowButton = event.target.closest("#addBulkStudentRowButton");
+  if(addBulkStudentRowButton){
+    addBulkStudentRow();
+    return;
+  }
+
+  const saveBulkStudentsButton = event.target.closest("#saveBulkStudentsButton");
+  if(saveBulkStudentsButton){
+    saveBulkStudents();
+    return;
+  }
+
+  const removeBulkStudentRowButton = event.target.closest(".remove-bulk-student-row-button");
+  if(removeBulkStudentRowButton){
+    removeBulkStudentRowButton.parentElement.remove();
+    return;
+  }
+
+  const panelButton = event.target.closest(".adminPanelButton");
+  if(panelButton){
+    showAdminPanel(panelButton.dataset.panel || "overview", panelButton);
+  }
+});
 function showAdminPanel(panelName, button){
   document.querySelectorAll(".adminPanel").forEach(panel => {
     panel.style.display = "none";
@@ -1459,7 +1582,7 @@ headers:{
   row.innerHTML =
     '<input class="bulkStudentName" placeholder="Student name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />' +
     '<input class="bulkStudentId" placeholder="Student ID" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />' +
-    '<button onclick="this.parentElement.remove()" style="padding:11px 14px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Remove</button>';
+      '<button class="remove-bulk-student-row-button" style="padding:11px 14px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Remove</button>';
   container.appendChild(row);
 }
 function saveBulkStudents(){

@@ -106,7 +106,7 @@ router.get(
         Live system status for platform admins.
       </p>
     </div>
-    <button onclick="window.location.replace('/platform/schools')" style="
+    <button id="platformHealthBackButton" style="
       padding:11px 15px;
       background:#475569;
       color:white;
@@ -194,7 +194,16 @@ router.get(
   </div>
 </div>
 </body>
+<script>
+const platformHealthBackButton = document.getElementById("platformHealthBackButton");
+if(platformHealthBackButton){
+  platformHealthBackButton.addEventListener("click", function(){
+    window.location.replace("/platform/schools");
+  });
+}
+</script>
 `;
+
     res.send(content);
   }
 );

@@ -96,14 +96,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-    option.onclick = function(){
+    option.addEventListener("click", function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
       closeCustomDropdowns();
       if(typeof onSelect === "function"){
         onSelect(optionData.value);
       }
-    };
+    });
     menu.appendChild(option);
   });
   const selectedOption = options.find(optionData =>
@@ -165,12 +165,14 @@ fetch("/api/teacher-dashboard-data")
   const totalSubjectsMapped = myClassSubjects.length;
   const recentTestsHtml = recentTests.length
     ? recentTests.map(t => \`
-      <div style="
-        padding:12px 0;
-        border-bottom:1px solid #e5e7eb;
-        cursor:pointer;
-      "
-      onclick="selectTest('\${t._id}')"
+      <div
+        class="recent-test-card"
+        data-test-id="\${escapeClientHtml(t._id)}"
+        style="
+          padding:12px 0;
+          border-bottom:1px solid #e5e7eb;
+          cursor:pointer;
+        "
       >
         <div style="font-weight:700;margin-bottom:5px;">
           \${escapeClientHtml(t.name || "Untitled Test")}
@@ -254,7 +256,7 @@ fetch("/api/teacher-dashboard-data")
         \${filteredTests.map(t => {
           const stats = getTestStats(t._id);
           return \`
-            <tr style="cursor:pointer;" onclick="go('/teacher-tests')">
+            <tr class="teacher-tests-link" style="cursor:pointer;">
               <td style="padding:12px;border-bottom:1px solid #e5e7eb;font-weight:700;">
                 \${escapeClientHtml(stats.test.name || "Untitled Test")}
               </td>
@@ -310,7 +312,7 @@ fetch("/api/teacher-dashboard-data")
           Here is your teaching overview.
         </p>
       </div>
-      <button onclick="go('/create-test')" style="
+      <button id="createTestButton" style="
         background:linear-gradient(135deg,#4f46e5,#6366f1);
         color:white;
         border:none;
@@ -387,7 +389,7 @@ fetch("/api/teacher-dashboard-data")
           flex-shrink:0;
         ">
           <h2 style="margin:0;font-size:22px;">Previous Tests</h2>
-          <button onclick="go('/teacher-tests')" style="
+          <button id="teacherTestsButton" style="
             border:none;
             background:#4f46e5;
             color:white;
@@ -439,7 +441,8 @@ fetch("/api/teacher-dashboard-data")
           <button
             id="testFilterButton"
             type="button"
-            onclick="toggleCustomDropdown('testFilter')"
+            class="teacher-dropdown-toggle"
+            data-dropdown-id="testFilter"
             style="
               width:100%;
               padding:10px 12px;
@@ -487,6 +490,30 @@ fetch("/api/teacher-dashboard-data")
       </div>
     </div>
   \`;
+    document.addEventListener("click", function(event){
+    const recentTestCard = event.target.closest(".recent-test-card");
+    if(recentTestCard){
+      selectTest(recentTestCard.dataset.testId || "all");
+      return;
+    }
+
+    const teacherTestsLink = event.target.closest(".teacher-tests-link");
+    if(teacherTestsLink){
+      go("/teacher-tests");
+      return;
+    }
+
+    const createTestButton = event.target.closest("#createTestButton");
+    if(createTestButton){
+      go("/create-test");
+      return;
+    }
+
+    const teacherTestsButton = event.target.closest("#teacherTestsButton");
+    if(teacherTestsButton){
+      go("/teacher-tests");
+    }
+  });
   window.selectTest = function(testId){
     const table = document.getElementById("analyticsTable");
     table.innerHTML = buildAnalyticsTable(testId);
@@ -618,11 +645,12 @@ router.get("/students", authMiddleware, async (req, res) => {
       .lean();
 
     const rows = students.map(s => {
-      const studentIdForJs = safeJsonForScript(String(s.studentId || ""));
+      const studentIdForAttribute = escapeAttribute(s.studentId || "");
       return `
 <tr
+class="teacher-student-row"
+data-student-id="${studentIdForAttribute}"
 style="cursor:pointer;"
-onclick='viewStudent(${studentIdForJs})'
 >
 <td>${escapeHtml(s.name || "-")}</td>
 <td>${escapeHtml(s.class || "-")}</td>
@@ -655,9 +683,15 @@ ${rows || "<tr><td colspan='4'>No students found</td></tr>"}
 <script>
 function viewStudent(studentId){
   window.location.replace(
-    "/student?studentId=" + encodeURIComponent(studentId)
+    "/student?studentId=" + encodeURIComponent(studentId || "")
   );
 }
+
+document.querySelectorAll(".teacher-student-row").forEach(row => {
+  row.addEventListener("click", function(){
+    viewStudent(this.dataset.studentId || "");
+  });
+});
 </script>
 `;
     res.send(layout(content, "students"));
@@ -692,7 +726,8 @@ flex-wrap:wrap;
     <button
       id="classFilterButton"
       type="button"
-      onclick="toggleCustomDropdown('classFilter')"
+      class="teacher-dropdown-toggle"
+      data-dropdown-id="classFilter"
       style="
         width:100%;
         padding:10px;
@@ -739,7 +774,7 @@ flex-wrap:wrap;
       min-width:280px;
     "
   />
-  <button onclick="loadClasses(1)" style="
+  <button id="classSearchButton" style="
     padding:10px 14px;
     background:#4f46e5;
     color:white;
@@ -750,7 +785,7 @@ flex-wrap:wrap;
   ">
     Search
   </button>
-  <button onclick="clearClassFilters()" style="
+  <button id="clearClassFiltersButton" style="
     padding:10px 14px;
     background:#64748b;
     color:white;
@@ -815,14 +850,14 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.onmouseleave = function(){
       option.style.background = "white";
     };
-    option.onclick = function(){
+    option.addEventListener("click", function(){
       input.value = optionData.value;
       label.textContent = optionData.label;
       closeCustomDropdowns();
       if(typeof onSelect === "function"){
         onSelect(optionData.value);
       }
-    };
+    });
     menu.appendChild(option);
   });
   const selectedOption = options.find(optionData =>
@@ -941,7 +976,8 @@ const classStudents = studentsData.filter(s =>
         const safeStudentId = jsString(s.studentId);
         return \`
 <div
-onclick='previewStudent(\${safeStudentId})'
+class="class-student-card"
+data-student-id="\${escapeHtml(s.studentId || "")}"
 style="
 background:#f8fafc;
 padding:12px;
@@ -1076,7 +1112,10 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
           : "N/A";
         return \`
 <div
-onclick='loadResultPreview(\${jsString(r.testId)}, \${safeStudentId}, \${jsString(student.class)})'
+class="student-result-preview-card"
+data-test-id="\${escapeHtml(r.testId || "")}"
+data-student-id="\${escapeHtml(student.studentId || "")}"
+data-class-name="\${escapeHtml(student.class || "")}"
 style="
 background:white;
 padding:14px;
@@ -1113,7 +1152,10 @@ margin-bottom:15px;
     <p style="margin:0;color:#64748b;">ID: \${escapeHtml(student.studentId)}</p>
     <p style="margin:4px 0 0 0;color:#64748b;">Class: \${escapeHtml(student.class)}</p>
   </div>
-  <button onclick='downloadStudentReport(\${safeStudentId})' style="
+  <button
+    class="download-student-report-button"
+    data-student-id="\${escapeHtml(student.studentId || "")}"
+    style="
     padding:10px 14px;
     background:#4f46e5;
     color:white;
@@ -1149,7 +1191,8 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
 ">
   <button
     \${paginationData.hasPrevPage ? "" : "disabled"}
-    onclick="loadClasses(\${paginationData.page - 1})"
+    class="class-pagination-button"
+    data-page="\${paginationData.page - 1}"
     style="
       padding:8px 12px;
       border:none;
@@ -1167,7 +1210,8 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
   </span>
   <button
     \${paginationData.hasNextPage ? "" : "disabled"}
-    onclick="loadClasses(\${paginationData.page + 1})"
+    class="class-pagination-button"
+    data-page="\${paginationData.page + 1}"
     style="
       padding:8px 12px;
       border:none;
@@ -1190,6 +1234,52 @@ window.clearClassFilters = function(){
   localStorage.setItem("selectedClass", "all");
   loadClasses(1);
 };
+document.addEventListener("click", function(event){
+  const studentCard = event.target.closest(".class-student-card");
+  if(studentCard){
+    previewStudent(studentCard.dataset.studentId || "");
+    return;
+  }
+
+  const resultCard = event.target.closest(".student-result-preview-card");
+  if(resultCard){
+    loadResultPreview(
+      resultCard.dataset.testId || "",
+      resultCard.dataset.studentId || "",
+      resultCard.dataset.className || ""
+    );
+    return;
+  }
+
+  const downloadButton = event.target.closest(".download-student-report-button");
+  if(downloadButton){
+    downloadStudentReport(downloadButton.dataset.studentId || "");
+    return;
+  }
+
+  const paginationButton = event.target.closest(".class-pagination-button");
+  if(paginationButton && !paginationButton.disabled){
+    loadClasses(Number(paginationButton.dataset.page || 1));
+    return;
+  }
+
+  const dropdownToggle = event.target.closest(".teacher-dropdown-toggle");
+  if(dropdownToggle){
+    toggleCustomDropdown(dropdownToggle.dataset.dropdownId || "");
+    return;
+  }
+
+  const clearClassFiltersButton = event.target.closest("#clearClassFiltersButton");
+  if(clearClassFiltersButton){
+    clearClassFilters();
+  }
+});
+const classSearchButton = document.getElementById("classSearchButton");
+if(classSearchButton){
+  classSearchButton.addEventListener("click", function(){
+    loadClasses(1);
+  });
+}
 document.getElementById("studentSearch").addEventListener("keydown", function(event){
   if(event.key === "Enter"){
     loadClasses(1);
