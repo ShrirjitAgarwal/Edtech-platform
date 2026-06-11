@@ -192,6 +192,7 @@ async function getStudentTestsHandler(req, res) {
     const Test = require("../models/Test");
     const Result = require("../models/Result");
     const Student = require("../models/Student");
+    const User = require("../models/User");
     const studentToken = req.cookies && req.cookies.studentSessionToken;
     if (!studentToken) {
       return res.status(401).json({
@@ -245,7 +246,7 @@ async function getStudentTestsHandler(req, res) {
       teacherId,
       ...(student.schoolId ? { schoolId: student.schoolId } : {})
     })
-      .select("testId className teacherId schoolId schoolCode")
+      .select("testId testName className teacherId schoolId schoolCode createdAt")
       .lean();
     const testIds = assignments
       .map(assignment => assignment.testId)
@@ -258,12 +259,7 @@ async function getStudentTestsHandler(req, res) {
       _id: { $in: testIds },
       status: "published",
       teacherId,
-      ...(student.schoolId ? { schoolId: student.schoolId } : {}),
-      $or: [
-        { scheduledAt: { $exists: false } },
-        { scheduledAt: null },
-        { scheduledAt: { $lte: now } }
-      ]
+      ...(student.schoolId ? { schoolId: student.schoolId } : {})
     })
       .select("name subject className status teacherId schoolId schoolCode scheduledAt durationMinutes testType questionTimersEnabled createdAt")
       .sort({ createdAt: -1 })
@@ -276,15 +272,44 @@ async function getStudentTestsHandler(req, res) {
       .select("testId")
       .lean();
     const attemptedIds = attempted.map(result => String(result.testId));
-    const filtered = tests.filter(test => {
-      const subjectMatch =
-        String(test.subject || "").trim().toLowerCase() ===
-        String(subject || "").trim().toLowerCase();
-      const classMatch =
-        String(test.className || "").trim().toUpperCase() === className;
-      const notAttempted = !attemptedIds.includes(String(test._id));
-      return subjectMatch && classMatch && notAttempted;
+    const assignmentByTestId = {};
+    assignments.forEach(assignment => {
+      assignmentByTestId[String(assignment.testId)] = assignment;
     });
+
+    const teacher = await User.findById(teacherId)
+      .select("name email")
+      .lean();
+
+    const filtered = tests
+      .filter(test => {
+        const subjectMatch =
+          String(test.subject || "").trim().toLowerCase() ===
+          String(subject || "").trim().toLowerCase();
+        const classMatch =
+          String(test.className || "").trim().toUpperCase() === className;
+        return subjectMatch && classMatch;
+      })
+      .map(test => {
+        const assignment = assignmentByTestId[String(test._id)] || {};
+        const hasAttempted = attemptedIds.includes(String(test._id));
+        const isPending =
+          test.scheduledAt &&
+          new Date(test.scheduledAt) > now;
+
+        return {
+          ...test,
+          assignedBy: teacher?.name || teacher?.email || "Teacher",
+          assignedOn: assignment.createdAt || test.createdAt || null,
+          assignmentId: assignment._id || null,
+          studentStatus: hasAttempted
+            ? "completed"
+            : isPending
+              ? "pending"
+              : "available"
+        };
+      });
+
     res.json(filtered);
   } catch (err) {
     console.error("GET TESTS ERROR:", err);

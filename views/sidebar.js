@@ -6,10 +6,10 @@ function sidebar(active = "", role = "__USER_ROLE__") {
   const sidebarRole = sidebarUser?.role || "${role}";
   const sidebarIsStudent = sidebarRole === "student";
   const sidebarIsAdmin = sidebarRole === "admin";
+
   const sidebarItems = sidebarIsStudent
     ? [
-        { key: "my-tests", label: "My Tests", path: "/my-tests" },
-        { key: "dashboard", label: "Dashboard", path: "/my-tests" }
+        { key: "my-tests", label: "Dashboard", path: "/my-tests" }
       ]
     : sidebarIsAdmin
       ? [
@@ -28,17 +28,22 @@ function sidebar(active = "", role = "__USER_ROLE__") {
           { key: "classes", label: "Classes", path: "/classes" },
           { key: "settings", label: "Settings", path: "/teacher-settings" }
         ];
+
   const sidebarTitle = sidebarIsStudent
     ? "Student"
     : sidebarIsAdmin
       ? "Admin"
       : "Wizdm.io";
+
   const activeKey = "${active}";
+
   const itemsHtml = sidebarItems.map(item => {
     const isActive = activeKey === item.key;
+
     return \`
       <div
-        onclick="go('\${item.path}')"
+        class="sidebar-nav-item"
+        data-path="\${item.path}"
         style="
           padding:12px 12px;
           border-radius:10px;
@@ -54,6 +59,7 @@ function sidebar(active = "", role = "__USER_ROLE__") {
       </div>
     \`;
   }).join("");
+
   document.getElementById("sidebarContent").innerHTML = \`
     <div>
       <h2 style="
@@ -63,9 +69,10 @@ function sidebar(active = "", role = "__USER_ROLE__") {
       ">\${sidebarTitle}</h2>
       \${itemsHtml}
     </div>
+
     <div>
       <div
-        onclick="logout()"
+        id="sidebarLogoutButton"
         style="
           padding:12px 12px;
           border-radius:10px;
@@ -80,9 +87,21 @@ function sidebar(active = "", role = "__USER_ROLE__") {
       </div>
     </div>
   \`;
+
+  document.querySelectorAll(".sidebar-nav-item").forEach(item => {
+    item.addEventListener("click", function(){
+      go(this.dataset.path || "/");
+    });
+  });
+
+  const logoutButton = document.getElementById("sidebarLogoutButton");
+  if (logoutButton) {
+    logoutButton.addEventListener("click", logout);
+  }
 })();
 </script>
 `;
+
   return `
 <div
   id="sidebarContent"
@@ -103,4 +122,5 @@ function sidebar(active = "", role = "__USER_ROLE__") {
 ${sidebarScript}
 `;
 }
+
 module.exports = sidebar;
