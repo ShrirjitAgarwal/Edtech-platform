@@ -96,7 +96,19 @@ function sidebar(active = "", role = "__USER_ROLE__") {
 
   const logoutButton = document.getElementById("sidebarLogoutButton");
   if (logoutButton) {
-    logoutButton.addEventListener("click", logout);
+    logoutButton.addEventListener("click", function(){
+      if(typeof window.logout === "function"){
+        window.logout();
+        return;
+      }
+
+      fetch("/logout", {
+        method: "POST"
+      }).finally(() => {
+        localStorage.clear();
+        window.location.replace("/");
+      });
+    });
   }
 })();
 </script>
@@ -117,6 +129,11 @@ function sidebar(active = "", role = "__USER_ROLE__") {
     display:flex;
     flex-direction:column;
     justify-content:space-between;
+    height:100vh;
+    overflow-y:auto;
+    overflow-x:hidden;
+    position:sticky;
+    top:0;
   "
 ></div>
 ${sidebarScript}
