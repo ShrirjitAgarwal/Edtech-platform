@@ -817,15 +817,18 @@ router.post("/api/student/lookup", studentLookupHandler);
 // ---------- STUDENT DASHBOARD / TEST LIST ----------
 router.get("/my-tests", requireStudentPageSession, async (req, res) => {
 res.send(`
-<body style="margin:0;font-family:Arial;background:#eef2ff;">
-<div style="display:flex;min-height:100vh;">
+<body style="margin:0;font-family:Arial;background:#eef2ff;overflow:hidden;">
+<div style="display:flex;height:100vh;">
      ${sidebar("my-tests", "student")}
   <!-- CONTENT -->
   <div style="
     flex:1;
+    height:100vh;
     padding:30px;
     background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 100%);
-    overflow:auto;
+    overflow-y:auto;
+    overflow-x:hidden;
+    box-sizing:border-box;
   ">
     <div style="
       display:flex;

@@ -132,8 +132,6 @@ function sidebar(active = "", role = "__USER_ROLE__") {
     height:100vh;
     overflow-y:auto;
     overflow-x:hidden;
-    position:sticky;
-    top:0;
   "
 ></div>
 ${sidebarScript}
