@@ -731,6 +731,24 @@ exports.schoolUsagePage = async (req, res) => {
       </p>
     </div>
 
+    <h2>Plan and Limits</h2>
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:14px;
+      margin-bottom:28px;
+    ">
+      ${usageCard("Plan", formatPlanLabel(school.plan))}
+      ${usageCard("Billing", formatPlanLabel(school.billingStatus))}
+      ${usageCard("Admins", `${adminsCount} / ${formatLimitValue(school.maxAdmins)}`)}
+      ${usageCard("Teachers", `${teachersCount} / ${formatLimitValue(school.maxTeachers)}`)}
+      ${usageCard("Students", `${studentsCount} / ${formatLimitValue(school.maxStudents)}`)}
+      ${usageCard("Tests", `${testsCount} / ${formatLimitValue(school.maxTests)}`)}
+      ${usageCard("Assignments", `${assignmentsCount} / ${formatLimitValue(school.maxAssignments)}`)}
+      ${usageCard("Monthly Code Runs", `${codeRunsThisMonth} / ${formatLimitValue(school.maxMonthlyCodeRuns)}`)}
+      ${usageCard("Limit Enforcement", formatEnforcementStatus(school.limitEnforcement || {}))}
+    </div>
+
     <h2>Current Account Size</h2>
     <div style="
       display:grid;
