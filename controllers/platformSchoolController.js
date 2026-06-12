@@ -93,7 +93,33 @@ function formatEnforcementStatus(limitEnforcement = {}) {
 
   return enabled ? "Some limits enforced" : "Off";
 }
+function selectedAttribute(currentValue, optionValue) {
+  return String(currentValue || "") === String(optionValue || "") ? "selected" : "";
+}
 
+function checkedAttribute(value) {
+  return value ? "checked" : "";
+}
+
+function normalizeEnumValue(value, allowedValues, fallbackValue) {
+  const text = String(value || "").trim().toLowerCase();
+  return allowedValues.includes(text) ? text : fallbackValue;
+}
+
+function normalizeLimitNumber(value, fallbackValue) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    return fallbackValue;
+  }
+  return Math.floor(numberValue);
+}
+function getSchoolLimitValue(school, fieldName, fallbackValue) {
+  const numberValue = Number(school && school[fieldName]);
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    return fallbackValue;
+  }
+  return Math.floor(numberValue);
+}
 function renderSchoolCommercialSummary(school) {
   const features = school.featuresEnabled || {};
   const enforcement = school.limitEnforcement || {};
@@ -114,12 +140,12 @@ function renderSchoolCommercialSummary(school) {
       </p>
       <p style="margin:4px 0;color:#475569;">
         <b>Limits:</b>
-        Admins ${escapeHtml(formatLimitValue(school.maxAdmins))},
-        Teachers ${escapeHtml(formatLimitValue(school.maxTeachers))},
-        Students ${escapeHtml(formatLimitValue(school.maxStudents))},
-        Tests ${escapeHtml(formatLimitValue(school.maxTests))},
-        Assignments ${escapeHtml(formatLimitValue(school.maxAssignments))},
-        Monthly Code Runs ${escapeHtml(formatLimitValue(school.maxMonthlyCodeRuns))}
+        Admins ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAdmins", 2)))},
+        Teachers ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTeachers", 10)))},
+        Students ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxStudents", 200)))},
+        Tests ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTests", 100)))},
+        Assignments ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAssignments", 500)))},
+        Monthly Code Runs ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000)))}
       </p>
       <p style="margin:4px 0;color:#475569;">
         <b>Features:</b>
@@ -212,6 +238,90 @@ exports.listSchoolsPage = async (req, res) => {
  required
  style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
  />
+
+ <div style="
+ background:white;
+ border:1px solid #e2e8f0;
+ border-radius:10px;
+ padding:14px;
+ margin:12px 0;
+ ">
+ <h3 style="margin:0 0 12px 0;">Commercial Plan</h3>
+
+ <label style="font-weight:700;">Plan</label>
+ <select
+ name="plan"
+ style="width:100%;padding:10px;margin:6px 0 10px 0;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+ >
+ <option value="trial" ${selectedAttribute(school.plan || "trial", "trial")}>Trial</option>
+ <option value="starter" ${selectedAttribute(school.plan || "trial", "starter")}>Starter</option>
+ <option value="growth" ${selectedAttribute(school.plan || "trial", "growth")}>Growth</option>
+ <option value="enterprise" ${selectedAttribute(school.plan || "trial", "enterprise")}>Enterprise</option>
+ </select>
+
+ <label style="font-weight:700;">Billing Status</label>
+ <select
+ name="billingStatus"
+ style="width:100%;padding:10px;margin:6px 0 10px 0;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+ >
+ <option value="trial" ${selectedAttribute(school.billingStatus || "trial", "trial")}>Trial</option>
+ <option value="active" ${selectedAttribute(school.billingStatus || "trial", "active")}>Active</option>
+ <option value="past_due" ${selectedAttribute(school.billingStatus || "trial", "past_due")}>Past Due</option>
+ <option value="paused" ${selectedAttribute(school.billingStatus || "trial", "paused")}>Paused</option>
+ <option value="cancelled" ${selectedAttribute(school.billingStatus || "trial", "cancelled")}>Cancelled</option>
+ </select>
+
+ <h3 style="margin:12px 0;">Limits</h3>
+
+ <input name="maxAdmins" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAdmins", 2)))}" placeholder="Max admins" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
+ <input name="maxTeachers" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTeachers", 10)))}" placeholder="Max teachers" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
+ <input name="maxStudents" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxStudents", 200)))}" placeholder="Max students" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
+ <input name="maxTests" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTests", 100)))}" placeholder="Max tests" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
+ <input name="maxAssignments" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAssignments", 500)))}" placeholder="Max assignments" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
+ <input name="maxMonthlyCodeRuns" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000)))}" placeholder="Max monthly code runs" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
+
+ <h3 style="margin:12px 0;">Features</h3>
+
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="featureCodingQuestions" ${checkedAttribute((school.featuresEnabled || {}).codingQuestions !== false)} />
+ Coding Questions
+ </label>
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="featureBulkStudentImport" ${checkedAttribute((school.featuresEnabled || {}).bulkStudentImport !== false)} />
+ Bulk Student Import
+ </label>
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="featureReportDownloads" ${checkedAttribute((school.featuresEnabled || {}).reportDownloads !== false)} />
+ Report Downloads
+ </label>
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="featurePublicQuestionLibrary" ${checkedAttribute((school.featuresEnabled || {}).publicQuestionLibrary !== false)} />
+ Public Question Library
+ </label>
+
+ <h3 style="margin:12px 0;">Limit Enforcement</h3>
+ <p style="margin:0 0 10px 0;color:#64748b;">
+ These switches only save settings. They will not block users until enforcement is added in a later step.
+ </p>
+
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="enforceStudentLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceStudentLimit)} />
+ Enforce Student Limit
+ </label>
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="enforceTeacherLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceTeacherLimit)} />
+ Enforce Teacher Limit
+ </label>
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="enforceCodeRunLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceCodeRunLimit)} />
+ Enforce Code Run Limit
+ </label>
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="enforceTestLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceTestLimit)} />
+ Enforce Test Limit
+ </label>
+ </div>
+
  <button type="submit" style="
  padding:10px 14px;
  background:#4f46e5;
@@ -740,12 +850,12 @@ exports.schoolUsagePage = async (req, res) => {
     ">
       ${usageCard("Plan", formatPlanLabel(school.plan))}
       ${usageCard("Billing", formatPlanLabel(school.billingStatus))}
-      ${usageCard("Admins", `${adminsCount} / ${formatLimitValue(school.maxAdmins)}`)}
-      ${usageCard("Teachers", `${teachersCount} / ${formatLimitValue(school.maxTeachers)}`)}
-      ${usageCard("Students", `${studentsCount} / ${formatLimitValue(school.maxStudents)}`)}
-      ${usageCard("Tests", `${testsCount} / ${formatLimitValue(school.maxTests)}`)}
-      ${usageCard("Assignments", `${assignmentsCount} / ${formatLimitValue(school.maxAssignments)}`)}
-      ${usageCard("Monthly Code Runs", `${codeRunsThisMonth} / ${formatLimitValue(school.maxMonthlyCodeRuns)}`)}
+      ${usageCard("Admins", `${adminsCount} / ${formatLimitValue(getSchoolLimitValue(school, "maxAdmins", 2))}`)}
+      ${usageCard("Teachers", `${teachersCount} / ${formatLimitValue(getSchoolLimitValue(school, "maxTeachers", 10))}`)}
+      ${usageCard("Students", `${studentsCount} / ${formatLimitValue(getSchoolLimitValue(school, "maxStudents", 200))}`)}
+      ${usageCard("Tests", `${testsCount} / ${formatLimitValue(getSchoolLimitValue(school, "maxTests", 100))}`)}
+      ${usageCard("Assignments", `${assignmentsCount} / ${formatLimitValue(getSchoolLimitValue(school, "maxAssignments", 500))}`)}
+      ${usageCard("Monthly Code Runs", `${codeRunsThisMonth} / ${formatLimitValue(getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000))}`)}
       ${usageCard("Limit Enforcement", formatEnforcementStatus(school.limitEnforcement || {}))}
     </div>
 
@@ -890,8 +1000,45 @@ exports.updateSchool = async (req, res) => {
       return res.status(409).send("School code already exists");
     }
     const oldCode = school.code;
+
+    const plan = normalizeEnumValue(
+      req.body.plan,
+      ["trial", "starter", "growth", "enterprise"],
+      school.plan || "trial"
+    );
+
+    const billingStatus = normalizeEnumValue(
+      req.body.billingStatus,
+      ["trial", "active", "past_due", "paused", "cancelled"],
+      school.billingStatus || "trial"
+    );
+
     school.name = name;
     school.code = code;
+    school.plan = plan;
+    school.billingStatus = billingStatus;
+
+    school.maxAdmins = normalizeLimitNumber(req.body.maxAdmins, school.maxAdmins ?? 2);
+    school.maxTeachers = normalizeLimitNumber(req.body.maxTeachers, school.maxTeachers ?? 10);
+    school.maxStudents = normalizeLimitNumber(req.body.maxStudents, school.maxStudents ?? 200);
+    school.maxTests = normalizeLimitNumber(req.body.maxTests, school.maxTests ?? 100);
+    school.maxAssignments = normalizeLimitNumber(req.body.maxAssignments, school.maxAssignments ?? 500);
+    school.maxMonthlyCodeRuns = normalizeLimitNumber(req.body.maxMonthlyCodeRuns, school.maxMonthlyCodeRuns ?? 1000);
+
+    school.featuresEnabled = {
+      codingQuestions: req.body.featureCodingQuestions === "on",
+      bulkStudentImport: req.body.featureBulkStudentImport === "on",
+      reportDownloads: req.body.featureReportDownloads === "on",
+      publicQuestionLibrary: req.body.featurePublicQuestionLibrary === "on"
+    };
+
+    school.limitEnforcement = {
+      enforceStudentLimit: req.body.enforceStudentLimit === "on",
+      enforceTeacherLimit: req.body.enforceTeacherLimit === "on",
+      enforceCodeRunLimit: req.body.enforceCodeRunLimit === "on",
+      enforceTestLimit: req.body.enforceTestLimit === "on"
+    };
+
     await school.save();
     if (oldCode !== code) {
       await Promise.all([
