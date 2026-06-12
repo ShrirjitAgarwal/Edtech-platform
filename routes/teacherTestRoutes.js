@@ -1122,6 +1122,12 @@ document.addEventListener("click", function(event){
     return;
   }
 
+  const saveTestButton = event.target.closest("#saveTestButton");
+  if(saveTestButton){
+    saveTest();
+    return;
+  }
+
   const saveTestSettingsButton = event.target.closest("#saveTestSettingsButton");
   if(saveTestSettingsButton){
     saveSettings();
