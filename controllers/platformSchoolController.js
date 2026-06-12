@@ -120,6 +120,67 @@ function getSchoolLimitValue(school, fieldName, fallbackValue) {
   }
   return Math.floor(numberValue);
 }
+function buildLimitWarning(label, usedValue, limitValue) {
+  const used = Number(usedValue);
+  const limit = Number(limitValue);
+
+  if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) {
+    return "";
+  }
+
+  const percentage = Math.round((used / limit) * 100);
+
+  if (percentage < 80) {
+    return "";
+  }
+
+  const isExceeded = used >= limit;
+  const background = isExceeded ? "#fee2e2" : "#fef3c7";
+  const border = isExceeded ? "#fecaca" : "#fde68a";
+  const color = isExceeded ? "#991b1b" : "#92400e";
+  const message = isExceeded
+    ? "Limit reached or exceeded. This is warning-only; users are not blocked yet."
+    : "Approaching limit. This is warning-only; users are not blocked yet.";
+
+  return `
+    <div style="
+      background:${background};
+      border:1px solid ${border};
+      color:${color};
+      padding:12px 14px;
+      border-radius:10px;
+      margin-bottom:10px;
+      font-weight:700;
+    ">
+      ${escapeHtml(label)}: ${escapeHtml(used)} / ${escapeHtml(limit)}
+      (${escapeHtml(percentage)}%) — ${escapeHtml(message)}
+    </div>
+  `;
+}
+
+function renderLimitWarnings(warnings = []) {
+  const visibleWarnings = warnings.filter(Boolean);
+
+  if (!visibleWarnings.length) {
+    return "";
+  }
+
+  return `
+    <div style="
+      margin-bottom:28px;
+      padding:16px;
+      background:#fff7ed;
+      border:1px solid #fed7aa;
+      border-radius:14px;
+    ">
+      <h2 style="margin:0 0 12px 0;color:#9a3412;">Limit Warnings</h2>
+      <p style="margin:0 0 12px 0;color:#9a3412;">
+        These are advisory warnings only. No school users are blocked by these warnings.
+      </p>
+      ${visibleWarnings.join("")}
+    </div>
+  `;
+}
 function renderSchoolCommercialSummary(school) {
   const features = school.featuresEnabled || {};
   const enforcement = school.limitEnforcement || {};
@@ -759,7 +820,14 @@ exports.schoolUsagePage = async (req, res) => {
         .limit(25)
         .lean()
     ]);
-
+    const limitWarningHtml = renderLimitWarnings([
+      buildLimitWarning("Admins", adminsCount, getSchoolLimitValue(school, "maxAdmins", 2)),
+      buildLimitWarning("Teachers", teachersCount, getSchoolLimitValue(school, "maxTeachers", 10)),
+      buildLimitWarning("Students", studentsCount, getSchoolLimitValue(school, "maxStudents", 200)),
+      buildLimitWarning("Tests", testsCount, getSchoolLimitValue(school, "maxTests", 100)),
+      buildLimitWarning("Assignments", assignmentsCount, getSchoolLimitValue(school, "maxAssignments", 500)),
+      buildLimitWarning("Monthly Code Runs", codeRunsThisMonth, getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000))
+    ]);
     const recentRows = recentEvents.length
       ? recentEvents.map(event => `
         <tr>
@@ -858,6 +926,8 @@ exports.schoolUsagePage = async (req, res) => {
       ${usageCard("Monthly Code Runs", `${codeRunsThisMonth} / ${formatLimitValue(getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000))}`)}
       ${usageCard("Limit Enforcement", formatEnforcementStatus(school.limitEnforcement || {}))}
     </div>
+
+    ${limitWarningHtml}
 
     <h2>Current Account Size</h2>
     <div style="
