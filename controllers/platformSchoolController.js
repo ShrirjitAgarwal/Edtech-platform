@@ -9,6 +9,10 @@ const {
   validatePasswordPolicy
 } = require("../utils/passwordPolicy");
 const Test = require("../models/Test");
+const Assignment = require("../models/Assignment");
+const Result = require("../models/Result");
+const Question = require("../models/Question");
+const UsageEvent = require("../models/UsageEvent");
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -101,6 +105,22 @@ exports.listSchoolsPage = async (req, res) => {
           <p style="margin:4px 0;color:#475569;">
             <b>School Admins:</b> ${schoolAdmins.length}
           </p>
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+            <a
+              href="/platform/schools/${school._id}/usage"
+              style="
+                display:inline-block;
+                padding:10px 14px;
+                background:#0f172a;
+                color:white;
+                text-decoration:none;
+                border-radius:8px;
+                font-weight:700;
+              "
+            >
+              Usage
+            </a>
+          </div>
            <details style="margin-top:14px;">
  <summary style="cursor:pointer;font-weight:700;">
  Edit school
@@ -427,6 +447,271 @@ fetch("/api/platform/admins/create", {
   } catch (err) {
     console.error("PLATFORM SCHOOLS PAGE ERROR:", err);
     res.status(500).send("Failed to load schools");
+  }
+};
+function formatDate(value) {
+  if (!value) {
+    return "N/A";
+  }
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return "N/A";
+  }
+}
+
+function buildSchoolUsageFilter(school) {
+  const schoolId = String(school._id);
+
+  return {
+    $or: [
+      { schoolId: school._id },
+      { schoolId },
+      { schoolCode: school.code }
+    ]
+  };
+}
+
+function usageCard(label, value, note) {
+  return `
+    <div style="
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      padding:18px;
+    ">
+      <div style="color:#64748b;font-size:13px;font-weight:800;">
+        ${escapeHtml(label)}
+      </div>
+      <div style="font-size:30px;font-weight:900;margin-top:8px;color:#0f172a;">
+        ${escapeHtml(String(value))}
+      </div>
+      ${
+        note
+          ? `<div style="color:#64748b;font-size:12px;margin-top:6px;">${escapeHtml(note)}</div>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+exports.schoolUsagePage = async (req, res) => {
+  try {
+    const schoolId = req.params.schoolId;
+    const school = await School.findById(schoolId).lean();
+
+    if (!school) {
+      return res.status(404).send("School not found");
+    }
+
+    const schoolFilter = buildSchoolUsageFilter(school);
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const monthFilter = {
+      ...schoolFilter,
+      createdAt: {
+        $gte: monthStart
+      }
+    };
+
+    const [
+      adminsCount,
+      teachersCount,
+      studentsCount,
+      classesCount,
+      subjectsCount,
+      testsCount,
+      publishedTestsCount,
+      draftTestsCount,
+      assignmentsCount,
+      resultsCount,
+      questionsCount,
+      codeRunsThisMonth,
+      testsAssignedThisMonth,
+      testsSubmittedThisMonth,
+      reportsDownloadedThisMonth,
+      questionsCreatedThisMonth,
+      studentsCreatedThisMonth,
+      studentsImportedThisMonth,
+      recentEvents
+    ] = await Promise.all([
+      User.countDocuments({ ...schoolFilter, role: "admin" }),
+      User.countDocuments({ ...schoolFilter, role: "teacher" }),
+      Student.countDocuments(schoolFilter),
+      ClassModel.countDocuments(schoolFilter),
+      Subject.countDocuments(schoolFilter),
+      Test.countDocuments(schoolFilter),
+      Test.countDocuments({ ...schoolFilter, status: "published" }),
+      Test.countDocuments({ ...schoolFilter, status: { $ne: "published" } }),
+      Assignment.countDocuments(schoolFilter),
+      Result.countDocuments(schoolFilter),
+      Question.countDocuments({ ...schoolFilter, scope: "teacher" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "code_run" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "test_assigned" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "test_submitted" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "report_downloaded" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "question_created" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "student_created" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "student_imported" }),
+      UsageEvent.find(schoolFilter)
+        .sort({ createdAt: -1 })
+        .limit(25)
+        .lean()
+    ]);
+
+    const recentRows = recentEvents.length
+      ? recentEvents.map(event => `
+        <tr>
+          <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+            ${escapeHtml(formatDate(event.createdAt))}
+          </td>
+          <td style="padding:12px;border-bottom:1px solid #e5e7eb;font-weight:800;">
+            ${escapeHtml(event.eventType)}
+          </td>
+          <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+            ${escapeHtml(event.eventLabel || "-")}
+          </td>
+          <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+            ${escapeHtml(event.status || "-")}
+          </td>
+          <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+            ${escapeHtml(event.role || "-")}
+          </td>
+        </tr>
+      `).join("")
+      : `
+        <tr>
+          <td colspan="5" style="padding:16px;color:#64748b;">
+            No usage events recorded yet.
+          </td>
+        </tr>
+      `;
+
+    res.send(`
+<body style="font-family:Arial;background:#eef2ff;margin:0;padding:40px;">
+  <div style="
+    max-width:1180px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:16px;
+    box-shadow:0 8px 24px rgba(15,23,42,0.08);
+  ">
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      margin-bottom:24px;
+    ">
+      <div>
+        <h1 style="margin:0;">School Usage</h1>
+        <p style="margin:8px 0 0 0;color:#64748b;">
+          ${escapeHtml(school.name)} · ${escapeHtml(school.code)}
+        </p>
+      </div>
+      <button id="schoolUsageBackButton" style="
+        padding:11px 15px;
+        background:#475569;
+        color:white;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:800;
+      ">
+        Back
+      </button>
+    </div>
+
+    <div style="
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      padding:18px;
+      margin-bottom:24px;
+    ">
+      <h2 style="margin-top:0;">Overview</h2>
+      <p><b>School:</b> ${escapeHtml(school.name)}</p>
+      <p><b>Code:</b> ${escapeHtml(school.code)}</p>
+      <p><b>Status:</b> ${escapeHtml(school.status || "active")}</p>
+      <p><b>Created:</b> ${escapeHtml(formatDate(school.createdAt))}</p>
+      <p style="color:#64748b;margin-bottom:0;">
+        This page shows current platform size and this-month activity for this school.
+      </p>
+    </div>
+
+    <h2>Current Account Size</h2>
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:14px;
+      margin-bottom:28px;
+    ">
+      ${usageCard("School Admins", adminsCount)}
+      ${usageCard("Teachers", teachersCount)}
+      ${usageCard("Students", studentsCount)}
+      ${usageCard("Classes", classesCount)}
+      ${usageCard("Subjects", subjectsCount)}
+      ${usageCard("Tests", testsCount)}
+      ${usageCard("Published Tests", publishedTestsCount)}
+      ${usageCard("Draft Tests", draftTestsCount)}
+      ${usageCard("Assignments", assignmentsCount)}
+      ${usageCard("Submissions", resultsCount)}
+      ${usageCard("Questions", questionsCount)}
+    </div>
+
+    <h2>This Month Activity</h2>
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:14px;
+      margin-bottom:28px;
+    ">
+      ${usageCard("Code Runs", codeRunsThisMonth, "Tracked from Run Code")}
+      ${usageCard("Tests Assigned", testsAssignedThisMonth)}
+      ${usageCard("Tests Submitted", testsSubmittedThisMonth)}
+      ${usageCard("Reports Downloaded", reportsDownloadedThisMonth)}
+      ${usageCard("Questions Created", questionsCreatedThisMonth)}
+      ${usageCard("Students Created", studentsCreatedThisMonth)}
+      ${usageCard("Bulk Student Imports", studentsImportedThisMonth)}
+    </div>
+
+    <h2>Recent Activity</h2>
+    <div style="
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      overflow:hidden;
+      background:white;
+    ">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="background:#e2e8f0;text-align:left;">
+          <th style="padding:12px;">Date</th>
+          <th style="padding:12px;">Event</th>
+          <th style="padding:12px;">Label</th>
+          <th style="padding:12px;">Status</th>
+          <th style="padding:12px;">Role</th>
+        </tr>
+        ${recentRows}
+      </table>
+    </div>
+  </div>
+
+<script>
+const schoolUsageBackButton = document.getElementById("schoolUsageBackButton");
+if(schoolUsageBackButton){
+  schoolUsageBackButton.addEventListener("click", function(){
+    window.location.replace("/platform/schools");
+  });
+}
+</script>
+</body>
+`);
+  } catch (err) {
+    console.error("SCHOOL USAGE PAGE ERROR:", err);
+    res.status(500).send("Failed to load school usage");
   }
 };
 exports.createSchool = async (req, res) => {

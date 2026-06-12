@@ -7,6 +7,9 @@ const {
 const {
   logAuditEvent
 } = require("../services/auditLogger");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 // ---------- TEST PAGE ----------
 router.get("/test", async (req, res, next) => {
   return next();
@@ -428,6 +431,29 @@ gradedAnswers.push({
         schoolCode: result.schoolCode || null
       }
     });
+
+    await recordUsageEvent({
+      schoolId: result.schoolId || null,
+      schoolCode: result.schoolCode || null,
+      teacherId: result.teacherId || null,
+      studentId,
+      role: "student",
+      eventType: "test_submitted",
+      eventLabel: "Test submitted",
+      resourceType: "test",
+      resourceId: testId,
+      status: "submitted",
+      metadata: {
+        resultId: String(result._id),
+        testId,
+        testName: testName || test.name,
+        studentRecordId,
+        score: finalScore,
+        total: Number(total) || gradedAnswers.length,
+        answerCount: gradedAnswers.length
+      }
+    });
+
     res.json({
       status: "submitted",
       result

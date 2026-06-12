@@ -213,6 +213,12 @@ router.get(
   platformAdminMiddleware,
   platformSchoolController.listSchoolsPage
 );
+router.get(
+  "/platform/schools/:schoolId/usage",
+  authMiddleware,
+  platformAdminMiddleware,
+  platformSchoolController.schoolUsagePage
+);
 router.post(
   "/platform/schools",
   authMiddleware,

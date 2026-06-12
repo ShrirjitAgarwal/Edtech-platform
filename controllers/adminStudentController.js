@@ -2,6 +2,9 @@ const {
   logAdminAction
 } = require("../services/adminActionLogger");
 const {
+  recordUsageEvent
+} = require("../services/usageTracker");
+const {
   ok,
   fail
 } = require("../utils/apiResponse");
@@ -103,6 +106,25 @@ exports.createStudentFromAdmin = async (req, res) => {
         schoolCode: student.schoolCode || null
       }
     });
+
+    await recordUsageEvent({
+      schoolId: student.schoolId || req.user.schoolId || null,
+      schoolCode: student.schoolCode || req.user.schoolCode || null,
+      userId: req.user.id,
+      role: req.user.role || "admin",
+      eventType: "student_created",
+      eventLabel: "Student created",
+      resourceType: "student",
+      resourceId: String(student._id),
+      status: "created",
+      metadata: {
+        studentId: student.studentId,
+        studentName: student.name,
+        className: student.class,
+        teacherId: student.teacherId
+      }
+    });
+
     return ok(res, {
       status: "created",
       student
@@ -263,6 +285,25 @@ exports.bulkCreateStudentsFromAdmin = async (req, res) => {
         studentIds: createdStudents.map(student => student.studentId)
       }
     });
+
+    await recordUsageEvent({
+      schoolId: req.user.schoolId || null,
+      schoolCode: req.user.schoolCode || null,
+      userId: req.user.id,
+      role: req.user.role || "admin",
+      eventType: "student_imported",
+      eventLabel: "Students bulk created",
+      resourceType: "student_batch",
+      resourceId: String(Date.now()),
+      status: "created",
+      metadata: {
+        createdCount: createdStudents.length,
+        className,
+        teacherId,
+        studentIds: createdStudents.map(student => student.studentId)
+      }
+    });
+
     return ok(res, {
       status: "created",
       createdCount: createdStudents.length,

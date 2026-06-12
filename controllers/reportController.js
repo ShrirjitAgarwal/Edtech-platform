@@ -1,3 +1,6 @@
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 function escapeCsvCell(value) {
   const raw = String(value ?? "");
   const protectedValue = /^[=+\-@]/.test(raw)
@@ -50,6 +53,23 @@ const results = await Result.find({
       encodeURIComponent(
         String(studentId || "unknown")
       );
+    await recordUsageEvent({
+      schoolId: req.user.schoolId || null,
+      schoolCode: req.user.schoolCode || null,
+      userId: req.user.id,
+      teacherId,
+      role: req.user.role || "teacher",
+      eventType: "report_downloaded",
+      eventLabel: "Student report downloaded",
+      resourceType: "student_report",
+      resourceId: String(studentId),
+      status: "downloaded",
+      metadata: {
+        reportType: "student",
+        studentId: String(studentId),
+        resultCount: results.length
+      }
+    });
     res.setHeader(
       "Content-Type",
       "application/vnd.ms-excel"
@@ -123,6 +143,24 @@ const results = await Result.find({
     });
     const safeClass =
       encodeURIComponent(className);
+    await recordUsageEvent({
+      schoolId: req.user.schoolId || null,
+      schoolCode: req.user.schoolCode || null,
+      userId: req.user.id,
+      teacherId,
+      role: req.user.role || "teacher",
+      eventType: "report_downloaded",
+      eventLabel: "Class report downloaded",
+      resourceType: "class_report",
+      resourceId: String(className),
+      status: "downloaded",
+      metadata: {
+        reportType: "class",
+        className: String(className),
+        resultCount: results.length,
+        studentCount: Object.keys(studentMap).length
+      }
+    });
     res.setHeader(
       "Content-Type",
       "application/vnd.ms-excel"

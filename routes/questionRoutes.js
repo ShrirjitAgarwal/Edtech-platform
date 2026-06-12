@@ -3,6 +3,9 @@ const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 // --- HTML Escaping Helpers ---
 function escapeHtml(value) {
   return String(value || "")
@@ -805,6 +808,28 @@ const existingQuestion = await Question.findOne({
         incorrect: 0
       }
     });
+
+    await recordUsageEvent({
+      schoolId: newQuestion.schoolId || req.user.schoolId || null,
+      schoolCode: newQuestion.schoolCode || req.user.schoolCode || null,
+      userId: req.user.id,
+      teacherId: req.user.id,
+      role: req.user.role || "teacher",
+      eventType: "question_created",
+      eventLabel: "Question created",
+      resourceType: "question",
+      resourceId: String(newQuestion._id),
+      status: "created",
+      metadata: {
+        questionId: String(newQuestion._id),
+        questionType: newQuestion.type || "mcq",
+        subject: newQuestion.subject || "",
+        board: newQuestion.board || "General",
+        difficulty: newQuestion.difficulty || "easy",
+        hasTestCases: Array.isArray(newQuestion.testCases) && newQuestion.testCases.length > 0
+      }
+    });
+
     res.json({
       status: "created",
       question: newQuestion

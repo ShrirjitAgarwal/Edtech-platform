@@ -4,6 +4,9 @@ const authMiddleware = require("../middleware/auth");
 const {
   logAuditEvent
 } = require("../services/auditLogger");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 // ---------- BULK UPLOAD STUDENTS ----------
 router.post("/upload-students", authMiddleware, async (req, res) => {
 try {
@@ -87,7 +90,6 @@ classDoc = await ClassModel.create({
 }
 });
 // ---------- PUBLISH TEST ----------
-// ---------- PUBLISH TEST ----------
 async function assignTestHandler(req, res) {
   try {
     const Test = require("../models/Test");
@@ -169,6 +171,32 @@ async function assignTestHandler(req, res) {
         publishedAt: test.publishedAt
       }
     });
+
+    await recordUsageEvent({
+      schoolId: test.schoolId || null,
+      schoolCode: test.schoolCode || null,
+      userId: teacherId,
+      teacherId,
+      role: "teacher",
+      eventType: "test_assigned",
+      eventLabel: assignmentCreated
+        ? "Test assigned"
+        : "Test assignment checked",
+      resourceType: "test",
+      resourceId: String(test._id),
+      status: assignmentCreated
+        ? "assigned"
+        : "already_assigned",
+      metadata: {
+        testId: String(test._id),
+        testName: test.name,
+        className,
+        subject,
+        assignmentCreated,
+        publishedAt: test.publishedAt
+      }
+    });
+
     res.json({
       status: "published",
       message: assignmentCreated

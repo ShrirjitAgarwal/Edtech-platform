@@ -1988,6 +1988,8 @@ const testId = ${safeJsonForScript(String(test._id))};
 window.__testId = testId;
 const testName = ${safeJsonForScript(test.name)};
 const studentId = ${safeJsonForScript(studentId)};
+const schoolId = ${safeJsonForScript(String(test.schoolId || ""))};
+const schoolCode = ${safeJsonForScript(String(test.schoolCode || ""))};
 window.codeMirrorEditors = window.codeMirrorEditors || {};
 function blockTestClipboardAction(event){
   event.preventDefault();
@@ -2054,7 +2056,14 @@ window.runCode = async function(qid){
         code,
         language: q.codingMeta?.language || "javascript",
         functionName: q.codingMeta?.functionName || "",
-        testCases: q.testCases || []
+        testCases: q.testCases || [],
+        schoolId,
+        schoolCode,
+        studentId,
+        testId,
+        questionId: qid,
+        testName,
+        questionType: q.type || "coding"
       })
     });
     clearTimeout(timeoutId);

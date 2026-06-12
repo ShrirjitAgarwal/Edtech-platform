@@ -4,6 +4,9 @@ const router = express.Router();
 const {
   judgeSubmission
 } = require("../services/codeJudge");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 const runCodeRateLimit = {};
 function getRunCodeClientKey(req){
   return (
@@ -50,7 +53,14 @@ async function runCodeHandler(req, res) {
       code,
       language,
       functionName,
-      testCases
+      testCases,
+      schoolId,
+      schoolCode,
+      studentId,
+      testId,
+      questionId,
+      testName,
+      questionType
     } = req.body;
     if (!code || !String(code).trim()) {
       return res.status(400).json({
@@ -132,6 +142,33 @@ async function runCodeHandler(req, res) {
       " / " +
       (judgeResult.totalCount || cleanTestCases.length) +
       " test cases passed.";
+    await recordUsageEvent({
+      schoolId,
+      schoolCode,
+      studentId,
+      eventType: "code_run",
+      eventLabel: "Code run",
+      resourceType: "question",
+      resourceId: questionId,
+      status: judgeResult.error
+        ? "error"
+        : judgeResult.allPassed
+          ? "passed"
+          : "failed",
+      metadata: {
+        testId,
+        testName,
+        questionId,
+        questionType: questionType || "coding",
+        language: language || "javascript",
+        codeLength: String(code || "").length,
+        testCaseCount: cleanTestCases.length,
+        passedCount: judgeResult.passedCount || 0,
+        totalCount: judgeResult.totalCount || cleanTestCases.length,
+        hasError: Boolean(judgeResult.error)
+      }
+    });
+
     res.json({
       output,
       passedCount: judgeResult.passedCount || 0,

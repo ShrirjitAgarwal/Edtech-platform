@@ -178,7 +178,7 @@ Question.find({
         ? Math.round((attemptedCount / assignedCount) * 100)
         : 0;
       return `
-        <tr onclick="goToClass(${jsAttributeString(className)})" style="cursor:pointer;">
+        <tr class="admin-class-row" data-class-name="${escapeAttribute(className)}" style="cursor:pointer;">
           <td style="font-weight:700;color:#4f46e5;">${escapeHtml(className)}</td>
           <td>${classStudents.length}</td>
           <td>${classMappings.length}</td>
@@ -335,7 +335,7 @@ Question.find({
       }
     ];
     const setupHtml = setupItems.map(item => `
-      <div onclick="go(${jsAttributeString(item.href)})" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:10px;cursor:pointer;background:${item.done ? "#ecfdf5" : "#fff7ed"};">
+      <div class="admin-setup-link" data-href="${escapeAttribute(item.href)}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:10px;cursor:pointer;background:${item.done ? "#ecfdf5" : "#fff7ed"};">
         <span style="font-weight:700;">${escapeHtml(item.label)}</span>
         <span style="font-weight:800;color:${item.done ? "#16a34a" : "#ea580c"};">${item.done ? "Done" : "Pending"}</span>
       </div>
@@ -422,10 +422,10 @@ if(!user || user.role !== "admin"){
   ">
     <div>
       <h2 style="margin-bottom:25px;">Admin</h2>
-      <div onclick="go('/admin-dashboard')" style="padding:12px 14px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">Dashboard</div>
-      <div onclick="go('/admin-settings')" style="padding:12px 14px;border-radius:8px;cursor:pointer;margin-bottom:10px;">Settings</div>
+      <div class="admin-nav-link" data-href="/admin-dashboard" style="padding:12px 14px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">Dashboard</div>
+      <div class="admin-nav-link" data-href="/admin-settings" style="padding:12px 14px;border-radius:8px;cursor:pointer;margin-bottom:10px;">Settings</div>
     </div>
-    <div onclick="logout()" style="padding:12px 14px;border-radius:8px;cursor:pointer;color:#f87171;">Logout</div>
+    <div id="adminLogoutButton" style="padding:12px 14px;border-radius:8px;cursor:pointer;color:#f87171;">Logout</div>
   </aside>
   <main style="
     flex:1;
@@ -442,7 +442,7 @@ if(!user || user.role !== "admin"){
         <p style="margin:0;color:#64748b;">${escapeHtml(school?.name || "School")} ${school?.code ? "(" + escapeHtml(school.code) + ")" : ""}</p>
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
- <button onclick="go('/school-dashboard')" style="
+ <button id="adminPreviousPageButton" style="
     padding:12px 16px;
     background:#f59e0b;
     color:white;
@@ -453,7 +453,7 @@ if(!user || user.role !== "admin"){
   ">
     ← Previous Page
   </button>
-  <button onclick="go('/admin-settings')" style="
+  <button id="adminOpenSettingsButton" style="
     padding:12px 16px;
     background:#4f46e5;
     color:white;
@@ -523,7 +523,45 @@ if(!user || user.role !== "admin"){
     </section>
   </main>
 </div>
+</script>
 <script>
+document.addEventListener("click", function(event){
+  const classRow = event.target.closest(".admin-class-row");
+  if(classRow){
+    goToClass(classRow.dataset.className || "");
+    return;
+  }
+
+  const setupLink = event.target.closest(".admin-setup-link");
+  if(setupLink){
+    go(setupLink.dataset.href || "/admin-settings");
+    return;
+  }
+
+  const navLink = event.target.closest(".admin-nav-link");
+  if(navLink){
+    go(navLink.dataset.href || "/admin-dashboard");
+    return;
+  }
+
+  const logoutButton = event.target.closest("#adminLogoutButton");
+  if(logoutButton){
+    logout();
+    return;
+  }
+
+  const previousPageButton = event.target.closest("#adminPreviousPageButton");
+  if(previousPageButton){
+    go("/school-dashboard");
+    return;
+  }
+
+  const openSettingsButton = event.target.closest("#adminOpenSettingsButton");
+  if(openSettingsButton){
+    go("/admin-settings");
+  }
+});
+
 function go(path){
   window.location.replace(path);
 }
