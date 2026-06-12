@@ -10,6 +10,9 @@ const RevokedToken = require("../models/RevokedToken");
 const {
   logAuditEvent
 } = require("../services/auditLogger");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 const rateLimit = require("express-rate-limit");
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -150,6 +153,25 @@ router.post("/login", loginLimiter, async (req, res) => {
         schoolCode: user.schoolCode || null
       }
     });
+
+    await recordUsageEvent({
+      schoolId: user.schoolId || null,
+      schoolCode: user.schoolCode || null,
+      userId: user._id,
+      teacherId: user.role === "teacher" ? user._id : null,
+      role: user.role,
+      eventType: "login_success",
+      eventLabel: "User login success",
+      resourceType: "user",
+      resourceId: String(user._id),
+      status: "success",
+      metadata: {
+        email: user.email,
+        role: user.role,
+        name: user.name || ""
+      }
+    });
+
     res.json({
       status: "success",
       token,

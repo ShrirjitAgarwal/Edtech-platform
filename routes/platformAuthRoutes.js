@@ -7,6 +7,9 @@ const rateLimit = require("express-rate-limit");
 const {
   validatePasswordPolicy
 } = require("../utils/passwordPolicy");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 const authMiddleware = require("../middleware/auth");
 const platformLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -185,6 +188,21 @@ const safeUser = {
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
+
+    await recordUsageEvent({
+      userId: user._id,
+      role: "platform_admin",
+      eventType: "platform_login_success",
+      eventLabel: "Platform admin login success",
+      resourceType: "user",
+      resourceId: String(user._id),
+      status: "success",
+      metadata: {
+        email: user.email,
+        name: user.name || ""
+      }
+    });
+
     res.json({
       status: "success",
       token,

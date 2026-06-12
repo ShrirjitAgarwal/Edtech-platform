@@ -530,12 +530,20 @@ exports.schoolUsagePage = async (req, res) => {
       resultsCount,
       questionsCount,
       codeRunsThisMonth,
+      testsCreatedThisMonth,
+      testsUpdatedThisMonth,
       testsAssignedThisMonth,
       testsSubmittedThisMonth,
       reportsDownloadedThisMonth,
       questionsCreatedThisMonth,
       studentsCreatedThisMonth,
       studentsImportedThisMonth,
+      usersCreatedThisMonth,
+      teachersCreatedThisMonth,
+      adminsCreatedThisMonth,
+      userLoginsThisMonth,
+      studentLoginsThisMonth,
+      platformLoginsThisMonth,
       recentEvents
     ] = await Promise.all([
       User.countDocuments({ ...schoolFilter, role: "admin" }),
@@ -550,12 +558,20 @@ exports.schoolUsagePage = async (req, res) => {
       Result.countDocuments(schoolFilter),
       Question.countDocuments({ ...schoolFilter, scope: "teacher" }),
       UsageEvent.countDocuments({ ...monthFilter, eventType: "code_run" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "test_created" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "test_updated" }),
       UsageEvent.countDocuments({ ...monthFilter, eventType: "test_assigned" }),
       UsageEvent.countDocuments({ ...monthFilter, eventType: "test_submitted" }),
       UsageEvent.countDocuments({ ...monthFilter, eventType: "report_downloaded" }),
       UsageEvent.countDocuments({ ...monthFilter, eventType: "question_created" }),
       UsageEvent.countDocuments({ ...monthFilter, eventType: "student_created" }),
       UsageEvent.countDocuments({ ...monthFilter, eventType: "student_imported" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "user_created" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "teacher_created" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "admin_created" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "login_success" }),
+      UsageEvent.countDocuments({ ...monthFilter, eventType: "student_login_success" }),
+      UsageEvent.countDocuments({ eventType: "platform_login_success", createdAt: { $gte: monthStart } }),
       UsageEvent.find(schoolFilter)
         .sort({ createdAt: -1 })
         .limit(25)
@@ -671,12 +687,20 @@ exports.schoolUsagePage = async (req, res) => {
       margin-bottom:28px;
     ">
       ${usageCard("Code Runs", codeRunsThisMonth, "Tracked from Run Code")}
+      ${usageCard("Tests Created", testsCreatedThisMonth)}
+      ${usageCard("Tests Updated", testsUpdatedThisMonth)}
       ${usageCard("Tests Assigned", testsAssignedThisMonth)}
       ${usageCard("Tests Submitted", testsSubmittedThisMonth)}
       ${usageCard("Reports Downloaded", reportsDownloadedThisMonth)}
       ${usageCard("Questions Created", questionsCreatedThisMonth)}
       ${usageCard("Students Created", studentsCreatedThisMonth)}
       ${usageCard("Bulk Student Imports", studentsImportedThisMonth)}
+      ${usageCard("Users Created", usersCreatedThisMonth)}
+      ${usageCard("Teachers Created", teachersCreatedThisMonth)}
+      ${usageCard("Admins Created", adminsCreatedThisMonth)}
+      ${usageCard("User Logins", userLoginsThisMonth, "Admin/teacher logins")}
+      ${usageCard("Student Logins", studentLoginsThisMonth)}
+      ${usageCard("Platform Admin Logins", platformLoginsThisMonth, "Platform-wide")}
     </div>
 
     <h2>Recent Activity</h2>

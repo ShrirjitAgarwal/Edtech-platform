@@ -7,6 +7,9 @@ const backButton = require("../views/backButton");
 const {
   logAuditEvent
 } = require("../services/auditLogger");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -1533,6 +1536,27 @@ await logAuditEvent(req, {
     schoolCode: existingTest.schoolCode || null
   }
 });
+
+await recordUsageEvent({
+  schoolId: existingTest.schoolId || req.user.schoolId || null,
+  schoolCode: existingTest.schoolCode || req.user.schoolCode || null,
+  userId: req.user.id,
+  teacherId: req.user.id,
+  role: req.user.role || "teacher",
+  eventType: "test_updated",
+  eventLabel: "Test updated",
+  resourceType: "test",
+  resourceId: String(existingTest._id),
+  status: "updated",
+  metadata: {
+    testId: String(existingTest._id),
+    testName: existingTest.name,
+    className: existingTest.className,
+    subject: existingTest.subject,
+    questionCount: existingTest.questionIds.length
+  }
+});
+
 return res.json({
  status: "draft_updated",
  test: existingTest
@@ -1562,6 +1586,27 @@ const newTest = await Test.create({
     schoolCode: newTest.schoolCode || null
   }
 });
+
+await recordUsageEvent({
+  schoolId: newTest.schoolId || req.user.schoolId || null,
+  schoolCode: newTest.schoolCode || req.user.schoolCode || null,
+  userId: req.user.id,
+  teacherId: req.user.id,
+  role: req.user.role || "teacher",
+  eventType: "test_created",
+  eventLabel: "Test created",
+  resourceType: "test",
+  resourceId: String(newTest._id),
+  status: "created",
+  metadata: {
+    testId: String(newTest._id),
+    testName: newTest.name,
+    className: newTest.className,
+    subject: newTest.subject,
+    questionCount: newTest.questionIds.length
+  }
+});
+
 res.json({ status: "draft_saved", test: newTest });
   } catch (err) {
     console.error(err);

@@ -11,6 +11,9 @@ const sidebar = require("../views/sidebar");
 const layout = require("../views/layout");
 const backButton = require("../views/backButton");
 const authMiddleware = require("../middleware/auth");
+const {
+  recordUsageEvent
+} = require("../services/usageTracker");
 // ======================================================
 // HELPERS
 // ======================================================
@@ -785,6 +788,28 @@ async function studentLookupHandler(req, res) {
       sameSite: "lax",
       maxAge: 2 * 60 * 60 * 1000
     });
+
+    await recordUsageEvent({
+      schoolId: student.schoolId || null,
+      schoolCode: student.schoolCode || null,
+      teacherId: student.teacherId || null,
+      studentId: student.studentId,
+      role: "student",
+      eventType: "student_login_success",
+      eventLabel: "Student login success",
+      resourceType: "student",
+      resourceId: String(student._id),
+      status: "success",
+      metadata: {
+        studentRecordId: String(student._id),
+        studentId: student.studentId,
+        studentName: student.fullName || student.name || "",
+        className: student.class || "",
+        teacherId: student.teacherId || null,
+        schoolName: school?.name || "N/A"
+      }
+    });
+
     res.json({
       status: "matched",
       student: {

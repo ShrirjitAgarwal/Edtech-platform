@@ -2,6 +2,9 @@ const {
   logAdminAction
 } = require("../services/adminActionLogger");
 const {
+  recordUsageEvent
+} = require("../services/usageTracker");
+const {
   validatePasswordPolicy
 } = require("../utils/passwordPolicy");
 const {
@@ -65,6 +68,45 @@ return fail(res, "User already exists", 409, "USER_ALREADY_EXISTS");
         schoolCode: user.schoolCode || null
       }
     });
+
+    await recordUsageEvent({
+      schoolId: user.schoolId || req.user.schoolId || null,
+      schoolCode: user.schoolCode || req.user.schoolCode || null,
+      userId: req.user.id,
+      role: req.user.role || "admin",
+      eventType: "user_created",
+      eventLabel: "User created",
+      resourceType: "user",
+      resourceId: String(user._id),
+      status: "created",
+      metadata: {
+        createdUserId: String(user._id),
+        createdUserEmail: user.email,
+        createdUserRole: user.role,
+        createdUserName: user.name
+      }
+    });
+
+    await recordUsageEvent({
+      schoolId: user.schoolId || req.user.schoolId || null,
+      schoolCode: user.schoolCode || req.user.schoolCode || null,
+      userId: req.user.id,
+      role: req.user.role || "admin",
+      eventType: user.role === "teacher" ? "teacher_created" : "admin_created",
+      eventLabel: user.role === "teacher"
+        ? "Teacher created"
+        : "Admin created",
+      resourceType: "user",
+      resourceId: String(user._id),
+      status: "created",
+      metadata: {
+        createdUserId: String(user._id),
+        createdUserEmail: user.email,
+        createdUserRole: user.role,
+        createdUserName: user.name
+      }
+    });
+
 return ok(res, {
   status: "created",
   user: {
