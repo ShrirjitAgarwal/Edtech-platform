@@ -128,7 +128,6 @@ const schoolSchema = new mongoose.Schema({
 
 // PERFORMANCE INDEXES
 schoolSchema.index({ name: 1 });
-schoolSchema.index({ code: 1 });
 schoolSchema.index({ status: 1 });
 schoolSchema.index({ plan: 1 });
 schoolSchema.index({ billingStatus: 1 });
