@@ -63,6 +63,77 @@ function buildPlatformMessage(req) {
   }
   return "";
 }
+function formatPlanLabel(value) {
+  const text = String(value || "trial").trim();
+  return text
+    .split("_")
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function formatLimitValue(value) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) {
+    return "N/A";
+  }
+  return String(numberValue);
+}
+
+function formatFeatureStatus(value) {
+  return value ? "On" : "Off";
+}
+
+function formatEnforcementStatus(limitEnforcement = {}) {
+  const enabled = [
+    limitEnforcement.enforceStudentLimit,
+    limitEnforcement.enforceTeacherLimit,
+    limitEnforcement.enforceCodeRunLimit,
+    limitEnforcement.enforceTestLimit
+  ].some(Boolean);
+
+  return enabled ? "Some limits enforced" : "Off";
+}
+
+function renderSchoolCommercialSummary(school) {
+  const features = school.featuresEnabled || {};
+  const enforcement = school.limitEnforcement || {};
+
+  return `
+    <div style="
+      margin-top:12px;
+      padding:12px;
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+    ">
+      <p style="margin:4px 0;color:#475569;">
+        <b>Plan:</b> ${escapeHtml(formatPlanLabel(school.plan))}
+      </p>
+      <p style="margin:4px 0;color:#475569;">
+        <b>Billing:</b> ${escapeHtml(formatPlanLabel(school.billingStatus))}
+      </p>
+      <p style="margin:4px 0;color:#475569;">
+        <b>Limits:</b>
+        Admins ${escapeHtml(formatLimitValue(school.maxAdmins))},
+        Teachers ${escapeHtml(formatLimitValue(school.maxTeachers))},
+        Students ${escapeHtml(formatLimitValue(school.maxStudents))},
+        Tests ${escapeHtml(formatLimitValue(school.maxTests))},
+        Assignments ${escapeHtml(formatLimitValue(school.maxAssignments))},
+        Monthly Code Runs ${escapeHtml(formatLimitValue(school.maxMonthlyCodeRuns))}
+      </p>
+      <p style="margin:4px 0;color:#475569;">
+        <b>Features:</b>
+        Coding ${escapeHtml(formatFeatureStatus(features.codingQuestions !== false))},
+        Bulk Import ${escapeHtml(formatFeatureStatus(features.bulkStudentImport !== false))},
+        Reports ${escapeHtml(formatFeatureStatus(features.reportDownloads !== false))},
+        Public Library ${escapeHtml(formatFeatureStatus(features.publicQuestionLibrary !== false))}
+      </p>
+      <p style="margin:4px 0;color:#475569;">
+        <b>Limit Enforcement:</b> ${escapeHtml(formatEnforcementStatus(enforcement))}
+      </p>
+    </div>
+  `;
+}
 exports.listSchoolsPage = async (req, res) => {
   try {
     const platformMessage = buildPlatformMessage(req);
@@ -102,7 +173,8 @@ exports.listSchoolsPage = async (req, res) => {
           <p style="margin:4px 0;color:#475569;">
             <b>Status:</b> ${escapeHtml(school.status)}
           </p>
-          <p style="margin:4px 0;color:#475569;">
+          ${renderSchoolCommercialSummary(school)}
+          <p style="margin:12px 0 4px 0;color:#475569;">
             <b>School Admins:</b> ${schoolAdmins.length}
           </p>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
