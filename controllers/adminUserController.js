@@ -5,6 +5,10 @@ const {
   recordUsageEvent
 } = require("../services/usageTracker");
 const {
+  canCreateAdmin,
+  canCreateTeacher
+} = require("../services/planEnforcement");
+const {
   validatePasswordPolicy
 } = require("../utils/passwordPolicy");
 const {
@@ -44,6 +48,27 @@ return fail(res, "Invalid role", 400, "INVALID_ROLE");
     if (existing) {
 return fail(res, "User already exists", 409, "USER_ALREADY_EXISTS");
     }
+
+    if (req.user.schoolId) {
+      const userLimitCheck = normalizedRole === "admin"
+        ? await canCreateAdmin(req.user.schoolId)
+        : await canCreateTeacher(req.user.schoolId);
+
+      if (!userLimitCheck.allowed) {
+return fail(
+  res,
+  userLimitCheck.message,
+  403,
+  userLimitCheck.code,
+  {
+    usage: userLimitCheck.usage,
+    limit: userLimitCheck.limit,
+    role: normalizedRole
+  }
+);
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(normalizedPassword, 10);
     const user = await User.create({
       name: normalizedName,
