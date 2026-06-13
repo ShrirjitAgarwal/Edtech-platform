@@ -230,6 +230,118 @@ function checkFetchRouteMatching() {
     }
   });
 }
+function readProjectFile(filePath) {
+  const absolutePath = path.join(process.cwd(), filePath);
+  if (!fs.existsSync(absolutePath)) {
+    return "";
+  }
+  return fs.readFileSync(absolutePath, "utf8");
+}
+
+function containsAll(content, patterns) {
+  return patterns.every(pattern => {
+    if (pattern instanceof RegExp) {
+      return pattern.test(content);
+    }
+    return content.includes(pattern);
+  });
+}
+
+function checkCriticalAction(name, filePath, patterns) {
+  const content = readProjectFile(filePath);
+
+  if (!content) {
+    fail("Critical action file missing: " + filePath + " for " + name);
+    return;
+  }
+
+  const missingPatterns = patterns.filter(pattern => {
+    if (pattern instanceof RegExp) {
+      return !pattern.test(content);
+    }
+    return !content.includes(pattern);
+  });
+
+  if (!missingPatterns.length) {
+    pass("Critical action wired: " + name + " (" + filePath + ")");
+    return;
+  }
+
+  fail("Critical action may be broken: " + name + " (" + filePath + ")");
+  missingPatterns.forEach(pattern => {
+    console.log("      Missing: " + String(pattern));
+  });
+}
+
+function checkCriticalFrontendActions() {
+  section("Critical Frontend Action Check");
+
+  checkCriticalAction(
+    "Create Test - Save Test",
+    "routes/teacherTestRoutes.js",
+    [
+      'id="saveTestButton"',
+      "function saveTest()",
+      'event.target.closest("#saveTestButton")',
+      "saveTest();",
+      'fetch("/api/teacher/tests/save"'
+    ]
+  );
+
+  checkCriticalAction(
+    "Test Settings - Save Settings",
+    "routes/teacherTestRoutes.js",
+    [
+      'id="saveTestSettingsButton"',
+      "function saveSettings()",
+      'event.target.closest("#saveTestSettingsButton")',
+      "saveSettings();",
+      'fetch("/api/teacher/tests/settings/save"'
+    ]
+  );
+
+  checkCriticalAction(
+    "Teacher Tests - Publish/Assign",
+    "routes/teacherTestRoutes.js",
+    [
+      'class="assign-test-button"',
+      "function assignTest(testId)",
+      'fetch("/api/teacher/tests/assign"'
+    ]
+  );
+
+  checkCriticalAction(
+    "Teacher Tests - Delete Selected",
+    "routes/teacherTestRoutes.js",
+    [
+      'id="deleteSelectedTestsButton"',
+      "const deleteSelectedTestsButton = document.getElementById(\"deleteSelectedTestsButton\")",
+      "deleteSelectedTestsButton.addEventListener(\"click\", deleteSelected)",
+      "function deleteSelected()",
+      'fetch("/api/teacher/tests/delete-multiple"'
+    ]
+  );
+
+  checkCriticalAction(
+    "Platform Schools - Create Platform Admin",
+    "controllers/platformSchoolController.js",
+    [
+      'id="createPlatformAdminButton"',
+      "function createPlatformAdmin()",
+      "createPlatformAdminButton.addEventListener",
+      'fetch("/api/platform/admins/create"'
+    ]
+  );
+
+  checkCriticalAction(
+    "Student Entry - Lookup",
+    "routes/studentRoutes.js",
+    [
+      'fetch("/api/student/lookup"',
+      "studentSessionToken"
+    ]
+  );
+}
 function checkCriticalUncommittedFiles() {
   section("Critical File Commit Check");
   let status = "";
@@ -314,6 +426,7 @@ checkPackageManager();
 checkSyntax();
 checkRouteLoad();
 checkFetchRouteMatching();
+checkCriticalFrontendActions();
 checkCriticalUncommittedFiles();
 checkProductionEnvShape();
 printFinalStatus();
