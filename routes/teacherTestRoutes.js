@@ -10,6 +10,9 @@ const {
 const {
   recordUsageEvent
 } = require("../services/usageTracker");
+const {
+  canCreateTest
+} = require("../services/planEnforcement");
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -1568,6 +1571,22 @@ return res.json({
  test: existingTest
  });
     }
+
+if (req.user.schoolId) {
+  const testLimitCheck = await canCreateTest(req.user.schoolId);
+
+  if (!testLimitCheck.allowed) {
+    return res.status(403).json({
+      error: {
+        code: testLimitCheck.code,
+        message: testLimitCheck.message,
+        usage: testLimitCheck.usage,
+        limit: testLimitCheck.limit
+      }
+    });
+  }
+}
+
 const newTest = await Test.create({
   name: normalizedName,
   questionIds,
