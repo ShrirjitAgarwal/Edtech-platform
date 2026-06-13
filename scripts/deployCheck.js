@@ -114,7 +114,8 @@ function checkSyntax() {
     ...getFilesRecursive("routes"),
     ...getFilesRecursive("controllers"),
     ...getFilesRecursive("models"),
-    ...getFilesRecursive("middleware")
+    ...getFilesRecursive("middleware"),
+    ...getFilesRecursive("services")
   ];
   filesToCheck.forEach(filePath => {
     try {
@@ -357,15 +358,20 @@ function checkCriticalUncommittedFiles() {
     "controllers/",
     "models/",
     "middleware/",
+    "services/",
+    "scripts/",
     "data/config/",
     "config/"
   ];
   const criticalChanges = status
     .split("\n")
-    .map(line => line.trim())
     .filter(Boolean)
     .filter(line => {
-      const filePath = line.slice(3).trim();
+      const trimmedLine = line.trim();
+      const filePath = trimmedLine
+        .replace(/^[A-Z?]{1,2}\s+/, "")
+        .trim();
+
       return criticalPatterns.some(pattern =>
         filePath === pattern || filePath.startsWith(pattern)
       );
