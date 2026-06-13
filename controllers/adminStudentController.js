@@ -5,6 +5,9 @@ const {
   recordUsageEvent
 } = require("../services/usageTracker");
 const {
+  canCreateStudent
+} = require("../services/planEnforcement");
+const {
   ok,
   fail
 } = require("../utils/apiResponse");
@@ -64,6 +67,24 @@ exports.createStudentFromAdmin = async (req, res) => {
         "TEACHER_NOT_FOUND"
       );
     }
+
+    if (req.user.schoolId) {
+      const studentLimitCheck = await canCreateStudent(req.user.schoolId);
+
+      if (!studentLimitCheck.allowed) {
+        return fail(
+          res,
+          studentLimitCheck.message,
+          403,
+          studentLimitCheck.code,
+          {
+            usage: studentLimitCheck.usage,
+            limit: studentLimitCheck.limit
+          }
+        );
+      }
+    }
+
     const nameParts = name.split(/\s+/).filter(Boolean);
     const firstName = nameParts[0] || name;
     const lastName = nameParts.slice(1).join(" ");
@@ -238,6 +259,28 @@ exports.bulkCreateStudentsFromAdmin = async (req, res) => {
         { studentIds: existingStudentIds }
       );
     }
+
+    if (req.user.schoolId) {
+      const studentLimitCheck = await canCreateStudent(
+        req.user.schoolId,
+        cleanedStudents.length
+      );
+
+      if (!studentLimitCheck.allowed) {
+        return fail(
+          res,
+          studentLimitCheck.message,
+          403,
+          studentLimitCheck.code,
+          {
+            usage: studentLimitCheck.usage,
+            limit: studentLimitCheck.limit,
+            requestedCount: cleanedStudents.length
+          }
+        );
+      }
+    }
+
     const docs = cleanedStudents.map(student => {
       const nameParts = student.name.split(/\s+/).filter(Boolean);
       const firstName = nameParts[0] || student.name;
