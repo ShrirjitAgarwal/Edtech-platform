@@ -21,7 +21,7 @@ exports.downloadReport = async (req, res) => {
 const results = await Result.find({
   studentId: String(studentId),
   teacherId: String(teacherId),
-  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+  schoolId: req.user.schoolId
 })
   .sort({ date: -1 })
   .lean();
@@ -99,7 +99,7 @@ const teacherId = req.user.id;
 const results = await Result.find({
   class: className,
   teacherId: String(teacherId),
-  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+  schoolId: req.user.schoolId
 })
   .sort({ date: -1 })
   .lean();
@@ -196,13 +196,11 @@ exports.resultPage = async (req, res) => {
   let result;
   try {
     const studentFilter = {
-      studentId: String(studentId)
+      studentId: String(studentId),
+      schoolId: req.user.schoolId
     };
     if (req.user.role === "teacher") {
       studentFilter.teacherId = String(req.user.id);
-    }
-    if (req.user.schoolId) {
-      studentFilter.schoolId = req.user.schoolId;
     }
     const student = await Student.findOne(studentFilter)
       .select("studentId teacherId schoolId")
@@ -212,13 +210,11 @@ exports.resultPage = async (req, res) => {
     }
     const resultFilter = {
       testId: String(testId),
-      studentId: String(studentId)
+      studentId: String(studentId),
+      schoolId: req.user.schoolId
     };
     if (req.user.role === "teacher") {
       resultFilter.teacherId = String(req.user.id);
-    }
-    if (req.user.schoolId) {
-      resultFilter.schoolId = req.user.schoolId;
     }
     result = await Result.findOne(resultFilter).lean();
   } catch (err) {
@@ -232,7 +228,8 @@ exports.resultPage = async (req, res) => {
     .filter(Boolean);
   const questions = questionIds.length
     ? await Question.find({
-        _id: { $in: questionIds }
+        _id: { $in: questionIds },
+        ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
       })
         .select("question")
         .lean()

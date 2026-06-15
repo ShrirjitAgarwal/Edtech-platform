@@ -228,7 +228,8 @@ exports.listSchoolsPage = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
     const admins = await User.find({
-      role: "admin"
+      role: "admin",
+      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
     })
       .select("name email schoolId schoolCode createdAt")
       .sort({ createdAt: -1 })
@@ -1222,7 +1223,10 @@ exports.createAdminForSchool = async (req, res) => {
           encodeURIComponent("School not found.")
       );
     }
-    const existingUser = await User.findOne({ email }).lean();
+    const existingUser = await User.findOne({
+      email,
+      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+    }).lean();
     if (existingUser) {
       return res.redirect(
         "/platform/schools?error=" +
