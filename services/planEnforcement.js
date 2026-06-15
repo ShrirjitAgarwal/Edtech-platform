@@ -22,6 +22,7 @@ const DEFAULT_FEATURES = {
 };
 
 const DEFAULT_ENFORCEMENT = {
+  enforceAdminLimit: false,
   enforceStudentLimit: false,
   enforceTeacherLimit: false,
   enforceCodeRunLimit: false,
@@ -53,6 +54,16 @@ function getFeatureEnabled(school, fieldName) {
 }
 
 function getEnforcementEnabled(school, fieldName) {
+  // Guard against unknown enforcement keys (typos or missing flags)
+  if (!(fieldName in DEFAULT_ENFORCEMENT)) {
+    console.warn(
+      `[planEnforcement] Unknown enforcement field: "${fieldName}". ` +
+      `Valid fields: ${Object.keys(DEFAULT_ENFORCEMENT).join(", ")}. ` +
+      `Defaulting to false (not enforced).`
+    );
+    return false;
+  }
+
   const value = school?.limitEnforcement?.[fieldName];
 
   if (typeof value === "boolean") {
@@ -279,7 +290,7 @@ async function canCreateAdmin(schoolId, incrementBy = 1) {
   return checkLimit({
     schoolId,
     limitField: "maxAdmins",
-    enforcementField: "enforceTeacherLimit",
+    enforcementField: "enforceAdminLimit",
     usageCounter: countAdmins,
     blockedCode: "ADMIN_LIMIT_REACHED",
     allowedCode: "ADMIN_LIMIT_ALLOWED",

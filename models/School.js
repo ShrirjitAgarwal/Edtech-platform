@@ -102,6 +102,10 @@ const schoolSchema = new mongoose.Schema({
   // Enforcement flags remain off by default for safety.
   // This means existing and new schools will not be blocked yet.
   limitEnforcement: {
+    enforceAdminLimit: {
+      type: Boolean,
+      default: false
+    },
     enforceStudentLimit: {
       type: Boolean,
       default: false
