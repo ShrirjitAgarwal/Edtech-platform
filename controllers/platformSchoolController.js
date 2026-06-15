@@ -653,9 +653,9 @@ exports.listSchoolsPage = async (req, res) => {
       `
       : "";
     res.send(`
-<body style="font-family:Arial;background:#eef2ff;margin:0;padding:40px;">
+<body style="font-family:Arial;background:#eef2ff;margin:0;padding:28px;">
   <div style="
-    max-width:980px;
+    max-width:1500px;
     margin:auto;
     background:white;
     padding:30px;
