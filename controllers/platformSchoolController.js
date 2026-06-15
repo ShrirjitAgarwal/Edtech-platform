@@ -114,27 +114,34 @@ function checkedAttribute(value) {
 
 function renderLimitInput(name, label, value, helpText) {
   return `
-    <label style="
-      display:block;
-      font-weight:800;
-      margin:12px 0 6px 0;
-      color:#0f172a;
+    <div style="
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      padding:12px;
     ">
-      ${escapeHtml(label)}
-    </label>
-    <input
-      name="${escapeHtml(name)}"
-      type="number"
-      min="0"
-      value="${escapeHtml(formatLimitValue(value))}"
-      placeholder="${escapeHtml(label)}"
-      style="width:100%;padding:10px;margin-bottom:4px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
-    />
-    ${
-      helpText
-        ? `<div style="font-size:12px;color:#64748b;margin-bottom:8px;">${escapeHtml(helpText)}</div>`
-        : ""
-    }
+      <label style="
+        display:block;
+        font-weight:800;
+        margin:0 0 6px 0;
+        color:#0f172a;
+      ">
+        ${escapeHtml(label)}
+      </label>
+      <input
+        name="${escapeHtml(name)}"
+        type="number"
+        min="0"
+        value="${escapeHtml(formatLimitValue(value))}"
+        placeholder="${escapeHtml(label)}"
+        style="width:100%;padding:10px;margin-bottom:6px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+      />
+      ${
+        helpText
+          ? `<div style="font-size:12px;color:#64748b;line-height:1.4;">${escapeHtml(helpText)}</div>`
+          : ""
+      }
+    </div>
   `;
 }
 
@@ -422,26 +429,25 @@ exports.listSchoolsPage = async (req, res) => {
                   </div>
 
                   <div style="
-                    display:flex;
-                    gap:10px;
-                    flex-wrap:wrap;
+                    display:block;
                     padding:0 14px 14px 14px;
                   ">
                     <details style="
-                      flex:1;
-                      min-width:360px;
+                      width:100%;
                       background:#f8fafc;
                       border:1px solid #e2e8f0;
                       border-radius:10px;
                       padding:10px 12px;
+                      box-sizing:border-box;
+                      margin-bottom:10px;
                     ">
                       <summary style="cursor:pointer;font-weight:900;color:#1e293b;">
                         Edit school plan, limits, features, and enforcement
                       </summary>
 
                       <form method="POST" action="/platform/schools/${school._id}/update" style="margin-top:14px;">
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
-                          <div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+                          <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
                             <label style="display:block;font-weight:800;margin-bottom:6px;">School Name</label>
                             <input
                               name="name"
@@ -452,7 +458,7 @@ exports.listSchoolsPage = async (req, res) => {
                             />
                           </div>
 
-                          <div>
+                          <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
                             <label style="display:block;font-weight:800;margin-bottom:6px;">School Code</label>
                             <input
                               name="code"
@@ -463,7 +469,7 @@ exports.listSchoolsPage = async (req, res) => {
                             />
                           </div>
 
-                          <div>
+                          <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
                             <label style="display:block;font-weight:800;margin-bottom:6px;">Plan</label>
                             <select
                               name="plan"
@@ -476,7 +482,7 @@ exports.listSchoolsPage = async (req, res) => {
                             </select>
                           </div>
 
-                          <div>
+                          <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
                             <label style="display:block;font-weight:800;margin-bottom:6px;">Billing Status</label>
                             <select
                               name="billingStatus"
@@ -496,7 +502,7 @@ exports.listSchoolsPage = async (req, res) => {
                           These values define the commercial plan limits for this school. A value of 0 means unlimited.
                         </p>
 
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
                           ${renderLimitInput("maxAdmins", "Max Admins", maxAdmins, "Maximum school admin users allowed.")}
                           ${renderLimitInput("maxTeachers", "Max Teachers", maxTeachers, "Maximum teacher users allowed.")}
                           ${renderLimitInput("maxStudents", "Max Students", maxStudents, "Maximum active student records allowed.")}
@@ -506,7 +512,7 @@ exports.listSchoolsPage = async (req, res) => {
                         </div>
 
                         <h3 style="margin:18px 0 8px 0;">Features</h3>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;">
                           <label style="display:block;">
                             <input type="checkbox" name="featureCodingQuestions" ${checkedAttribute(features.codingQuestions !== false)} />
                             Coding Questions
@@ -531,7 +537,7 @@ exports.listSchoolsPage = async (req, res) => {
                           Turn them ON only for a test school first.
                         </p>
 
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;">
                           <label style="display:block;">
                             <input type="checkbox" name="enforceStudentLimit" ${checkedAttribute(enforcement.enforceStudentLimit)} />
                             Enforce Student Limit
@@ -570,12 +576,12 @@ exports.listSchoolsPage = async (req, res) => {
                     </details>
 
                     <details style="
-                      flex:1;
-                      min-width:320px;
+                      width:100%;
                       background:#f8fafc;
                       border:1px solid #e2e8f0;
                       border-radius:10px;
                       padding:10px 12px;
+                      box-sizing:border-box;
                     ">
                       <summary style="cursor:pointer;font-weight:900;color:#1e293b;">
                         Admins (${schoolAdmins.length})
