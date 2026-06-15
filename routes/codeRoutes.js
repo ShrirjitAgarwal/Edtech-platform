@@ -7,6 +7,10 @@ const {
 const {
   recordUsageEvent
 } = require("../services/usageTracker");
+const Student = require("../models/Student");
+const {
+  canRunCode
+} = require("../services/planEnforcement");
 const runCodeRateLimit = {};
 function getRunCodeClientKey(req){
   return (
@@ -103,6 +107,57 @@ async function runCodeHandler(req, res) {
         error: "No valid test cases found"
       });
     }
+
+    const normalizedSchoolId = String(schoolId || "").trim();
+    const normalizedStudentId = String(studentId || "").trim();
+
+    if (!normalizedSchoolId) {
+      return res.status(403).json({
+        error: "School context required"
+      });
+    }
+
+    if (!normalizedStudentId) {
+      return res.status(401).json({
+        error: "Invalid student context"
+      });
+    }
+
+    const student = await Student.findOne({
+      studentId: normalizedStudentId,
+      schoolId: normalizedSchoolId,
+      status: "active"
+    })
+      .select("studentId schoolId schoolCode status")
+      .lean();
+
+    if (!student) {
+      return res.status(403).json({
+        error: "Invalid student context"
+      });
+    }
+
+    if (
+      schoolCode &&
+      student.schoolCode &&
+      String(schoolCode) !== String(student.schoolCode)
+    ) {
+      return res.status(403).json({
+        error: "Invalid school context"
+      });
+    }
+
+    const codeRunLimitCheck = await canRunCode(normalizedSchoolId);
+
+    if (!codeRunLimitCheck.allowed) {
+      return res.status(403).json({
+        error: codeRunLimitCheck.message,
+        code: codeRunLimitCheck.code,
+        usage: codeRunLimitCheck.usage,
+        limit: codeRunLimitCheck.limit
+      });
+    }
+
     const judgeResult = await judgeSubmission({
       code,
       functionName: String(functionName).trim(),
@@ -143,9 +198,9 @@ async function runCodeHandler(req, res) {
       (judgeResult.totalCount || cleanTestCases.length) +
       " test cases passed.";
     await recordUsageEvent({
-      schoolId,
-      schoolCode,
-      studentId,
+      schoolId: normalizedSchoolId,
+      schoolCode: student.schoolCode || schoolCode || null,
+      studentId: normalizedStudentId,
       eventType: "code_run",
       eventLabel: "Code run",
       resourceType: "question",
