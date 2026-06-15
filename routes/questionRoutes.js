@@ -29,6 +29,9 @@ function safeJsonForScript(value) {
 // ---------- CREATE QUESTION PAGE ----------
 router.get("/create-question", authMiddleware, async (req, res) => {
   try {
+if (!req.user.schoolId) {
+  return res.status(403).send("<h1>School context required</h1>");
+}
     const Question = require("../models/Question");
 let editQuestion = null;
 if(req.query.id){
@@ -36,21 +39,16 @@ editQuestion = await Question.findOne({
     _id: req.query.id,
     scope: "teacher",
     teacherId: String(req.user.id),
-    ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+    schoolId: req.user.schoolId
   }).lean();
 }
 const dropdownQuestions = await Question.find({
   $or: [
     { scope: "public" },
-    req.user.schoolId
-      ? {
-          scope: "teacher",
-          schoolId: req.user.schoolId
-        }
-      : {
-          scope: "teacher",
-          teacherId: String(req.user.id)
-        }
+    {
+      scope: "teacher",
+      schoolId: req.user.schoolId
+    }
   ]
 })
   .select("subject category board")

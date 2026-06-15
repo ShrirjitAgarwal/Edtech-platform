@@ -135,7 +135,27 @@ async function submitStudentTestHandler(req, res) {
       });
       return res.status(401).json({ error: "Invalid student session" });
     }
-    const test = await Test.findById(testId).lean();
+    if (!student.schoolId) {
+      await logAuditEvent(req, {
+        event: "student_test_submission_failed",
+        status: "failed",
+        actor: decodedStudent,
+        metadata: {
+          testId,
+          testName,
+          studentId,
+          studentRecordId,
+          reason: "missing_school_context"
+        },
+        error: "School context required"
+      });
+      return res.status(403).json({ error: "School context required" });
+    }
+
+    const test = await Test.findOne({
+      _id: testId,
+      schoolId: student.schoolId
+    }).lean();
     if (!test) {
       await logAuditEvent(req, {
         event: "student_test_submission_failed",

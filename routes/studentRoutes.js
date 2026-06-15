@@ -1394,26 +1394,27 @@ router.get("/test", requireStudentPageSession, async (req, res) => {
     const decodedStudent = req.studentSession.decodedStudent;
     const student = req.studentSession.student;
     const studentId = decodedStudent.studentId;
+
+    if (!student.schoolId) {
+      return res.send("<h1>School context required</h1>");
+    }
+
 const alreadyAttempted = await Result.findOne({
   studentId,
   testId: id,
   teacherId: String(student.teacherId || ""),
-  ...(student.schoolId ? { schoolId: student.schoolId } : {})
+  schoolId: student.schoolId
 })
   .select("_id")
   .lean();
     if (alreadyAttempted) {
       return res.redirect("/my-tests");
     }
-    const test = await Test.findById(id).lean();
+    const test = await Test.findOne({
+      _id: id,
+      schoolId: student.schoolId
+    }).lean();
     if (!test || test.status !== "published") {
-      return res.send("<h1>Test not available</h1>");
-    }
-    if (
-      student.schoolId &&
-      test.schoolId &&
-      String(student.schoolId) !== String(test.schoolId)
-    ) {
       return res.send("<h1>Test not available</h1>");
     }
     if (test.scheduledAt && new Date(test.scheduledAt) > new Date()) {

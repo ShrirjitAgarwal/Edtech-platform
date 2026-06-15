@@ -105,9 +105,10 @@ exports.mapClassSubject = async (req, res) => {
       ...schoolFilter
     }).lean();
     if (existingMapping) {
-      const existingTeacher = await User.findById(
-        existingMapping.teacherId
-      )
+      const existingTeacher = await User.findOne({
+        _id: existingMapping.teacherId,
+        schoolId: req.user.schoolId
+      })
         .select("name email")
         .lean();
       return sendError(
@@ -182,7 +183,7 @@ exports.deleteClassSubjectMapping = async (req, res) => {
     }
     const deleted = await ClassSubject.findOneAndDelete({
       _id: mappingId,
-      ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+      schoolId: req.user.schoolId
     });
     if (!deleted) {
       return sendError(

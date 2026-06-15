@@ -305,9 +305,12 @@ async function getStudentTestsHandler(req, res) {
       assignmentByTestId[String(assignment.testId)] = assignment;
     });
 
-    const teacher = await User.findById(teacherId)
-      .select("name email")
-      .lean();
+const teacher = await User.findOne({
+  _id: teacherId,
+  ...(student.schoolId ? { schoolId: student.schoolId } : {})
+})
+  .select("name email")
+  .lean();
 
     const filtered = tests
       .filter(test => {
