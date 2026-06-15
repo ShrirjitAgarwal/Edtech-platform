@@ -84,14 +84,25 @@ function formatFeatureStatus(value) {
 }
 
 function formatEnforcementStatus(limitEnforcement = {}) {
-  const enabled = [
-    limitEnforcement.enforceStudentLimit,
-    limitEnforcement.enforceTeacherLimit,
-    limitEnforcement.enforceCodeRunLimit,
-    limitEnforcement.enforceTestLimit
-  ].some(Boolean);
+  const enabled = [];
 
-  return enabled ? "Some limits enforced" : "Off";
+  if (limitEnforcement.enforceAdminLimit) {
+    enabled.push("Admins");
+  }
+  if (limitEnforcement.enforceTeacherLimit) {
+    enabled.push("Teachers");
+  }
+  if (limitEnforcement.enforceStudentLimit) {
+    enabled.push("Students");
+  }
+  if (limitEnforcement.enforceTestLimit) {
+    enabled.push("Tests");
+  }
+  if (limitEnforcement.enforceCodeRunLimit) {
+    enabled.push("Code Runs");
+  }
+
+  return enabled.length ? enabled.join(", ") : "Off";
 }
 function selectedAttribute(currentValue, optionValue) {
   return String(currentValue || "") === String(optionValue || "") ? "selected" : "";
@@ -99,6 +110,32 @@ function selectedAttribute(currentValue, optionValue) {
 
 function checkedAttribute(value) {
   return value ? "checked" : "";
+}
+
+function renderLimitInput(name, label, value, helpText) {
+  return `
+    <label style="
+      display:block;
+      font-weight:800;
+      margin:12px 0 6px 0;
+      color:#0f172a;
+    ">
+      ${escapeHtml(label)}
+    </label>
+    <input
+      name="${escapeHtml(name)}"
+      type="number"
+      min="0"
+      value="${escapeHtml(formatLimitValue(value))}"
+      placeholder="${escapeHtml(label)}"
+      style="width:100%;padding:10px;margin-bottom:4px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+    />
+    ${
+      helpText
+        ? `<div style="font-size:12px;color:#64748b;margin-bottom:8px;">${escapeHtml(helpText)}</div>`
+        : ""
+    }
+  `;
 }
 
 function normalizeEnumValue(value, allowedValues, fallbackValue) {
@@ -245,13 +282,18 @@ exports.listSchoolsPage = async (req, res) => {
     const schoolRows = schools.map(school => {
     const schoolAdmins = adminsBySchoolCode[String(school.code || "")] || [];
       return `
-        <div style="
-          background:#f8fafc;
-          border:1px solid #e5e7eb;
-          border-radius:12px;
-          padding:18px;
-          margin-bottom:18px;
-        ">
+        <div
+          class="platform-school-card"
+          data-school-name="${escapeHtml(school.name)}"
+          data-school-code="${escapeHtml(school.code)}"
+          style="
+            background:#f8fafc;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            padding:18px;
+            margin-bottom:18px;
+          "
+        >
           <h2 style="margin:0 0 8px 0;">
             ${escapeHtml(school.name)}
           </h2>
@@ -334,13 +376,18 @@ exports.listSchoolsPage = async (req, res) => {
  </select>
 
  <h3 style="margin:12px 0;">Limits</h3>
+ <p style="margin:0 0 10px 0;color:#64748b;font-size:13px;">
+ These values define the commercial plan limits for this school. A value of 0 means unlimited.
+ </p>
 
- <input name="maxAdmins" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAdmins", 2)))}" placeholder="Max admins" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
- <input name="maxTeachers" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTeachers", 10)))}" placeholder="Max teachers" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
- <input name="maxStudents" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxStudents", 200)))}" placeholder="Max students" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
- <input name="maxTests" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTests", 100)))}" placeholder="Max tests" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
- <input name="maxAssignments" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAssignments", 500)))}" placeholder="Max assignments" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
- <input name="maxMonthlyCodeRuns" type="number" min="0" value="${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000)))}" placeholder="Max monthly code runs" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;" />
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+ ${renderLimitInput("maxAdmins", "Max Admins", getSchoolLimitValue(school, "maxAdmins", 2), "Maximum school admin users allowed.")}
+ ${renderLimitInput("maxTeachers", "Max Teachers", getSchoolLimitValue(school, "maxTeachers", 10), "Maximum teacher users allowed.")}
+ ${renderLimitInput("maxStudents", "Max Students", getSchoolLimitValue(school, "maxStudents", 200), "Maximum active student records allowed.")}
+ ${renderLimitInput("maxTests", "Max Tests", getSchoolLimitValue(school, "maxTests", 100), "Maximum tests created by this school.")}
+ ${renderLimitInput("maxAssignments", "Max Assignments", getSchoolLimitValue(school, "maxAssignments", 500), "Maximum assigned-test records.")}
+ ${renderLimitInput("maxMonthlyCodeRuns", "Max Monthly Code Runs", getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000), "Maximum Run Code usage per calendar month.")}
+ </div>
 
  <h3 style="margin:12px 0;">Features</h3>
 
@@ -363,7 +410,8 @@ exports.listSchoolsPage = async (req, res) => {
 
  <h3 style="margin:12px 0;">Limit Enforcement</h3>
  <p style="margin:0 0 10px 0;color:#64748b;">
- These switches only save settings. They will not block users until enforcement is added in a later step.
+ These switches actively control blocking for the enforcement paths already connected in the app.
+ Turn them ON only for a test school first.
  </p>
 
  <label style="display:block;margin-bottom:8px;">
@@ -373,6 +421,10 @@ exports.listSchoolsPage = async (req, res) => {
  <label style="display:block;margin-bottom:8px;">
  <input type="checkbox" name="enforceTeacherLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceTeacherLimit)} />
  Enforce Teacher Limit
+ </label>
+ <label style="display:block;margin-bottom:8px;">
+ <input type="checkbox" name="enforceAdminLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceAdminLimit)} />
+ Enforce Admin Limit
  </label>
  <label style="display:block;margin-bottom:8px;">
  <input type="checkbox" name="enforceCodeRunLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceCodeRunLimit)} />
@@ -609,7 +661,15 @@ exports.listSchoolsPage = async (req, res) => {
         </button>
       </form>
     </div>
-    <h2>Existing Schools</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Existing Schools</h2>
+      <input
+        id="schoolSearchInput"
+        placeholder="Search schools by name or code..."
+        style="min-width:280px;flex:1;max-width:420px;padding:12px;border:1px solid #cbd5e1;border-radius:10px;box-sizing:border-box;"
+      />
+    </div>
+    <p id="schoolSearchCount" style="color:#64748b;font-weight:700;margin:10px 0 18px 0;"></p>
     ${
       schoolRows ||
       `<p style="color:#64748b;">No schools created yet.</p>`
@@ -639,6 +699,43 @@ const createPlatformAdminButton = document.getElementById("createPlatformAdminBu
 if(createPlatformAdminButton){
   createPlatformAdminButton.addEventListener("click", createPlatformAdmin);
 }
+
+const schoolSearchInput = document.getElementById("schoolSearchInput");
+const schoolSearchCount = document.getElementById("schoolSearchCount");
+
+function updateSchoolSearch(){
+  const query = schoolSearchInput
+    ? schoolSearchInput.value.trim().toLowerCase()
+    : "";
+  const cards = Array.from(document.querySelectorAll(".platform-school-card"));
+  let visibleCount = 0;
+
+  cards.forEach(card => {
+    const text = (
+      (card.dataset.schoolName || "") +
+      " " +
+      (card.dataset.schoolCode || "")
+    ).toLowerCase();
+
+    const isVisible = !query || text.includes(query);
+    card.style.display = isVisible ? "block" : "none";
+
+    if (isVisible) {
+      visibleCount += 1;
+    }
+  });
+
+  if (schoolSearchCount) {
+    schoolSearchCount.textContent =
+      visibleCount + " of " + cards.length + " schools shown";
+  }
+}
+
+if(schoolSearchInput){
+  schoolSearchInput.addEventListener("input", updateSchoolSearch);
+}
+updateSchoolSearch();
+
 function togglePlatformAdminForm(){
   const form = document.getElementById("platformAdminForm");
   if(!form){
@@ -1106,6 +1203,7 @@ exports.updateSchool = async (req, res) => {
     school.limitEnforcement = {
       enforceStudentLimit: req.body.enforceStudentLimit === "on",
       enforceTeacherLimit: req.body.enforceTeacherLimit === "on",
+      enforceAdminLimit: req.body.enforceAdminLimit === "on",
       enforceCodeRunLimit: req.body.enforceCodeRunLimit === "on",
       enforceTestLimit: req.body.enforceTestLimit === "on"
     };
