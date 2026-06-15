@@ -279,257 +279,373 @@ exports.listSchoolsPage = async (req, res) => {
       }
       adminsBySchoolCode[code].push(admin);
     });
-    const schoolRows = schools.map(school => {
-    const schoolAdmins = adminsBySchoolCode[String(school.code || "")] || [];
-      return `
-        <div
-          class="platform-school-card"
-          data-school-name="${escapeHtml(school.name)}"
-          data-school-code="${escapeHtml(school.code)}"
-          style="
-            background:#f8fafc;
-            border:1px solid #e5e7eb;
-            border-radius:12px;
-            padding:18px;
-            margin-bottom:18px;
-          "
-        >
-          <h2 style="margin:0 0 8px 0;">
-            ${escapeHtml(school.name)}
-          </h2>
-          <p style="margin:4px 0;color:#475569;">
-            <b>Code:</b> ${escapeHtml(school.code)}
-          </p>
-          <p style="margin:4px 0;color:#475569;">
-            <b>Status:</b> ${escapeHtml(school.status)}
-          </p>
-          ${renderSchoolCommercialSummary(school)}
-          <p style="margin:12px 0 4px 0;color:#475569;">
-            <b>School Admins:</b> ${schoolAdmins.length}
-          </p>
-          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
-            <a
-              href="/platform/schools/${school._id}/usage"
-              style="
-                display:inline-block;
-                padding:10px 14px;
-                background:#0f172a;
-                color:white;
-                text-decoration:none;
-                border-radius:8px;
-                font-weight:700;
-              "
-            >
-              Usage
-            </a>
-          </div>
-           <details style="margin-top:14px;">
- <summary style="cursor:pointer;font-weight:700;">
- Edit school
- </summary>
- <form method="POST" action="/platform/schools/${school._id}/update" style="margin-top:14px;">
- <input
- name="name"
- value="${escapeHtml(school.name)}"
- placeholder="School name"
- required
- style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
- />
- <input
- name="code"
- value="${escapeHtml(school.code)}"
- placeholder="School code"
- required
- style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
- />
+    const schoolRows = schools.length
+      ? `
+        <div style="
+          overflow-x:auto;
+          border:1px solid #e5e7eb;
+          border-radius:14px;
+          background:white;
+        ">
+          <div style="min-width:1180px;">
+            <div style="
+              display:grid;
+              grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.6fr;
+              gap:10px;
+              padding:12px 14px;
+              background:#e2e8f0;
+              color:#334155;
+              font-size:12px;
+              font-weight:900;
+              text-transform:uppercase;
+              letter-spacing:0.03em;
+            ">
+              <div>School</div>
+              <div>Code</div>
+              <div>Status</div>
+              <div>Plan</div>
+              <div>Billing</div>
+              <div>Admins</div>
+              <div>Teachers</div>
+              <div>Students</div>
+              <div>Tests</div>
+              <div>Code Runs</div>
+              <div>Actions</div>
+            </div>
+            ${schools.map(school => {
+              const schoolAdmins = adminsBySchoolCode[String(school.code || "")] || [];
+              const features = school.featuresEnabled || {};
+              const enforcement = school.limitEnforcement || {};
+              const maxAdmins = getSchoolLimitValue(school, "maxAdmins", 2);
+              const maxTeachers = getSchoolLimitValue(school, "maxTeachers", 10);
+              const maxStudents = getSchoolLimitValue(school, "maxStudents", 200);
+              const maxTests = getSchoolLimitValue(school, "maxTests", 100);
+              const maxAssignments = getSchoolLimitValue(school, "maxAssignments", 500);
+              const maxMonthlyCodeRuns = getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000);
 
- <div style="
- background:white;
- border:1px solid #e2e8f0;
- border-radius:10px;
- padding:14px;
- margin:12px 0;
- ">
- <h3 style="margin:0 0 12px 0;">Commercial Plan</h3>
-
- <label style="font-weight:700;">Plan</label>
- <select
- name="plan"
- style="width:100%;padding:10px;margin:6px 0 10px 0;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
- >
- <option value="trial" ${selectedAttribute(school.plan || "trial", "trial")}>Trial</option>
- <option value="starter" ${selectedAttribute(school.plan || "trial", "starter")}>Starter</option>
- <option value="growth" ${selectedAttribute(school.plan || "trial", "growth")}>Growth</option>
- <option value="enterprise" ${selectedAttribute(school.plan || "trial", "enterprise")}>Enterprise</option>
- </select>
-
- <label style="font-weight:700;">Billing Status</label>
- <select
- name="billingStatus"
- style="width:100%;padding:10px;margin:6px 0 10px 0;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
- >
- <option value="trial" ${selectedAttribute(school.billingStatus || "trial", "trial")}>Trial</option>
- <option value="active" ${selectedAttribute(school.billingStatus || "trial", "active")}>Active</option>
- <option value="past_due" ${selectedAttribute(school.billingStatus || "trial", "past_due")}>Past Due</option>
- <option value="paused" ${selectedAttribute(school.billingStatus || "trial", "paused")}>Paused</option>
- <option value="cancelled" ${selectedAttribute(school.billingStatus || "trial", "cancelled")}>Cancelled</option>
- </select>
-
- <h3 style="margin:12px 0;">Limits</h3>
- <p style="margin:0 0 10px 0;color:#64748b;font-size:13px;">
- These values define the commercial plan limits for this school. A value of 0 means unlimited.
- </p>
-
- <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
- ${renderLimitInput("maxAdmins", "Max Admins", getSchoolLimitValue(school, "maxAdmins", 2), "Maximum school admin users allowed.")}
- ${renderLimitInput("maxTeachers", "Max Teachers", getSchoolLimitValue(school, "maxTeachers", 10), "Maximum teacher users allowed.")}
- ${renderLimitInput("maxStudents", "Max Students", getSchoolLimitValue(school, "maxStudents", 200), "Maximum active student records allowed.")}
- ${renderLimitInput("maxTests", "Max Tests", getSchoolLimitValue(school, "maxTests", 100), "Maximum tests created by this school.")}
- ${renderLimitInput("maxAssignments", "Max Assignments", getSchoolLimitValue(school, "maxAssignments", 500), "Maximum assigned-test records.")}
- ${renderLimitInput("maxMonthlyCodeRuns", "Max Monthly Code Runs", getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000), "Maximum Run Code usage per calendar month.")}
- </div>
-
- <h3 style="margin:12px 0;">Features</h3>
-
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="featureCodingQuestions" ${checkedAttribute((school.featuresEnabled || {}).codingQuestions !== false)} />
- Coding Questions
- </label>
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="featureBulkStudentImport" ${checkedAttribute((school.featuresEnabled || {}).bulkStudentImport !== false)} />
- Bulk Student Import
- </label>
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="featureReportDownloads" ${checkedAttribute((school.featuresEnabled || {}).reportDownloads !== false)} />
- Report Downloads
- </label>
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="featurePublicQuestionLibrary" ${checkedAttribute((school.featuresEnabled || {}).publicQuestionLibrary !== false)} />
- Public Question Library
- </label>
-
- <h3 style="margin:12px 0;">Limit Enforcement</h3>
- <p style="margin:0 0 10px 0;color:#64748b;">
- These switches actively control blocking for the enforcement paths already connected in the app.
- Turn them ON only for a test school first.
- </p>
-
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="enforceStudentLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceStudentLimit)} />
- Enforce Student Limit
- </label>
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="enforceTeacherLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceTeacherLimit)} />
- Enforce Teacher Limit
- </label>
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="enforceAdminLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceAdminLimit)} />
- Enforce Admin Limit
- </label>
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="enforceCodeRunLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceCodeRunLimit)} />
- Enforce Code Run Limit
- </label>
- <label style="display:block;margin-bottom:8px;">
- <input type="checkbox" name="enforceTestLimit" ${checkedAttribute((school.limitEnforcement || {}).enforceTestLimit)} />
- Enforce Test Limit
- </label>
- </div>
-
- <button type="submit" style="
- padding:10px 14px;
- background:#4f46e5;
- color:white;
- border:none;
- border-radius:8px;
- font-weight:700;
- cursor:pointer;
- ">
- Save School
- </button>
- </form>
- </details>
- <form
- method="POST"
- action="/platform/schools/${school._id}/delete"
- onsubmit="return confirm('Delete this school? This is only allowed if the school has no users, students, classes, subjects, mappings, or tests.');"
- style="margin-top:12px;"
- >
- <button type="submit" style="
- padding:10px 14px;
- background:#dc2626;
- color:white;
- border:none;
- border-radius:8px;
- font-weight:700;
- cursor:pointer;
- ">
- Delete School
- </button>
- </form>
-          <details style="margin-top:14px;">
-            <summary style="cursor:pointer;font-weight:700;">
-              Add first / additional school admin
-            </summary>
-            <form method="POST" action="/platform/schools/${school._id}/admins" style="margin-top:14px;">
-              <input
-                name="name"
-                placeholder="Admin name"
-                required
-                style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
-              />
-              <input
-                name="email"
-                type="email"
-                placeholder="Admin email"
-                required
-                style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
-              />
-              <input
-                name="password"
-                type="password"
-                placeholder="Temporary password"
-                required
-                minlength="10"
-                style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
-              />
-              <button type="submit" style="
-                padding:10px 14px;
-                background:#16a34a;
-                color:white;
-                border:none;
-                border-radius:8px;
-                font-weight:700;
-                cursor:pointer;
-              ">
-                Create School Admin
-              </button>
-            </form>
-          </details>
-          ${
-            schoolAdmins.length
-              ? `
-                <div style="margin-top:16px;">
-                  <h3 style="margin-bottom:8px;">School Admins</h3>
-                  ${schoolAdmins.map(admin => `
-                    <div style="
-                      background:white;
-                      border:1px solid #e5e7eb;
-                      border-radius:8px;
-                      padding:10px;
-                      margin-bottom:8px;
-                    ">
-                      <b>${escapeHtml(admin.name)}</b><br>
-                      <span style="color:#64748b;">${escapeHtml(admin.email)}</span>
+              return `
+                <div
+                  class="platform-school-card"
+                  data-school-name="${escapeHtml(school.name)}"
+                  data-school-code="${escapeHtml(school.code)}"
+                  style="
+                    border-top:1px solid #e5e7eb;
+                    background:#ffffff;
+                  "
+                >
+                  <div style="
+                    display:grid;
+                    grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.6fr;
+                    gap:10px;
+                    align-items:center;
+                    padding:14px;
+                    color:#0f172a;
+                    font-size:13px;
+                  ">
+                    <div>
+                      <div style="font-weight:900;font-size:14px;">
+                        ${escapeHtml(school.name)}
+                      </div>
+                      <div style="color:#64748b;font-size:12px;margin-top:3px;">
+                        Enforcement: ${escapeHtml(formatEnforcementStatus(enforcement))}
+                      </div>
                     </div>
-                  `).join("")}
+                    <div style="font-weight:800;color:#334155;">
+                      ${escapeHtml(school.code)}
+                    </div>
+                    <div>
+                      <span style="
+                        display:inline-block;
+                        padding:4px 8px;
+                        border-radius:999px;
+                        background:#dcfce7;
+                        color:#166534;
+                        font-weight:900;
+                        font-size:12px;
+                      ">
+                        ${escapeHtml(school.status || "active")}
+                      </span>
+                    </div>
+                    <div>${escapeHtml(formatPlanLabel(school.plan))}</div>
+                    <div>${escapeHtml(formatPlanLabel(school.billingStatus))}</div>
+                    <div>
+                      <b>${escapeHtml(schoolAdmins.length)}</b> / ${escapeHtml(formatLimitValue(maxAdmins))}
+                    </div>
+                    <div>
+                      Limit ${escapeHtml(formatLimitValue(maxTeachers))}
+                    </div>
+                    <div>
+                      Limit ${escapeHtml(formatLimitValue(maxStudents))}
+                    </div>
+                    <div>
+                      Limit ${escapeHtml(formatLimitValue(maxTests))}
+                    </div>
+                    <div>
+                      Limit ${escapeHtml(formatLimitValue(maxMonthlyCodeRuns))}
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                      <a
+                        href="/platform/schools/${school._id}/usage"
+                        style="
+                          display:inline-block;
+                          padding:8px 10px;
+                          background:#0f172a;
+                          color:white;
+                          text-decoration:none;
+                          border-radius:8px;
+                          font-weight:900;
+                          font-size:12px;
+                        "
+                      >
+                        Usage
+                      </a>
+                      <form
+                        method="POST"
+                        action="/platform/schools/${school._id}/delete"
+                        onsubmit="return confirm('Delete this school? This is only allowed if the school has no users, students, classes, subjects, mappings, or tests.');"
+                        style="margin:0;"
+                      >
+                        <button type="submit" style="
+                          padding:8px 10px;
+                          background:#dc2626;
+                          color:white;
+                          border:none;
+                          border-radius:8px;
+                          font-weight:900;
+                          cursor:pointer;
+                          font-size:12px;
+                        ">
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <div style="
+                    display:flex;
+                    gap:10px;
+                    flex-wrap:wrap;
+                    padding:0 14px 14px 14px;
+                  ">
+                    <details style="
+                      flex:1;
+                      min-width:360px;
+                      background:#f8fafc;
+                      border:1px solid #e2e8f0;
+                      border-radius:10px;
+                      padding:10px 12px;
+                    ">
+                      <summary style="cursor:pointer;font-weight:900;color:#1e293b;">
+                        Edit school plan, limits, features, and enforcement
+                      </summary>
+
+                      <form method="POST" action="/platform/schools/${school._id}/update" style="margin-top:14px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                          <div>
+                            <label style="display:block;font-weight:800;margin-bottom:6px;">School Name</label>
+                            <input
+                              name="name"
+                              value="${escapeHtml(school.name)}"
+                              placeholder="School name"
+                              required
+                              style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+                            />
+                          </div>
+
+                          <div>
+                            <label style="display:block;font-weight:800;margin-bottom:6px;">School Code</label>
+                            <input
+                              name="code"
+                              value="${escapeHtml(school.code)}"
+                              placeholder="School code"
+                              required
+                              style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+                            />
+                          </div>
+
+                          <div>
+                            <label style="display:block;font-weight:800;margin-bottom:6px;">Plan</label>
+                            <select
+                              name="plan"
+                              style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+                            >
+                              <option value="trial" ${selectedAttribute(school.plan || "trial", "trial")}>Trial</option>
+                              <option value="starter" ${selectedAttribute(school.plan || "trial", "starter")}>Starter</option>
+                              <option value="growth" ${selectedAttribute(school.plan || "trial", "growth")}>Growth</option>
+                              <option value="enterprise" ${selectedAttribute(school.plan || "trial", "enterprise")}>Enterprise</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style="display:block;font-weight:800;margin-bottom:6px;">Billing Status</label>
+                            <select
+                              name="billingStatus"
+                              style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+                            >
+                              <option value="trial" ${selectedAttribute(school.billingStatus || "trial", "trial")}>Trial</option>
+                              <option value="active" ${selectedAttribute(school.billingStatus || "trial", "active")}>Active</option>
+                              <option value="past_due" ${selectedAttribute(school.billingStatus || "trial", "past_due")}>Past Due</option>
+                              <option value="paused" ${selectedAttribute(school.billingStatus || "trial", "paused")}>Paused</option>
+                              <option value="cancelled" ${selectedAttribute(school.billingStatus || "trial", "cancelled")}>Cancelled</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <h3 style="margin:18px 0 8px 0;">Limits</h3>
+                        <p style="margin:0 0 10px 0;color:#64748b;font-size:13px;">
+                          These values define the commercial plan limits for this school. A value of 0 means unlimited.
+                        </p>
+
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                          ${renderLimitInput("maxAdmins", "Max Admins", maxAdmins, "Maximum school admin users allowed.")}
+                          ${renderLimitInput("maxTeachers", "Max Teachers", maxTeachers, "Maximum teacher users allowed.")}
+                          ${renderLimitInput("maxStudents", "Max Students", maxStudents, "Maximum active student records allowed.")}
+                          ${renderLimitInput("maxTests", "Max Tests", maxTests, "Maximum tests created by this school.")}
+                          ${renderLimitInput("maxAssignments", "Max Assignments", maxAssignments, "Maximum assigned-test records.")}
+                          ${renderLimitInput("maxMonthlyCodeRuns", "Max Monthly Code Runs", maxMonthlyCodeRuns, "Maximum Run Code usage per calendar month.")}
+                        </div>
+
+                        <h3 style="margin:18px 0 8px 0;">Features</h3>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
+                          <label style="display:block;">
+                            <input type="checkbox" name="featureCodingQuestions" ${checkedAttribute(features.codingQuestions !== false)} />
+                            Coding Questions
+                          </label>
+                          <label style="display:block;">
+                            <input type="checkbox" name="featureBulkStudentImport" ${checkedAttribute(features.bulkStudentImport !== false)} />
+                            Bulk Student Import
+                          </label>
+                          <label style="display:block;">
+                            <input type="checkbox" name="featureReportDownloads" ${checkedAttribute(features.reportDownloads !== false)} />
+                            Report Downloads
+                          </label>
+                          <label style="display:block;">
+                            <input type="checkbox" name="featurePublicQuestionLibrary" ${checkedAttribute(features.publicQuestionLibrary !== false)} />
+                            Public Question Library
+                          </label>
+                        </div>
+
+                        <h3 style="margin:18px 0 8px 0;">Limit Enforcement</h3>
+                        <p style="margin:0 0 10px 0;color:#64748b;font-size:13px;">
+                          These switches actively control blocking for the enforcement paths already connected in the app.
+                          Turn them ON only for a test school first.
+                        </p>
+
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
+                          <label style="display:block;">
+                            <input type="checkbox" name="enforceStudentLimit" ${checkedAttribute(enforcement.enforceStudentLimit)} />
+                            Enforce Student Limit
+                          </label>
+                          <label style="display:block;">
+                            <input type="checkbox" name="enforceTeacherLimit" ${checkedAttribute(enforcement.enforceTeacherLimit)} />
+                            Enforce Teacher Limit
+                          </label>
+                          <label style="display:block;">
+                            <input type="checkbox" name="enforceAdminLimit" ${checkedAttribute(enforcement.enforceAdminLimit)} />
+                            Enforce Admin Limit
+                          </label>
+                          <label style="display:block;">
+                            <input type="checkbox" name="enforceCodeRunLimit" ${checkedAttribute(enforcement.enforceCodeRunLimit)} />
+                            Enforce Code Run Limit
+                          </label>
+                          <label style="display:block;">
+                            <input type="checkbox" name="enforceTestLimit" ${checkedAttribute(enforcement.enforceTestLimit)} />
+                            Enforce Test Limit
+                          </label>
+                        </div>
+
+                        <button type="submit" style="
+                          margin-top:16px;
+                          padding:10px 14px;
+                          background:#4f46e5;
+                          color:white;
+                          border:none;
+                          border-radius:8px;
+                          font-weight:900;
+                          cursor:pointer;
+                        ">
+                          Save School
+                        </button>
+                      </form>
+                    </details>
+
+                    <details style="
+                      flex:1;
+                      min-width:320px;
+                      background:#f8fafc;
+                      border:1px solid #e2e8f0;
+                      border-radius:10px;
+                      padding:10px 12px;
+                    ">
+                      <summary style="cursor:pointer;font-weight:900;color:#1e293b;">
+                        Admins (${schoolAdmins.length})
+                      </summary>
+
+                      <form method="POST" action="/platform/schools/${school._id}/admins" style="margin-top:14px;">
+                        <input
+                          name="name"
+                          placeholder="Admin name"
+                          required
+                          style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+                        />
+                        <input
+                          name="email"
+                          type="email"
+                          placeholder="Admin email"
+                          required
+                          style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+                        />
+                        <input
+                          name="password"
+                          type="password"
+                          placeholder="Temporary password"
+                          required
+                          minlength="10"
+                          style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;"
+                        />
+                        <button type="submit" style="
+                          padding:10px 14px;
+                          background:#16a34a;
+                          color:white;
+                          border:none;
+                          border-radius:8px;
+                          font-weight:900;
+                          cursor:pointer;
+                        ">
+                          Create School Admin
+                        </button>
+                      </form>
+
+                      ${
+                        schoolAdmins.length
+                          ? `
+                            <div style="margin-top:16px;">
+                              <h3 style="margin-bottom:8px;">Existing School Admins</h3>
+                              ${schoolAdmins.map(admin => `
+                                <div style="
+                                  background:white;
+                                  border:1px solid #e5e7eb;
+                                  border-radius:8px;
+                                  padding:10px;
+                                  margin-bottom:8px;
+                                ">
+                                  <b>${escapeHtml(admin.name)}</b><br>
+                                  <span style="color:#64748b;">${escapeHtml(admin.email)}</span>
+                                </div>
+                              `).join("")}
+                            </div>
+                          `
+                          : `<p style="color:#64748b;">No school admins created yet.</p>`
+                      }
+                    </details>
+                  </div>
                 </div>
-              `
-              : ""
-          }
+              `;
+            }).join("")}
+          </div>
         </div>
-      `;
-    }).join("");
+      `
+      : "";
     res.send(`
 <body style="font-family:Arial;background:#eef2ff;margin:0;padding:40px;">
   <div style="
