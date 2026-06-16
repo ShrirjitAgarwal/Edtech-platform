@@ -225,46 +225,6 @@ function renderLimitWarnings(warnings = []) {
     </div>
   `;
 }
-function renderSchoolCommercialSummary(school) {
-  const features = school.featuresEnabled || {};
-  const enforcement = school.limitEnforcement || {};
-
-  return `
-    <div style="
-      margin-top:12px;
-      padding:12px;
-      background:white;
-      border:1px solid #e2e8f0;
-      border-radius:10px;
-    ">
-      <p style="margin:4px 0;color:#475569;">
-        <b>Plan:</b> ${escapeHtml(formatPlanLabel(school.plan))}
-      </p>
-      <p style="margin:4px 0;color:#475569;">
-        <b>Billing:</b> ${escapeHtml(formatPlanLabel(school.billingStatus))}
-      </p>
-      <p style="margin:4px 0;color:#475569;">
-        <b>Limits:</b>
-        Admins ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAdmins", 2)))},
-        Teachers ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTeachers", 10)))},
-        Students ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxStudents", 200)))},
-        Tests ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxTests", 100)))},
-        Assignments ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxAssignments", 500)))},
-        Monthly Code Runs ${escapeHtml(formatLimitValue(getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000)))}
-      </p>
-      <p style="margin:4px 0;color:#475569;">
-        <b>Features:</b>
-        Coding ${escapeHtml(formatFeatureStatus(features.codingQuestions !== false))},
-        Bulk Import ${escapeHtml(formatFeatureStatus(features.bulkStudentImport !== false))},
-        Reports ${escapeHtml(formatFeatureStatus(features.reportDownloads !== false))},
-        Public Library ${escapeHtml(formatFeatureStatus(features.publicQuestionLibrary !== false))}
-      </p>
-      <p style="margin:4px 0;color:#475569;">
-        <b>Limit Enforcement:</b> ${escapeHtml(formatEnforcementStatus(enforcement))}
-      </p>
-    </div>
-  `;
-}
 exports.listSchoolsPage = async (req, res) => {
   try {
     const platformMessage = buildPlatformMessage(req);
@@ -509,26 +469,6 @@ exports.listSchoolsPage = async (req, res) => {
                           ${renderLimitInput("maxTests", "Max Tests", maxTests, "Maximum tests created by this school.")}
                           ${renderLimitInput("maxAssignments", "Max Assignments", maxAssignments, "Maximum assigned-test records.")}
                           ${renderLimitInput("maxMonthlyCodeRuns", "Max Monthly Code Runs", maxMonthlyCodeRuns, "Maximum Run Code usage per calendar month.")}
-                        </div>
-
-                        <h3 style="margin:18px 0 8px 0;">Features</h3>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;">
-                          <label style="display:block;">
-                            <input type="checkbox" name="featureCodingQuestions" ${checkedAttribute(features.codingQuestions !== false)} />
-                            Coding Questions
-                          </label>
-                          <label style="display:block;">
-                            <input type="checkbox" name="featureBulkStudentImport" ${checkedAttribute(features.bulkStudentImport !== false)} />
-                            Bulk Student Import
-                          </label>
-                          <label style="display:block;">
-                            <input type="checkbox" name="featureReportDownloads" ${checkedAttribute(features.reportDownloads !== false)} />
-                            Report Downloads
-                          </label>
-                          <label style="display:block;">
-                            <input type="checkbox" name="featurePublicQuestionLibrary" ${checkedAttribute(features.publicQuestionLibrary !== false)} />
-                            Public Question Library
-                          </label>
                         </div>
 
                         <h3 style="margin:18px 0 8px 0;">Limit Enforcement</h3>
@@ -1337,13 +1277,6 @@ exports.updateSchool = async (req, res) => {
     school.maxTests = normalizeLimitNumber(req.body.maxTests, school.maxTests ?? 100);
     school.maxAssignments = normalizeLimitNumber(req.body.maxAssignments, school.maxAssignments ?? 500);
     school.maxMonthlyCodeRuns = normalizeLimitNumber(req.body.maxMonthlyCodeRuns, school.maxMonthlyCodeRuns ?? 1000);
-
-    school.featuresEnabled = {
-      codingQuestions: req.body.featureCodingQuestions === "on",
-      bulkStudentImport: req.body.featureBulkStudentImport === "on",
-      reportDownloads: req.body.featureReportDownloads === "on",
-      publicQuestionLibrary: req.body.featurePublicQuestionLibrary === "on"
-    };
 
     school.limitEnforcement = {
       enforceStudentLimit: req.body.enforceStudentLimit === "on",
