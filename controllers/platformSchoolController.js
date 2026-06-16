@@ -295,7 +295,7 @@ exports.listSchoolsPage = async (req, res) => {
           background:white;
         ">
           <div style="min-width:1180px;">
-            <div style="
+            <div class="platform-school-table-header" style="
               display:grid;
               grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.6fr;
               gap:10px;
@@ -340,7 +340,7 @@ exports.listSchoolsPage = async (req, res) => {
                     background:#ffffff;
                   "
                 >
-                  <div style="
+                  <div class="platform-school-row" style="
                     display:grid;
                     grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.6fr;
                     gap:10px;
@@ -654,6 +654,29 @@ exports.listSchoolsPage = async (req, res) => {
       : "";
     res.send(`
 <body style="font-family:Arial;background:#eef2ff;margin:0;padding:28px;">
+<style>
+  .platform-school-table-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .platform-school-table-header > div,
+  .platform-school-row > div {
+    border-right: 1px solid #cbd5e1;
+    padding-right: 10px;
+    min-width: 0;
+  }
+
+  .platform-school-table-header > div:last-child,
+  .platform-school-row > div:last-child {
+    border-right: none;
+  }
+
+  .platform-school-row:hover {
+    background: #f8fafc;
+  }
+</style>
   <div style="
     max-width:1500px;
     margin:auto;
