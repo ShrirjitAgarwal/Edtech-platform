@@ -47,7 +47,7 @@ const alreadyAttempted = await Result.findOne({
     if (test.scheduledAt && new Date(test.scheduledAt) > new Date()) {
       return res.send("<h1>Test not available yet</h1>");
     }
-    const Question = require("../models/Question");
+    const Question = require("../../models/Question");
     const questionIds = test.questionIds.map(qid => String(qid));
     const mongoQuestions = await Question.find({
       _id: { $in: questionIds },

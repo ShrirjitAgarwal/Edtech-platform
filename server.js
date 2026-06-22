@@ -93,12 +93,12 @@ const publicRoutes = require("./routes/publicRoutes");
 const codeRoutes = require("./routes/codeRoutes");
 const libraryRoutes = require("./routes/libraryRoutes");
 const questionRoutes = require("./routes/questionRoutes");
-const teacherTestRoutes = require("./routes/teacherTestRoutes");
+
 const studentSubmissionRoutes = require("./routes/studentSubmissionRoutes");
 const testAssignmentRoutes = require("./routes/testAssignmentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
-const teacherRoutes = require("./routes/teacherRoutes");
+const teacherRoutes = require("./routes/teacher");
 const adminRoutes = require("./routes/adminRoutes");
 const studentRoutes = require("./routes/student");
 const reportRoutes = require("./routes/reportRoutes");
@@ -224,15 +224,14 @@ function getStartupRouteReport() {
     "codeRoutes",
     "libraryRoutes",
     "questionRoutes",
-    "teacherTestRoutes",
     "studentSubmissionRoutes",
     "testAssignmentRoutes",
     "platformAuthRoutes",
     "authRoutes",
     "dashboardRoutes",
-    "teacherRoutes",
+    "teacherRoutes (routes/teacher/)",
     "adminRoutes",
-    "studentRoutes",
+    "studentRoutes (routes/student/)",
     "reportRoutes",
     "platformRoutes"
   ];
