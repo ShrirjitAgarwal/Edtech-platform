@@ -219,6 +219,19 @@ router.get(
   platformAdminMiddleware,
   platformSchoolController.schoolUsagePage
 );
+router.get(
+  "/platform/schools/:schoolId/compliance",
+  authMiddleware,
+  platformAdminMiddleware,
+  platformSchoolController.schoolCompliancePage
+);
+router.post(
+  "/platform/schools/:schoolId/compliance/accept",
+  authMiddleware,
+  platformAdminMiddleware,
+  express.urlencoded({ extended: true }),
+  platformSchoolController.acceptSchoolCompliance
+);
 router.post(
   "/platform/schools",
   authMiddleware,

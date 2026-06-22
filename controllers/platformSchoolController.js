@@ -13,6 +13,7 @@ const Assignment = require("../models/Assignment");
 const Result = require("../models/Result");
 const Question = require("../models/Question");
 const UsageEvent = require("../models/UsageEvent");
+const SchoolComplianceAcceptance = require("../models/SchoolComplianceAcceptance");
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -365,6 +366,21 @@ exports.listSchoolsPage = async (req, res) => {
                         "
                       >
                         Usage
+                      </a>
+                      <a
+                        href="/platform/schools/${school._id}/compliance"
+                        style="
+                          display:inline-block;
+                          padding:8px 10px;
+                          background:#2563eb;
+                          color:white;
+                          text-decoration:none;
+                          border-radius:8px;
+                          font-weight:900;
+                          font-size:12px;
+                        "
+                      >
+                        Compliance
                       </a>
                       <form
                         method="POST"
@@ -1432,3 +1448,367 @@ exports.createAdminForSchool = async (req, res) => {
     );
   }
 };
+
+const COMPLIANCE_DOCUMENT_VERSIONS = {
+  agreementVersion: "v1.0",
+  privacyPolicyVersion: "v1.0",
+  termsVersion: "v1.0",
+  dpaVersion: "v1.0",
+  studentDataNoticeVersion: "v1.0",
+  retentionPolicyVersion: "v1.0"
+};
+
+function getRequestIp(req) {
+  const forwardedFor = String(req.headers["x-forwarded-for"] || "").trim();
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim();
+  }
+  return String(req.ip || req.socket?.remoteAddress || "").trim();
+}
+
+function formatComplianceDate(value) {
+  if (!value) {
+    return "Not accepted yet";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Not accepted yet";
+  }
+
+  return date.toISOString();
+}
+
+function renderComplianceCheckbox(name, label) {
+  return `
+    <label style="
+      display:block;
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      padding:12px;
+      margin-bottom:10px;
+      font-weight:700;
+      color:#0f172a;
+      line-height:1.45;
+    ">
+      <input
+        type="checkbox"
+        name="${escapeHtml(name)}"
+        required
+        style="margin-right:8px;transform:scale(1.1);"
+      />
+      ${escapeHtml(label)}
+    </label>
+  `;
+}
+
+function renderComplianceDocumentCard(title, version, description) {
+  return `
+    <div style="
+      background:white;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:14px;
+    ">
+      <h3 style="margin:0 0 6px 0;color:#0f172a;">${escapeHtml(title)}</h3>
+      <div style="font-size:12px;font-weight:800;color:#2563eb;margin-bottom:8px;">
+        Version ${escapeHtml(version)}
+      </div>
+      <p style="margin:0;color:#475569;line-height:1.5;font-size:14px;">
+        ${escapeHtml(description)}
+      </p>
+    </div>
+  `;
+}
+
+exports.schoolCompliancePage = async (req, res) => {
+  try {
+    const schoolId = req.params.schoolId;
+    const school = await School.findById(schoolId).lean();
+
+    if (!school) {
+      return res.redirect(
+        "/platform/schools?error=" + encodeURIComponent("School not found.")
+      );
+    }
+
+    const latestAcceptance = await SchoolComplianceAcceptance.findOne({
+      schoolId: school._id
+    })
+      .sort({ acceptedAt: -1 })
+      .lean();
+
+    const acceptanceHistory = await SchoolComplianceAcceptance.find({
+      schoolId: school._id
+    })
+      .sort({ acceptedAt: -1 })
+      .limit(10)
+      .lean();
+
+    const successMessage = String(req.query.success || "").trim();
+    const errorMessage = String(req.query.error || "").trim();
+
+    const messageHtml = successMessage
+      ? `
+        <div style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0;padding:14px 16px;border-radius:10px;font-weight:800;margin-bottom:18px;">
+          ${escapeHtml(successMessage)}
+        </div>
+      `
+      : errorMessage
+      ? `
+        <div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:14px 16px;border-radius:10px;font-weight:800;margin-bottom:18px;">
+          ${escapeHtml(errorMessage)}
+        </div>
+      `
+      : "";
+
+    const statusBadge = latestAcceptance
+      ? `<span style="background:#dcfce7;color:#166534;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px;">ACCEPTED</span>`
+      : `<span style="background:#fee2e2;color:#991b1b;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px;">NOT ACCEPTED</span>`;
+
+    const historyRows = acceptanceHistory.length
+      ? acceptanceHistory
+          .map(record => {
+            return `
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${escapeHtml(formatComplianceDate(record.acceptedAt))}</td>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${escapeHtml(record.acceptedByName || "-")}</td>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${escapeHtml(record.acceptedByEmail || "-")}</td>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${escapeHtml(record.agreementVersion || "-")}</td>
+              </tr>
+            `;
+          })
+          .join("")
+      : `
+          <tr>
+            <td colspan="4" style="padding:14px;color:#64748b;">No acceptance records yet.</td>
+          </tr>
+        `;
+
+    res.send(`
+      <body style="margin:0;font-family:Arial;background:#eef2ff;">
+        <div style="
+          max-width:1100px;
+          margin:30px auto;
+          background:white;
+          padding:28px;
+          border-radius:16px;
+          box-shadow:0 8px 24px rgba(15,23,42,0.08);
+        ">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;">
+            <div>
+              <h1 style="margin:0;">Compliance Agreements</h1>
+              <p style="margin:8px 0 0 0;color:#64748b;">
+                ${escapeHtml(school.name)} (${escapeHtml(school.code)})
+              </p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              ${statusBadge}
+              <a href="/platform/schools" style="
+                display:inline-block;
+                background:#475569;
+                color:white;
+                text-decoration:none;
+                padding:11px 14px;
+                border-radius:8px;
+                font-weight:800;
+              ">Back to Schools</a>
+            </div>
+          </div>
+
+          ${messageHtml}
+
+          <div style="
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:14px;
+            padding:18px;
+            margin-bottom:22px;
+          ">
+            <h2 style="margin:0 0 10px 0;">Current Acceptance Status</h2>
+            <p style="margin:6px 0;color:#475569;">
+              <b>Status:</b> ${latestAcceptance ? "Accepted" : "Not accepted yet"}
+            </p>
+            <p style="margin:6px 0;color:#475569;">
+              <b>Accepted At:</b> ${escapeHtml(formatComplianceDate(latestAcceptance?.acceptedAt))}
+            </p>
+            <p style="margin:6px 0;color:#475569;">
+              <b>Accepted By:</b> ${escapeHtml(latestAcceptance?.acceptedByName || "-")}
+              ${latestAcceptance?.acceptedByEmail ? `(${escapeHtml(latestAcceptance.acceptedByEmail)})` : ""}
+            </p>
+          </div>
+
+          <div style="
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+            gap:14px;
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:14px;
+            padding:18px;
+            margin-bottom:22px;
+          ">
+            ${renderComplianceDocumentCard(
+              "Privacy Policy",
+              COMPLIANCE_DOCUMENT_VERSIONS.privacyPolicyVersion,
+              "Explains what personal and student data is collected, why it is collected, how it is used, and how privacy requests are handled."
+            )}
+            ${renderComplianceDocumentCard(
+              "Terms of Use",
+              COMPLIANCE_DOCUMENT_VERSIONS.termsVersion,
+              "Defines acceptable use, user responsibilities, account security requirements, and platform usage rules."
+            )}
+            ${renderComplianceDocumentCard(
+              "School Data Processing Agreement",
+              COMPLIANCE_DOCUMENT_VERSIONS.dpaVersion,
+              "Confirms the school is responsible for lawful upload of student data and the platform processes it only for school assessment purposes."
+            )}
+            ${renderComplianceDocumentCard(
+              "Student Data Notice",
+              COMPLIANCE_DOCUMENT_VERSIONS.studentDataNoticeVersion,
+              "Explains how student data is used for assessments, results, reporting, and academic administration."
+            )}
+            ${renderComplianceDocumentCard(
+              "Retention and Deletion Policy",
+              COMPLIANCE_DOCUMENT_VERSIONS.retentionPolicyVersion,
+              "Explains how long data is retained and how deletion/export requests are handled."
+            )}
+          </div>
+
+          <form method="POST" action="/platform/schools/${escapeHtml(String(school._id))}/compliance/accept" style="
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:14px;
+            padding:18px;
+            margin-bottom:22px;
+          ">
+            <h2 style="margin:0 0 12px 0;">Required Confirmations</h2>
+            <p style="margin:0 0 14px 0;color:#64748b;line-height:1.5;">
+              Tick every confirmation below to record compliance acceptance for this school.
+              This creates an auditable acceptance record.
+            </p>
+
+            ${renderComplianceCheckbox("reviewedPrivacyPolicy", "The school has reviewed and accepted the Privacy Policy.")}
+            ${renderComplianceCheckbox("reviewedTerms", "The school has reviewed and accepted the Terms of Use.")}
+            ${renderComplianceCheckbox("reviewedDpa", "The school has reviewed and accepted the School Data Processing Agreement.")}
+            ${renderComplianceCheckbox("reviewedStudentDataNotice", "The school has reviewed the Student Data Notice.")}
+            ${renderComplianceCheckbox("reviewedRetentionPolicy", "The school has reviewed the Retention and Deletion Policy.")}
+            ${renderComplianceCheckbox("schoolAuthorizedForStudentData", "The school confirms it is authorized to provide/upload student data to the platform.")}
+            ${renderComplianceCheckbox("schoolHandlesParentGuardianPermissions", "The school confirms it handles required parent/guardian/student permissions or lawful authorization where applicable.")}
+            ${renderComplianceCheckbox("academicUseOnly", "The school confirms student data will be used only for school assessment, results, reporting, and academic administration.")}
+            ${renderComplianceCheckbox("deletionExportViaAuthorizedSchoolAdmin", "The school understands deletion/export requests must come through authorized school representatives/admins.")}
+
+            <button type="submit" style="
+              margin-top:8px;
+              background:#2563eb;
+              color:white;
+              border:none;
+              padding:12px 16px;
+              border-radius:8px;
+              font-weight:900;
+              cursor:pointer;
+            ">
+              Record Acceptance
+            </button>
+          </form>
+
+          <div style="
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:14px;
+            padding:18px;
+          ">
+            <h2 style="margin:0 0 12px 0;">Acceptance History</h2>
+            <table style="width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden;">
+              <tr style="background:#e2e8f0;text-align:left;">
+                <th style="padding:10px;">Accepted At</th>
+                <th style="padding:10px;">Name</th>
+                <th style="padding:10px;">Email</th>
+                <th style="padding:10px;">Agreement Version</th>
+              </tr>
+              ${historyRows}
+            </table>
+          </div>
+        </div>
+      </body>
+    `);
+  } catch (err) {
+    console.error("SCHOOL COMPLIANCE PAGE ERROR:", err);
+    res.status(500).send("Failed to load school compliance page");
+  }
+};
+
+exports.acceptSchoolCompliance = async (req, res) => {
+  try {
+    const schoolId = req.params.schoolId;
+    const school = await School.findById(schoolId).lean();
+
+    if (!school) {
+      return res.redirect(
+        "/platform/schools?error=" + encodeURIComponent("School not found.")
+      );
+    }
+
+    const requiredFields = [
+      "reviewedPrivacyPolicy",
+      "reviewedTerms",
+      "reviewedDpa",
+      "reviewedStudentDataNotice",
+      "reviewedRetentionPolicy",
+      "schoolAuthorizedForStudentData",
+      "schoolHandlesParentGuardianPermissions",
+      "academicUseOnly",
+      "deletionExportViaAuthorizedSchoolAdmin"
+    ];
+
+    const missingFields = requiredFields.filter(field => req.body[field] !== "on");
+
+    if (missingFields.length) {
+      return res.redirect(
+        "/platform/schools/" +
+          encodeURIComponent(String(school._id)) +
+          "/compliance?error=" +
+          encodeURIComponent("All required confirmations must be checked before acceptance can be recorded.")
+      );
+    }
+
+    await SchoolComplianceAcceptance.create({
+      schoolId: school._id,
+      schoolCode: school.code || "",
+      schoolName: school.name || "",
+      acceptedByUserId: String(req.user.id || req.user._id || ""),
+      acceptedByName: req.user.name || "",
+      acceptedByEmail: req.user.email || "",
+      acceptedByRole: req.user.role || "",
+      ...COMPLIANCE_DOCUMENT_VERSIONS,
+      confirmations: {
+        reviewedPrivacyPolicy: true,
+        reviewedTerms: true,
+        reviewedDpa: true,
+        reviewedStudentDataNotice: true,
+        reviewedRetentionPolicy: true,
+        schoolAuthorizedForStudentData: true,
+        schoolHandlesParentGuardianPermissions: true,
+        academicUseOnly: true,
+        deletionExportViaAuthorizedSchoolAdmin: true
+      },
+      requestIp: getRequestIp(req),
+      userAgent: String(req.headers["user-agent"] || "").slice(0, 500)
+    });
+
+    res.redirect(
+      "/platform/schools/" +
+        encodeURIComponent(String(school._id)) +
+        "/compliance?success=" +
+        encodeURIComponent("Compliance acceptance recorded successfully.")
+    );
+  } catch (err) {
+    console.error("ACCEPT SCHOOL COMPLIANCE ERROR:", err);
+    res.redirect(
+      "/platform/schools?error=" +
+        encodeURIComponent("Compliance acceptance could not be recorded. Please try again.")
+    );
+  }
+};
+

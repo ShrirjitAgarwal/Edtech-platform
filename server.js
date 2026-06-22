@@ -86,6 +86,7 @@ require("./models/AdminActionLog");
 require("./models/AuditLog");
 require("./models/School");
 require("./models/UsageEvent");
+require("./models/SchoolComplianceAcceptance");
 require("./models/RevokedToken");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
