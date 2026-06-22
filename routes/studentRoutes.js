@@ -14,6 +14,7 @@ const authMiddleware = require("../middleware/auth");
 const {
   recordUsageEvent
 } = require("../services/usageTracker");
+const { escapeHtml, escapeAttribute, safeJsonForScript } = require("../utils/html");
 // ======================================================
 // HELPERS
 // ======================================================
@@ -41,25 +42,6 @@ function logout(){
 }
 </script>
 `;
-}
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, "&#096;");
-}
-function safeJsonForScript(value) {
-  return JSON.stringify(value)
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026")
-    .replace(/\u2028/g, "\\u2028")
-    .replace(/\u2029/g, "\\u2029");
 }
 async function getStudentSession(req) {
   const studentToken = req.cookies && req.cookies.studentSessionToken;

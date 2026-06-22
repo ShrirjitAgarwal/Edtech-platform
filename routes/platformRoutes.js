@@ -13,14 +13,7 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024
   }
 });
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+const { escapeHtml } = require("../utils/html");
 function getMongoHealth() {
   const readyState = mongoose.connection.readyState;
   const states = {

@@ -14,14 +14,7 @@ const Result = require("../models/Result");
 const Question = require("../models/Question");
 const UsageEvent = require("../models/UsageEvent");
 const SchoolComplianceAcceptance = require("../models/SchoolComplianceAcceptance");
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+const { escapeHtml } = require("../utils/html");
 function normalizeSchoolCode(value) {
   return String(value || "")
     .trim()

@@ -1,3 +1,4 @@
+const { escapeHtml, escapeAttribute } = require("../utils/html");
 exports.schoolDashboardPage = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -81,19 +82,8 @@ Question.find({
   .select("scope schoolId teacherId createdAt")
   .lean()
     ]);
-    function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
     function jsString(value) {
       return JSON.stringify(String(value || ""));
-    }
-    function escapeAttribute(value) {
-      return escapeHtml(value).replace(/`/g, "&#096;");
     }
     function jsAttributeString(value) {
       return escapeAttribute(jsString(value));

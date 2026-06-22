@@ -1,6 +1,7 @@
 const {
   recordUsageEvent
 } = require("../services/usageTracker");
+const { escapeHtml } = require("../utils/html");
 function escapeCsvCell(value) {
   const raw = String(value ?? "");
   const protectedValue = /^[=+\-@]/.test(raw)
@@ -182,14 +183,6 @@ exports.resultPage = async (req, res) => {
   const Result = require("../models/Result");
   const Student = require("../models/Student");
   const Question = require("../models/Question");
-  function escapeHtml(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
   if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
     return res.status(403).send("<h2>Access denied</h2>");
   }
