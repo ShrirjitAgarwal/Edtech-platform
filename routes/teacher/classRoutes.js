@@ -10,6 +10,16 @@ const layout = require("../../views/layout");
 const backButton = require("../../views/backButton");
 const authMiddleware = require("../../middleware/auth");
 const { escapeHtml, escapeAttribute, safeJsonForScript } = require("../../utils/html");
+function teacherGuardScript() {
+  return `
+<script>
+const pageUser = JSON.parse(localStorage.getItem("user") || "null");
+if(!pageUser || pageUser.role !== "teacher"){
+  window.location.replace("/");
+}
+</script>
+`;
+}
 
 // ---------- VIEW STUDENTS ----------
 router.get("/students", authMiddleware, async (req, res) => {
