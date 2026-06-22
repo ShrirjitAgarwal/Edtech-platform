@@ -186,7 +186,6 @@ app.use("/", publicRoutes);
 app.use("/", codeRoutes);
 app.use("/", libraryRoutes);
 app.use("/", questionRoutes);
-app.use("/", teacherTestRoutes);
 app.use("/", studentSubmissionRoutes);
 app.use("/", testAssignmentRoutes);
 app.use("/", platformAuthRoutes);
