@@ -437,6 +437,18 @@ headers:{
 })
   .catch(() => alert("Failed to save settings"));
 }
+document.addEventListener("click", function(event){
+  const saveButton = event.target.closest("#saveTestSettingsButton");
+  if(saveButton){
+    saveSettings();
+    return;
+  }
+
+  const backButton = event.target.closest("#backToTeacherTestsButton");
+  if(backButton){
+    window.location.replace("/teacher-tests");
+  }
+});
 setCustomDropdownOptions(
   "testSelector",
   [

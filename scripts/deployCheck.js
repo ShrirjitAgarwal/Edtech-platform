@@ -279,7 +279,7 @@ function checkCriticalFrontendActions() {
 
   checkCriticalAction(
     "Create Test - Save Test",
-    "routes/teacherTestRoutes.js",
+    "routes/teacher/testCreateRoutes.js",
     [
       'id="saveTestButton"',
       "function saveTest()",
@@ -291,7 +291,7 @@ function checkCriticalFrontendActions() {
 
   checkCriticalAction(
     "Test Settings - Save Settings",
-    "routes/teacherTestRoutes.js",
+    "routes/teacher/testSettingsRoutes.js",
     [
       'id="saveTestSettingsButton"',
       "function saveSettings()",
@@ -303,7 +303,7 @@ function checkCriticalFrontendActions() {
 
   checkCriticalAction(
     "Teacher Tests - Publish/Assign",
-    "routes/teacherTestRoutes.js",
+    "routes/teacher/testListRoutes.js",
     [
       'class="assign-test-button"',
       "function assignTest(testId)",
@@ -313,7 +313,7 @@ function checkCriticalFrontendActions() {
 
   checkCriticalAction(
     "Teacher Tests - Delete Selected",
-    "routes/teacherTestRoutes.js",
+    "routes/teacher/testListRoutes.js",
     [
       'id="deleteSelectedTestsButton"',
       "const deleteSelectedTestsButton = document.getElementById(\"deleteSelectedTestsButton\")",
@@ -336,7 +336,7 @@ function checkCriticalFrontendActions() {
 
   checkCriticalAction(
     "Student Entry - Lookup",
-    "routes/studentRoutes.js",
+    "routes/student/entryRoutes.js",
     [
       'fetch("/api/student/lookup"',
       "studentSessionToken"
