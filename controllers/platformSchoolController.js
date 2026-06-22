@@ -1539,22 +1539,7 @@ exports.schoolCompliancePage = async (req, res) => {
       .limit(10)
       .lean();
 
-    const successMessage = String(req.query.success || "").trim();
-    const errorMessage = String(req.query.error || "").trim();
-
-    const messageHtml = successMessage
-      ? `
-        <div style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0;padding:14px 16px;border-radius:10px;font-weight:800;margin-bottom:18px;">
-          ${escapeHtml(successMessage)}
-        </div>
-      `
-      : errorMessage
-      ? `
-        <div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:14px 16px;border-radius:10px;font-weight:800;margin-bottom:18px;">
-          ${escapeHtml(errorMessage)}
-        </div>
-      `
-      : "";
+    const messageHtml = buildPlatformMessage(req);
 
     const statusBadge = latestAcceptance
       ? `<span style="background:#dcfce7;color:#166534;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px;">ACCEPTED</span>`
