@@ -7,7 +7,7 @@ const School = require("../../models/School");
 const sidebar = require("../../views/sidebar");
 const { requireStudentPageSession } = require("./session");
 const { recordUsageEvent } = require("../../services/usageTracker");
-const { escapeHtml, safeJsonForScript } = require("../../utils/html");
+const { escapeHtml, escapeAttribute, safeJsonForScript } = require("../../utils/html");
 
 // ======================================================
 // TEST PAGE
