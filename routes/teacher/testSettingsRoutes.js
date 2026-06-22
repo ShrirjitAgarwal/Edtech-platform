@@ -180,9 +180,19 @@ function setCustomDropdownOptions(inputId, options, onSelect){
   }
 }
 document.addEventListener("click", function(event){
+  const dropdownToggle = event.target.closest(".custom-dropdown-toggle");
+  if(dropdownToggle){
+    const dropdownId = dropdownToggle.dataset.dropdownId;
+    if(dropdownId){
+      toggleCustomDropdown(dropdownId);
+    }
+    return;
+  }
+
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
     event.target.closest("[id$='Menu']");
+
   if(!clickedInsideDropdown){
     closeCustomDropdowns();
   }
