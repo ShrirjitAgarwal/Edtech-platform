@@ -305,6 +305,10 @@ router.get("/student-entry", (req, res) => {
           <input id="lastName" placeholder="Enter last name" autocomplete="family-name">
         </div>
         <div class="field">
+          <label for="schoolCode">School Code</label>
+          <input id="schoolCode" placeholder="Enter school code" autocomplete="off">
+        </div>
+        <div class="field">
           <label for="studentId">Student ID</label>
           <input id="studentId" placeholder="Enter student ID" autocomplete="off">
         </div>
@@ -343,9 +347,10 @@ function lookupStudent(){
   clearError();
   const firstName = document.getElementById("firstName").value.trim();
   const lastName = document.getElementById("lastName").value.trim();
+  const schoolCode = document.getElementById("schoolCode").value.trim().toUpperCase();
   const studentId = document.getElementById("studentId").value.trim();
-  if(!firstName || !lastName || !studentId){
-    showError("Please enter first name, last name, and student ID.");
+  if(!firstName || !lastName || !schoolCode || !studentId){
+    showError("Please enter school code, first name, last name, and student ID.");
     return;
   }
   fetch("/api/student/lookup", {
@@ -356,7 +361,8 @@ function lookupStudent(){
     body: JSON.stringify({
       firstName,
       lastName,
-      studentId
+      studentId,
+      schoolCode
     })
   })
   .then(res => res.json())
@@ -439,9 +445,10 @@ async function studentLookupHandler(req, res) {
     const firstName = String(req.body.firstName || "").trim();
     const lastName = String(req.body.lastName || "").trim();
     const studentId = String(req.body.studentId || "").trim();
-    if (!firstName || !lastName || !studentId) {
+    const schoolCode = String(req.body.schoolCode || "").trim().toUpperCase();
+    if (!firstName || !lastName || !studentId || !schoolCode) {
       return res.status(400).json({
-        error: "Please enter first name, last name, and student ID."
+        error: "Please enter school code, first name, last name, and student ID."
       });
     }
     const normalize = value =>
@@ -460,6 +467,7 @@ async function studentLookupHandler(req, res) {
     let matches = await Student.find({
       studentKey,
       nameKey,
+      schoolCode,
       status: "active"
     })
       .select("studentId studentKey name firstName lastName fullName nameKey class teacherId schoolId schoolCode status")
@@ -467,6 +475,7 @@ async function studentLookupHandler(req, res) {
       .lean();
     if (!matches.length) {
       matches = await Student.find({
+        schoolCode,
         status: "active",
         $or: [
           { studentKey },
