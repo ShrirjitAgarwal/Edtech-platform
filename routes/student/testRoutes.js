@@ -73,7 +73,7 @@ const alreadyAttempted = await Result.findOne({
         { scope: "public" },
         ...(test.schoolId ? [{ schoolId: test.schoolId }] : [])
       ]
-    }).lean();
+    }).select("-testCases -codingMeta.functionName").lean();
     const questionMap = {};
     mongoQuestions.forEach(q => {
       questionMap[String(q._id)] = q;
