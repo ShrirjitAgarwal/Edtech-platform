@@ -659,33 +659,9 @@ router.get("/student-login", (req, res) => {
   res.redirect("/student-entry");
 });
 router.post("/student-login", async (req, res) => {
-  try {
-    const { studentId, name, class: studentClass, schoolCode } = req.body;
-    const student = await Student.findOne({
-      studentId,
-      name,
-      class: studentClass,
-      schoolCode
-    });
-    if (!student) {
-      return res.json({ error: "Invalid credentials" });
-    }
-    res.json({
-      status: "ok",
-      user: {
-        studentId: student.studentId,
-        name: student.name,
-        class: student.class,
-        teacherId: student.teacherId,
-        schoolId: student.schoolId,
-        schoolCode: student.schoolCode,
-        role: "student"
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Login failed" });
-  }
+  return res.status(410).json({
+    error: "This login endpoint is no longer supported. Please use the student entry page."
+  });
 });
 
 module.exports = router;
