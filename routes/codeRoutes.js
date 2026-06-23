@@ -1,6 +1,7 @@
 
 const express = require("express");
 const router = express.Router();
+const jwt = require("jsonwebtoken");
 const {
   judgeSubmission
 } = require("../services/codeJudge");
@@ -8,6 +9,9 @@ const {
   recordUsageEvent
 } = require("../services/usageTracker");
 const Student = require("../models/Student");
+const Test = require("../models/Test");
+const Question = require("../models/Question");
+const Assignment = require("../models/Assignment");
 const {
   canRunCode
 } = require("../services/planEnforcement");
@@ -41,6 +45,7 @@ let activeCodeRuns = 0;
 const maxActiveCodeRuns = 25;
 // ---------- RUN CODE ----------
 async function runCodeHandler(req, res) {
+  let codeRunSlotReserved = false;
   try {
     if (activeCodeRuns >= maxActiveCodeRuns) {
       return res.status(503).json({
@@ -53,45 +58,121 @@ async function runCodeHandler(req, res) {
       });
     }
     activeCodeRuns++;
+    codeRunSlotReserved = true;
+    // Verify student session cookie
+    const studentToken = req.cookies && req.cookies.studentSessionToken;
+    if (!studentToken) {
+      return res.status(401).json({ error: "Student session required" });
+    }
+    let decodedStudent;
+    try {
+      decodedStudent = jwt.verify(studentToken, process.env.JWT_SECRET);
+    } catch (tokenErr) {
+      return res.status(401).json({ error: "Student session expired" });
+    }
+    if (!decodedStudent || decodedStudent.role !== "student") {
+      return res.status(401).json({ error: "Invalid student session" });
+    }
     const {
       code,
       language,
-      functionName,
-      testCases,
-      schoolId,
-      schoolCode,
-      studentId,
       testId,
       questionId,
       testName,
       questionType
     } = req.body;
     if (!code || !String(code).trim()) {
-      return res.status(400).json({
-        error: "Code required"
-      });
+      return res.status(400).json({ error: "Code required" });
     }
     if (String(code).length > 10000) {
       return res.status(400).json({
         error: "Code is too long. Please keep your answer under 10,000 characters."
       });
     }
-    if (!functionName || !String(functionName).trim()) {
-      return res.status(400).json({
-        error: "Function name required"
-      });
+    if (!testId || !String(testId).trim()) {
+      return res.status(400).json({ error: "Test ID required" });
     }
-    if (!Array.isArray(testCases) || !testCases.length) {
-      return res.status(400).json({
-        error: "No test cases found"
-      });
+    if (!questionId || !String(questionId).trim()) {
+      return res.status(400).json({ error: "Question ID required" });
     }
-    if (testCases.length > 4) {
-      return res.status(400).json({
-        error: "Too many test cases"
-      });
+    // Load student from DB using decoded token — not body values
+    const student = await Student.findOne({
+      _id: decodedStudent.studentRecordId,
+      studentId: decodedStudent.studentId,
+      status: "active"
+    })
+      .select("studentId class teacherId schoolId schoolCode status")
+      .lean();
+    if (!student) {
+      return res.status(401).json({ error: "Invalid student session" });
     }
-    const cleanTestCases = testCases
+    if (!student.schoolId) {
+      return res.status(403).json({ error: "School context required" });
+    }
+    // Load and authorize the test
+    const test = await Test.findOne({
+      _id: testId,
+      schoolId: student.schoolId
+    })
+      .select("status teacherId className questionIds")
+      .lean();
+    if (!test) {
+      return res.status(403).json({ error: "Test not available" });
+    }
+    if (test.status !== "published") {
+      return res.status(403).json({ error: "Test not available" });
+    }
+    if (String(test.teacherId || "") !== String(student.teacherId || "")) {
+      return res.status(403).json({ error: "Test not available" });
+    }
+    const normalizedStudentClass = String(student.class || "").trim().toUpperCase();
+    const normalizedTestClass = String(test.className || "").trim().toUpperCase();
+    if (normalizedTestClass !== normalizedStudentClass) {
+      return res.status(403).json({ error: "Test not available" });
+    }
+    // Verify questionId belongs to this test
+    const testQuestionIds = (test.questionIds || []).map(String);
+    if (!testQuestionIds.includes(String(questionId))) {
+      return res.status(403).json({ error: "Question not available" });
+    }
+    // Verify the student is assigned to this test
+    const assignment = await Assignment.findOne({
+      testId: String(test._id),
+      className: normalizedStudentClass,
+      teacherId: String(student.teacherId || ""),
+      schoolId: student.schoolId
+    })
+      .select("_id")
+      .lean();
+    if (!assignment) {
+      return res.status(403).json({ error: "Test not assigned" });
+    }
+    // Load question from DB — functionName and testCases come only from here
+    const question = await Question.findOne({
+      _id: questionId,
+      $or: [
+        { scope: "public" },
+        { schoolId: student.schoolId }
+      ]
+    })
+      .select("codingMeta testCases type")
+      .lean();
+    if (!question) {
+      return res.status(403).json({ error: "Question not available" });
+    }
+    const dbFunctionName = String(question.codingMeta?.functionName || "").trim();
+    const dbTestCases = Array.isArray(question.testCases) ? question.testCases : [];
+    const dbLanguage = String(question.codingMeta?.language || "").trim() || language || "javascript";
+    if (!dbFunctionName) {
+      return res.status(400).json({ error: "Function name required" });
+    }
+    if (!dbTestCases.length) {
+      return res.status(400).json({ error: "No test cases found" });
+    }
+    if (dbTestCases.length > 4) {
+      return res.status(400).json({ error: "Too many test cases" });
+    }
+    const cleanTestCases = dbTestCases
       .filter(tc => tc && typeof tc === "object")
       .map(tc => ({
         input: String(tc.input || ""),
@@ -103,52 +184,9 @@ async function runCodeHandler(req, res) {
         tc.expectedOutput.trim() !== ""
       );
     if (!cleanTestCases.length) {
-      return res.status(400).json({
-        error: "No valid test cases found"
-      });
+      return res.status(400).json({ error: "No valid test cases found" });
     }
-
-    const normalizedSchoolId = String(schoolId || "").trim();
-    const normalizedStudentId = String(studentId || "").trim();
-
-    if (!normalizedSchoolId) {
-      return res.status(403).json({
-        error: "School context required"
-      });
-    }
-
-    if (!normalizedStudentId) {
-      return res.status(401).json({
-        error: "Invalid student context"
-      });
-    }
-
-    const student = await Student.findOne({
-      studentId: normalizedStudentId,
-      schoolId: normalizedSchoolId,
-      status: "active"
-    })
-      .select("studentId schoolId schoolCode status")
-      .lean();
-
-    if (!student) {
-      return res.status(403).json({
-        error: "Invalid student context"
-      });
-    }
-
-    if (
-      schoolCode &&
-      student.schoolCode &&
-      String(schoolCode) !== String(student.schoolCode)
-    ) {
-      return res.status(403).json({
-        error: "Invalid school context"
-      });
-    }
-
-    const codeRunLimitCheck = await canRunCode(normalizedSchoolId);
-
+    const codeRunLimitCheck = await canRunCode(student.schoolId);
     if (!codeRunLimitCheck.allowed) {
       return res.status(403).json({
         error: codeRunLimitCheck.message,
@@ -157,12 +195,11 @@ async function runCodeHandler(req, res) {
         limit: codeRunLimitCheck.limit
       });
     }
-
     const judgeResult = await judgeSubmission({
       code,
-      functionName: String(functionName).trim(),
+      functionName: dbFunctionName,
       testCases: cleanTestCases,
-      language: language || "javascript"
+      language: dbLanguage
     });
     let output = "";
     if (judgeResult.error) {
@@ -198,13 +235,13 @@ async function runCodeHandler(req, res) {
       (judgeResult.totalCount || cleanTestCases.length) +
       " test cases passed.";
     await recordUsageEvent({
-      schoolId: normalizedSchoolId,
-      schoolCode: student.schoolCode || schoolCode || null,
-      studentId: normalizedStudentId,
+      schoolId: student.schoolId,
+      schoolCode: student.schoolCode || null,
+      studentId: student.studentId,
       eventType: "code_run",
       eventLabel: "Code run",
       resourceType: "question",
-      resourceId: questionId,
+      resourceId: String(questionId),
       status: judgeResult.error
         ? "error"
         : judgeResult.allPassed
@@ -215,7 +252,7 @@ async function runCodeHandler(req, res) {
         testName,
         questionId,
         questionType: questionType || "coding",
-        language: language || "javascript",
+        language: dbLanguage,
         codeLength: String(code || "").length,
         testCaseCount: cleanTestCases.length,
         passedCount: judgeResult.passedCount || 0,
@@ -223,7 +260,6 @@ async function runCodeHandler(req, res) {
         hasError: Boolean(judgeResult.error)
       }
     });
-
     res.json({
       output,
       passedCount: judgeResult.passedCount || 0,
@@ -237,7 +273,9 @@ async function runCodeHandler(req, res) {
       error: "Execution failed"
     });
   } finally {
-    activeCodeRuns = Math.max(activeCodeRuns - 1, 0);
+    if (codeRunSlotReserved) {
+      activeCodeRuns = Math.max(activeCodeRuns - 1, 0);
+    }
   }
 }
 router.post("/api/code/run", runCodeHandler);
