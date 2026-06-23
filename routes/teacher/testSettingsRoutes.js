@@ -456,7 +456,7 @@ document.addEventListener("click", function(event){
 
   const backButton = event.target.closest("#backToTeacherTestsButton");
   if(backButton){
-    window.location.replace("/teacher-tests");
+    go("/teacher-tests");
   }
 });
 setCustomDropdownOptions(

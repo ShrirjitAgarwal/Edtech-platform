@@ -450,13 +450,13 @@ label.textContent = options[0]?.label || "All";
 document.addEventListener("click", function(event){
 const createQuestionButton = event.target.closest("#libraryCreateQuestionButton");
 if(createQuestionButton){
-window.location.replace("/create-question");
+go("/create-question");
 return;
 }
 
 const manageQuestionsButton = event.target.closest("#libraryManageQuestionsButton");
 if(manageQuestionsButton){
-window.location.replace("/my-questions");
+go("/my-questions");
 return;
 }
 

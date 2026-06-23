@@ -418,7 +418,7 @@ headers:{
         .catch(() => alert("Delete failed"));
       }
 function openSelectedSettings(){
-  window.location.replace("/test-settings");
+  go("/test-settings");
 }
 
 const createTestFromListButton = document.getElementById("createTestFromListButton");

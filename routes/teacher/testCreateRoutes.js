@@ -869,7 +869,7 @@ body: JSON.stringify({
  if(data.error) return alert(getErrorMessage(data.error));
  localStorage.removeItem("selectedQuestions");
  alert(editingTestId ? "Draft updated!" : "Test saved as draft!");
- window.location.replace("/teacher-tests");
+ go("/teacher-tests");
  })
  .catch(() => alert("Failed to create test"));
 }

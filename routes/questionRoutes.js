@@ -695,7 +695,7 @@ headers:{
       return;
     }
     alert("Question saved");
-    window.location.replace("/library");
+    go("/library");
   })
   .catch(() => {
     alert("Failed to save question");
@@ -1045,7 +1045,7 @@ function previewQuestion(id){
     "</div>";
 }
 function editQuestion(id){
-  window.location.replace("/create-question?id=" + id);
+  go("/create-question?id=" + id);
 }
 function deleteQuestion(id){
   if(!confirm("Delete this question?")){
