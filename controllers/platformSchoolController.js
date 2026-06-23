@@ -240,6 +240,38 @@ exports.listSchoolsPage = async (req, res) => {
       }
       adminsBySchoolCode[code].push(admin);
     });
+
+    const schoolIds = schools
+      .map(school => school._id)
+      .filter(Boolean);
+
+    const latestComplianceRecords = schoolIds.length
+      ? await SchoolComplianceAcceptance.aggregate([
+          {
+            $match: {
+              schoolId: { $in: schoolIds }
+            }
+          },
+          {
+            $sort: {
+              acceptedAt: -1
+            }
+          },
+          {
+            $group: {
+              _id: "$schoolId",
+              acceptedAt: { $first: "$acceptedAt" },
+              agreementVersion: { $first: "$agreementVersion" }
+            }
+          }
+        ])
+      : [];
+
+    const latestComplianceBySchoolId = {};
+    latestComplianceRecords.forEach(record => {
+      latestComplianceBySchoolId[String(record._id || "")] = record;
+    });
+
     const schoolRows = schools.length
       ? `
         <div style="
@@ -251,7 +283,7 @@ exports.listSchoolsPage = async (req, res) => {
           <div style="min-width:1180px;">
             <div class="platform-school-table-header" style="
               display:grid;
-              grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.6fr;
+              grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.2fr 1.6fr;
               gap:10px;
               padding:12px 14px;
               background:#e2e8f0;
@@ -271,6 +303,7 @@ exports.listSchoolsPage = async (req, res) => {
               <div>Students</div>
               <div>Tests</div>
               <div>Code Runs</div>
+              <div>Compliance</div>
               <div>Actions</div>
             </div>
             ${schools.map(school => {
@@ -283,6 +316,12 @@ exports.listSchoolsPage = async (req, res) => {
               const maxTests = getSchoolLimitValue(school, "maxTests", 100);
               const maxAssignments = getSchoolLimitValue(school, "maxAssignments", 500);
               const maxMonthlyCodeRuns = getSchoolLimitValue(school, "maxMonthlyCodeRuns", 1000);
+              const latestCompliance =
+                latestComplianceBySchoolId[String(school._id || "")] || null;
+              const complianceAccepted = Boolean(latestCompliance);
+              const complianceBadgeBackground = complianceAccepted ? "#dcfce7" : "#fee2e2";
+              const complianceBadgeColor = complianceAccepted ? "#166534" : "#991b1b";
+              const complianceBadgeText = complianceAccepted ? "ACCEPTED" : "NOT ACCEPTED";
 
               return `
                 <div
@@ -296,7 +335,7 @@ exports.listSchoolsPage = async (req, res) => {
                 >
                   <div class="platform-school-row" style="
                     display:grid;
-                    grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.6fr;
+                    grid-template-columns:2fr 1fr 0.8fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr 1.2fr 1.2fr 1.6fr;
                     gap:10px;
                     align-items:center;
                     padding:14px;
@@ -343,6 +382,26 @@ exports.listSchoolsPage = async (req, res) => {
                     </div>
                     <div>
                       Limit ${escapeHtml(formatLimitValue(maxMonthlyCodeRuns))}
+                    </div>
+                    <div>
+                      <span style="
+                        display:inline-block;
+                        padding:4px 8px;
+                        border-radius:999px;
+                        background:${complianceBadgeBackground};
+                        color:${complianceBadgeColor};
+                        font-weight:900;
+                        font-size:11px;
+                      ">
+                        ${escapeHtml(complianceBadgeText)}
+                      </span>
+                      <div style="color:#64748b;font-size:11px;margin-top:4px;line-height:1.35;">
+                        ${
+                          latestCompliance
+                            ? `Last: ${escapeHtml(formatComplianceDate(latestCompliance.acceptedAt))}<br>Version: ${escapeHtml(latestCompliance.agreementVersion || "v1.0")}`
+                            : "No acceptance record"
+                        }
+                      </div>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                       <a
