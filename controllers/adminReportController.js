@@ -4,11 +4,15 @@ exports.adminStudentPage = async (req, res) => {
     if (req.user.role !== "admin") {
       return res.send("Access denied");
     }
+    const schoolId = req.user.schoolId || null;
+    if (!schoolId) {
+      return res.status(403).send("Access denied: missing school context");
+    }
     const studentId = req.query.studentId;
     const Result = require("../models/Result");
 const results = await Result.find({
   studentId,
-  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+  schoolId
 })
   .sort({ date: -1 })
   .lean();
@@ -146,6 +150,10 @@ exports.adminClassPage = async (req, res) => {
     if (req.user.role !== "admin") {
       return res.send("Access denied");
     }
+    const schoolId = req.user.schoolId || null;
+    if (!schoolId) {
+      return res.status(403).send("Access denied: missing school context");
+    }
     let className = req.query.class;
     className = String(className || "").trim();
     const Result = require("../models/Result");
@@ -153,19 +161,19 @@ exports.adminClassPage = async (req, res) => {
     const Student = require("../models/Student");
 const results = await Result.find({
   class: className,
-  ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+  schoolId
 })
   .sort({ date: -1 })
   .lean();
 const assignments =
   await Assignment.find({
     className,
-    ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+    schoolId
   }).lean();
 const students =
   await Student.find({
     class: className,
-    ...(req.user.schoolId ? { schoolId: req.user.schoolId } : {})
+    schoolId
   }).lean();
     const attemptedSet =
       new Set(
