@@ -3,6 +3,7 @@ const router = express.Router();
 const Student = require("../../models/Student");
 const Result = require("../../models/Result");
 const Test = require("../../models/Test");
+const Assignment = require("../../models/Assignment");
 const School = require("../../models/School");
 const sidebar = require("../../views/sidebar");
 const { requireStudentPageSession } = require("./session");
@@ -46,6 +47,23 @@ const alreadyAttempted = await Result.findOne({
     }
     if (test.scheduledAt && new Date(test.scheduledAt) > new Date()) {
       return res.send("<h1>Test not available yet</h1>");
+    }
+    const normalizedStudentClass = String(student.class || "").trim().toUpperCase();
+    const normalizedTestClass = String(test.className || "").trim().toUpperCase();
+    if (String(test.teacherId || "") !== String(student.teacherId || "")) {
+      return res.send("<h1>Test not available</h1>");
+    }
+    if (normalizedTestClass !== normalizedStudentClass) {
+      return res.send("<h1>Test not available</h1>");
+    }
+    const assignment = await Assignment.findOne({
+      testId: String(test._id),
+      className: normalizedStudentClass,
+      teacherId: String(student.teacherId || ""),
+      schoolId: student.schoolId
+    }).select("_id").lean();
+    if (!assignment) {
+      return res.send("<h1>Test not available</h1>");
     }
     const Question = require("../../models/Question");
     const questionIds = test.questionIds.map(qid => String(qid));
