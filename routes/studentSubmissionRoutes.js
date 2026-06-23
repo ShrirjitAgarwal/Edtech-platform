@@ -296,7 +296,13 @@ async function submitStudentTestHandler(req, res) {
       });
       return res.status(403).json({ error: "Test not assigned" });
     }
-    const questionIds = answers
+    const allowedQuestionIds = new Set((test.questionIds || []).map(String));
+    const validAnswers = answers.filter(answer =>
+      answer &&
+      answer.questionId &&
+      allowedQuestionIds.has(String(answer.questionId))
+    );
+    const questionIds = validAnswers
       .filter(answer => answer.questionId)
       .map(answer => answer.questionId);
     const questions = await Question.find({
@@ -339,7 +345,7 @@ async function submitStudentTestHandler(req, res) {
     }
     let finalScore = Number(score) || 0;
     const gradedAnswers = [];
-    for (const answer of answers) {
+    for (const answer of validAnswers) {
       if (answer.type !== "coding") {
         gradedAnswers.push(answer);
         continue;
