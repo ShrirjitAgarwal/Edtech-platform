@@ -448,6 +448,27 @@ label.textContent = options[0]?.label || "All";
 }
 }
 document.addEventListener("click", function(event){
+const createQuestionButton = event.target.closest("#libraryCreateQuestionButton");
+if(createQuestionButton){
+window.location.replace("/create-question");
+return;
+}
+
+const manageQuestionsButton = event.target.closest("#libraryManageQuestionsButton");
+if(manageQuestionsButton){
+window.location.replace("/my-questions");
+return;
+}
+
+const dropdownToggle = event.target.closest(".library-dropdown-toggle");
+if(dropdownToggle){
+const dropdownId = dropdownToggle.dataset.dropdownId;
+if(dropdownId){
+toggleCustomDropdown(dropdownId);
+}
+return;
+}
+
 const clickedInsideDropdown = event.target.closest("[id$='Button']") ||
 event.target.closest("[id$='Menu']");
 if(!clickedInsideDropdown){
