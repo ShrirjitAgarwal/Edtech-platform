@@ -187,7 +187,7 @@ async function createSubmission({
 async function getSubmission({
   apiUrl,
   headers,
-  toke
+  token
 }) {
   const fields = [
     "stdout",
@@ -259,7 +259,7 @@ function parseJudge0Output(submission) {
 async function waitForSubmission({
   apiUrl,
   headers,
-  toke
+  token
 }) {
   for (
     let attempt = 0;
@@ -269,7 +269,7 @@ async function waitForSubmission({
     const submission = await getSubmission({
       apiUrl,
       headers,
-      toke
+      token
     });
     const statusId = submission?.status?.id;
     if (statusId !== 1 && statusId !== 2) {
@@ -312,7 +312,7 @@ async function runJudge0Code({
   const submission = await waitForSubmission({
     apiUrl,
     headers,
-    toke
+    token
   });
   return parseJudge0Output(submission);
 }
