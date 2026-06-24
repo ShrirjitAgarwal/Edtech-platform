@@ -16,6 +16,9 @@ const School = require("../../models/School");
 // ---------- TEACHER SETTINGS ----------
 router.get("/teacher-settings", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "teacher") {
+      return res.redirect("/");
+    }
     const School = require("../../models/School");
     const ClassSubject = require("../../models/ClassSubject");
     const teacherId = String(req.user.id);
