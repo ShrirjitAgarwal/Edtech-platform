@@ -620,6 +620,9 @@ await logAuditEvent(req, {
 router.post("/api/teacher/tests/delete", authMiddleware, deleteTestHandler);
 async function deleteMultipleTestsHandler(req, res) {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      return res.status(403).json({ error: "Access denied" });
+    }
     const { ids } = req.body;
     if (!Array.isArray(ids) || !ids.length) {
       return res.status(400).json({ error: "No test ids provided" });
