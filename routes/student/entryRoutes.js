@@ -37,294 +37,170 @@ function logout(){
 // STUDENT ENTRY
 // ======================================================
 router.get("/student-entry", (req, res) => {
-  res.send(`
-<!DOCTYPE html>
+  res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Login | WZDM</title>
+<title>Student login — Wzdm.in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
 <style>
-  :root {
-    --bg: #f8fafc;
-    --bg-soft: #eef2ff;
-    --card: #ffffff;
-    --text: #0f172a;
-    --muted: #64748b;
-    --border: #e2e8f0;
-    --primary: #e0633a;
-    --primary-dark: #3730a3;
-    --success: #16a34a;
-    --secondary: #64748b;
-    --danger-bg: #fef2f2;
-    --danger-text: #991b1b;
-    --shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
-    --radius: 18px;
+  :root{
+    --ink:#11161d;
+    --ink-soft:#1b232e;
+    --slate:#3a4654;
+    --mist:#e8eaed;
+    --paper:#f6f4ef;
+    --line:rgba(255,255,255,0.10);
+    --line-dark:rgba(17,22,29,0.10);
+    --accent:#e0633a;
+    --gold:#d8b46a;
+    --sans:'Inter',system-ui,sans-serif;
+    --display:'Fraunces',Georgia,serif;
   }
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: Arial, Helvetica, sans-serif;
-    color: var(--text);
-    background:
-      radial-gradient(circle at top left, rgba(79, 70, 229, 0.12), transparent 34%),
-      radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.10), transparent 30%),
-      linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-  }
-  .page {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  .topbar {
-    height: 72px;
-    padding: 0 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 800;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-  .brand-mark {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: var(--primary);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-  }
-  .toplink {
-    color: var(--primary);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 700;
-  }
-  .main {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 18px 48px;
-  }
-  .card {
-    width: 100%;
-    max-width: 480px;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 30px;
-  }
-  .badge {
-    width: 56px;
-    height: 56px;
-    border-radius: 18px;
-    background: var(--primary);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 18px;
-    font-size: 24px;
-    font-weight: 800;
-  }
-  h1 {
-    margin: 0;
-    text-align: center;
-    font-size: 30px;
-    line-height: 1.2;
-    letter-spacing: -0.03em;
-  }
-  .subtitle {
-    margin: 10px auto 26px;
-    max-width: 360px;
-    text-align: center;
-    color: var(--muted);
-    line-height: 1.5;
-    font-size: 15px;
-  }
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 800;
-    margin-bottom: 7px;
-    color: #334155;
-  }
-  .field input {
-    width: 100%;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 13px 14px;
-    font-size: 15px;
-    outline: none;
-    background: white;
-  }
-  .field input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
-  }
-  .primary-btn,
-  .success-btn,
-  .secondary-btn {
-    width: 100%;
-    border: none;
-    border-radius: 12px;
-    padding: 14px;
-    color: white;
-    font-size: 15px;
-    font-weight: 800;
-    cursor: pointer;
-  }
-  .primary-btn {
-    background: var(--primary);
-  }
-  .primary-btn:hover {
-    background: var(--primary-dark);
-  }
-  .success-btn {
-    background: var(--success);
-  }
-  .secondary-btn {
-    background: var(--secondary);
-  }
-  .error {
-    display: none;
-    margin: 0 0 14px;
-    padding: 11px 12px;
-    border-radius: 12px;
-    background: var(--danger-bg);
-    color: var(--danger-text);
-    font-size: 13px;
-    font-weight: 700;
-    text-align: left;
-  }
-  .confirm-box {
-    display: none;
-    margin-top: 20px;
-    background: #f8fafc;
-    padding: 18px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-  }
-  .confirm-box h3 {
-    margin: 0 0 12px;
-    font-size: 18px;
-  }
-  .confirm-row {
-    margin: 8px 0;
-    color: #334155;
-    line-height: 1.45;
-  }
-  .confirm-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 18px;
-  }
-  .secondary-actions {
-    margin-top: 22px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-  }
-  .secondary-actions button {
-    border: none;
-    background: transparent;
-    color: var(--primary);
-    cursor: pointer;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 800;
-  }
-  .help-text {
-    margin: 12px 0 0;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.45;
-  }
-  .footer {
-    padding: 18px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 12px;
-  }
-  @media (max-width: 520px) {
-    .topbar {
-      padding: 0 18px;
-    }
-    .card {
-      padding: 24px 18px;
-    }
-    h1 {
-      font-size: 25px;
-    }
-    .confirm-actions {
-      flex-direction: column;
-    }
-  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+
+  nav{position:sticky;top:0;z-index:50;background:rgba(17,22,29,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{font-family:var(--display);font-size:23px;font-weight:600;color:#fff;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  .brand .dot{width:11px;height:11px;border-radius:3px;background:var(--accent);display:inline-block}
+  .navlinks{display:flex;gap:30px;align-items:center}
+  .navlinks a{color:var(--mist);font-size:14.5px;font-weight:400;transition:color .2s}
+  .navlinks a:hover{color:#fff}
+  .navbtn{background:var(--accent);color:#fff !important;padding:9px 18px;border-radius:8px;font-weight:500;font-size:14.5px;transition:transform .15s,background .2s}
+  .navbtn:hover{background:#c9542e;transform:translateY(-1px)}
+  .navbtn-ghost{border:1px solid rgba(255,255,255,0.22);color:#fff !important;padding:8px 16px;border-radius:8px;font-weight:500;font-size:14.5px;transition:border-color .2s,background .2s}
+  .navbtn-ghost:hover{border-color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.06)}
+  .nav-dropdown{position:relative;display:flex;align-items:center}
+  .nav-drop-btn{background:none;border:none;color:var(--mist);font-size:14.5px;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--sans);padding:0;transition:color .2s;line-height:1}
+  .nav-drop-btn:hover{color:#fff}
+  .nav-drop-menu{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%);background:#1b232e;border:1px solid var(--line);border-radius:11px;padding:6px;min-width:172px;display:none;flex-direction:column;gap:2px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .nav-dropdown:hover .nav-drop-menu,.nav-dropdown:focus-within .nav-drop-menu{display:flex}
+  .nav-drop-menu a{color:#c4ccd6;font-size:14px;padding:9px 13px;border-radius:7px;transition:background .15s,color .15s;display:flex;align-items:center;gap:8px}
+  .nav-drop-menu a:hover{background:rgba(255,255,255,0.08);color:#fff}
+  @media(max-width:760px){.navlinks a:not(.navbtn){display:none}.nav-dropdown{display:none}}
+
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:52px 28px 64px}
+
+  .card{width:100%;max-width:460px;background:#fff;border:1px solid var(--line-dark);border-radius:16px;padding:36px 32px;box-shadow:0 4px 32px rgba(17,22,29,0.08)}
+  .card-icon{width:48px;height:48px;border-radius:13px;background:#fbeee7;color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 20px}
+  .card-title{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:-0.02em;text-align:center;margin-bottom:8px;color:var(--ink)}
+  .card-sub{font-size:14.5px;color:var(--slate);text-align:center;margin-bottom:28px;line-height:1.5}
+
+  .form{display:flex;flex-direction:column;gap:16px}
+  .field label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--ink)}
+  .field input{width:100%;border:1px solid var(--line-dark);border-radius:10px;padding:12px 14px;font-size:15px;outline:none;font-family:var(--sans);color:var(--ink);background:#fff;transition:border-color .2s,box-shadow .2s}
+  .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(224,99,58,0.12)}
+  .btn-submit{width:100%;border:none;border-radius:10px;padding:13px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:background .2s,transform .15s;margin-top:2px}
+  .btn-submit:hover{background:#c9542e;transform:translateY(-1px)}
+
+  .error{display:none;margin:0 0 16px;padding:11px 13px;border-radius:10px;background:#fef2f2;color:#991b1b;font-size:13.5px;border:1px solid #fecaca}
+
+  .confirm-box{display:none;margin-top:20px;background:#fafaf8;border:1px solid var(--line-dark);border-radius:12px;padding:20px}
+  .confirm-box h3{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:-0.01em;margin-bottom:14px;color:var(--ink)}
+  .confirm-row{font-size:14px;color:var(--slate);margin-bottom:8px;line-height:1.5}
+  .confirm-row b{color:var(--ink);font-weight:500}
+  .confirm-actions{display:flex;gap:10px;margin-top:18px}
+  .success-btn{flex:1;border:none;border-radius:10px;padding:12px;background:#15803d;color:#fff;font-size:14.5px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:background .2s}
+  .success-btn:hover{background:#166534}
+  .secondary-btn{flex:1;border:1px solid var(--line-dark);border-radius:10px;padding:12px;background:#fff;color:var(--slate);font-size:14.5px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:border-color .2s,color .2s}
+  .secondary-btn:hover{border-color:var(--slate);color:var(--ink)}
+
+  .secondary{margin-top:20px;padding-top:18px;border-top:1px solid var(--line-dark);text-align:center}
+  .secondary button{border:none;background:transparent;color:var(--accent);cursor:pointer;font-size:14px;font-weight:500;font-family:var(--sans)}
+  .secondary button:hover{text-decoration:underline}
+  .secondary p{margin:10px 0 0;color:var(--slate);font-size:13px;line-height:1.45}
+
+  footer{background:var(--ink);color:#8b95a2;padding:52px 0 34px;border-top:1px solid var(--line)}
+  .foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:38px}
+  @media(max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}}
+  footer h4{color:#fff;font-size:13.5px;font-weight:600;margin-bottom:14px;letter-spacing:.02em}
+  footer ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+  footer a{font-size:14px;color:#9aa4b1;transition:color .2s}
+  footer a:hover{color:#fff}
+  .foot-brand{font-family:var(--display);font-size:21px;font-weight:600;color:#fff;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .foot-brand .dot{width:10px;height:10px;border-radius:3px;background:var(--accent)}
+  .foot-bottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;font-size:13px;flex-wrap:wrap;gap:10px}
+
+  @media(max-width:480px){.card{padding:28px 20px}.confirm-actions{flex-direction:column}}
 </style>
 </head>
 <body>
-<div class="page">
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">W</div>
-      <div>WZDM</div>
+
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand"><span class="dot"></span>Wzdm.in</a>
+    <div class="navlinks">
+      <div class="nav-dropdown">
+        <button class="nav-drop-btn">Features <i class="ti ti-chevron-down" style="font-size:13px"></i></button>
+        <div class="nav-drop-menu">
+          <a href="/#features"><i class="ti ti-layout-dashboard"></i>What you can do</a>
+          <a href="/#how"><i class="ti ti-route"></i>How it works</a>
+          <a href="/#security"><i class="ti ti-shield-check"></i>Security</a>
+        </div>
+      </div>
+      <a href="/book-demo" class="navbtn-ghost">Book a demo</a>
+      <a href="/login" class="navbtn">Login</a>
     </div>
-    <a class="toplink" href="/login">Login Options</a>
-  </header>
-  <main class="main">
-    <section class="card">
-      <div class="badge">S</div>
-      <h1>Student Login</h1>
-      <p class="subtitle">Enter your name and student ID to find your record and continue to your assigned tests.</p>
-      <p id="errorBox" class="error"></p>
-      <div id="lookupForm" class="form">
-        <div class="field">
-          <label for="firstName">First Name</label>
-          <input id="firstName" placeholder="Enter first name" autocomplete="given-name">
-        </div>
-        <div class="field">
-          <label for="lastName">Last Name</label>
-          <input id="lastName" placeholder="Enter last name" autocomplete="family-name">
-        </div>
-        <div class="field">
-          <label for="schoolCode">School Code</label>
-          <input id="schoolCode" placeholder="Enter school code" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="studentId">Student ID</label>
-          <input id="studentId" placeholder="Enter student ID" autocomplete="off">
-        </div>
-        <button id="lookupStudentButton" class="primary-btn" type="button">Find My Record</button>
+  </div>
+</nav>
+
+<main>
+  <div class="card">
+    <div class="card-icon"><i class="ti ti-user"></i></div>
+    <h1 class="card-title">Student login</h1>
+    <p class="card-sub">Enter your details to find your record and continue to your assigned tests.</p>
+    <p id="errorBox" class="error"></p>
+    <div id="lookupForm" class="form">
+      <div class="field">
+        <label for="firstName">First name</label>
+        <input id="firstName" placeholder="Enter first name" autocomplete="given-name">
       </div>
-      <div id="confirmBox" class="confirm-box"></div>
-      <div class="secondary-actions">
-        <button id="studentBackToLoginButton" type="button">← Back to login options</button>
-        <p class="help-text">Having trouble signing in? Please contact your teacher or school admin.</p>
+      <div class="field">
+        <label for="lastName">Last name</label>
+        <input id="lastName" placeholder="Enter last name" autocomplete="family-name">
       </div>
-    </section>
-  </main>
-  <footer class="footer">
-    © 2026 WZDM Assessment Platform. All rights reserved.
-  </footer>
-</div>
+      <div class="field">
+        <label for="schoolCode">School code</label>
+        <input id="schoolCode" placeholder="Enter school code" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="studentId">Student ID</label>
+        <input id="studentId" placeholder="Enter student ID" autocomplete="off">
+      </div>
+      <button id="lookupStudentButton" class="btn-submit" type="button">Find my record</button>
+    </div>
+    <div id="confirmBox" class="confirm-box"></div>
+    <div class="secondary">
+      <button id="studentBackToLoginButton" type="button">← All login options</button>
+      <p>Having trouble? Contact your teacher or school admin.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand"><span class="dot"></span>Wzdm.in</div>
+        <p style="font-size:14px;max-width:24em">The secure online assessment platform for schools and colleges. MCQ and coding tests, role-based portals, and reporting in one place.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="/#features">Features</a></li><li><a href="/#how">How it works</a></li><li><a href="/#security">Security</a></li><li><a href="/book-demo">Book a demo</a></li><li><a href="/privacy">Privacy policy</a></li></ul></div>
+      <div><h4>Get in</h4><ul><li><a href="/login">School login</a></li><li><a href="/student-entry">Student entry</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Wzdm.in. All rights reserved.</span>
+      <a href="/privacy" style="color:#9aa4b1;font-size:13px;transition:color .2s">Privacy policy</a>
+    </div>
+  </div>
+</footer>
+
 <script>
 localStorage.clear();
 let matchedStudent = null;
@@ -355,15 +231,8 @@ function lookupStudent(){
   }
   fetch("/api/student/lookup", {
     method:"POST",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body: JSON.stringify({
-      firstName,
-      lastName,
-      studentId,
-      schoolCode
-    })
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({firstName, lastName, studentId, schoolCode})
   })
   .then(res => res.json())
   .then(data => {
@@ -377,14 +246,14 @@ function lookupStudent(){
     const confirmBox = document.getElementById("confirmBox");
     confirmBox.style.display = "block";
     confirmBox.innerHTML =
-      "<h3>Confirm Your Details</h3>" +
+      "<h3>Confirm your details</h3>" +
       "<p class='confirm-row'><b>Name:</b> " + escapeHtml(matchedStudent.name) + "</p>" +
-      "<p class='confirm-row'><b>Class ID:</b> " + escapeHtml(matchedStudent.class) + "</p>" +
+      "<p class='confirm-row'><b>Class:</b> " + escapeHtml(matchedStudent.class) + "</p>" +
       "<p class='confirm-row'><b>Student ID:</b> " + escapeHtml(matchedStudent.studentId) + "</p>" +
       "<p class='confirm-row'><b>School:</b> " + escapeHtml(matchedStudent.schoolName) + "</p>" +
       "<div class='confirm-actions'>" +
-        "<button id='confirmStudentButton' class='success-btn' type='button'>Confirm</button>" +
-        "<button id='resetLookupButton' class='secondary-btn' type='button'>Go Back</button>" +
+        "<button id='confirmStudentButton' class='success-btn' type='button'>Confirm &amp; continue</button>" +
+        "<button id='resetLookupButton' class='secondary-btn' type='button'>Go back</button>" +
       "</div>";
   })
   .catch(() => {
@@ -396,37 +265,18 @@ function resetLookup(){
   document.getElementById("confirmBox").style.display = "none";
   clearError();
 }
-
 document.addEventListener("click", function(event){
   const lookupStudentButton = event.target.closest("#lookupStudentButton");
-  if(lookupStudentButton){
-    lookupStudent();
-    return;
-  }
-
+  if(lookupStudentButton){ lookupStudent(); return; }
   const studentBackToLoginButton = event.target.closest("#studentBackToLoginButton");
-  if(studentBackToLoginButton){
-    window.location.replace("/login");
-    return;
-  }
-
+  if(studentBackToLoginButton){ window.location.replace("/login"); return; }
   const confirmStudentButton = event.target.closest("#confirmStudentButton");
-  if(confirmStudentButton){
-    confirmStudent();
-    return;
-  }
-
+  if(confirmStudentButton){ confirmStudent(); return; }
   const resetLookupButton = event.target.closest("#resetLookupButton");
-  if(resetLookupButton){
-    resetLookup();
-  }
+  if(resetLookupButton){ resetLookup(); }
 });
-
 function confirmStudent(){
-  if(!matchedStudent){
-    showError("No student record selected.");
-    return;
-  }
+  if(!matchedStudent){ showError("No student record selected."); return; }
   localStorage.setItem("student", JSON.stringify(matchedStudent));
   localStorage.setItem("class", matchedStudent.class);
   go("/my-tests");
