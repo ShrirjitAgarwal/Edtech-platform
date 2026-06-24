@@ -1,7 +1,16 @@
 const {
   recordUsageEvent
 } = require("../services/usageTracker");
+const { logAuditEvent } = require("../services/auditLogger");
 const { escapeHtml } = require("../utils/html");
+async function logReportDownloadDenied(req, metadata, error) {
+  await logAuditEvent(req, {
+    event: "report_download_denied",
+    status: "failed",
+    metadata,
+    error
+  });
+}
 function escapeCsvCell(value) {
   const raw = String(value ?? "");
   const protectedValue = /^[=+\-@]/.test(raw)
@@ -11,22 +20,50 @@ function escapeCsvCell(value) {
 }
 exports.downloadReport = async (req, res) => {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      await logReportDownloadDenied(req, {
+        reportType: "student",
+        reason: "invalid_role",
+        requestedStudentId: String(req.body?.studentId || "")
+      }, "invalid_role");
+      return res.status(403).json({ error: "Access denied" });
+    }
+    const schoolId = req.user.schoolId || null;
+    if (!schoolId) {
+      await logReportDownloadDenied(req, {
+        reportType: "student",
+        reason: "missing_school_context",
+        requestedStudentId: String(req.body?.studentId || "")
+      }, "missing_school_context");
+      return res.status(403).json({ error: "Access denied: missing school context" });
+    }
     const { studentId } = req.body;
     const Result = require("../models/Result");
     if (!studentId) {
+      await logReportDownloadDenied(req, {
+        reportType: "student",
+        reason: "missing_student_id"
+      }, "missing_student_id");
       return res.status(400).json({
         error: "Missing studentId"
       });
     }
-    const teacherId = req.user.id;
-const results = await Result.find({
-  studentId: String(studentId),
-  teacherId: String(teacherId),
-  schoolId: req.user.schoolId
-})
-  .sort({ date: -1 })
-  .lean();
+    const resultFilter = {
+      studentId: String(studentId),
+      schoolId
+    };
+    if (req.user.role === "teacher") {
+      resultFilter.teacherId = String(req.user.id);
+    }
+    const results = await Result.find(resultFilter)
+      .sort({ date: -1 })
+      .lean();
     if (!results || results.length === 0) {
+      await logReportDownloadDenied(req, {
+        reportType: "student",
+        reason: "no_results_or_not_authorized",
+        requestedStudentId: String(studentId)
+      }, "no_results_or_not_authorized");
       return res.status(404).json({
         error: "No results found"
       });
@@ -58,8 +95,8 @@ const results = await Result.find({
       schoolId: req.user.schoolId || null,
       schoolCode: req.user.schoolCode || null,
       userId: req.user.id,
-      teacherId,
-      role: req.user.role || "teacher",
+      teacherId: req.user.role === "teacher" ? String(req.user.id) : null,
+      role: req.user.role,
       eventType: "report_downloaded",
       eventLabel: "Student report downloaded",
       resourceType: "student_report",
@@ -89,22 +126,50 @@ const results = await Result.find({
 };
 exports.downloadClassReport = async (req, res) => {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      await logReportDownloadDenied(req, {
+        reportType: "class",
+        reason: "invalid_role",
+        requestedClassName: String(req.body?.className || "")
+      }, "invalid_role");
+      return res.status(403).json({ error: "Access denied" });
+    }
+    const schoolId = req.user.schoolId || null;
+    if (!schoolId) {
+      await logReportDownloadDenied(req, {
+        reportType: "class",
+        reason: "missing_school_context",
+        requestedClassName: String(req.body?.className || "")
+      }, "missing_school_context");
+      return res.status(403).json({ error: "Access denied: missing school context" });
+    }
     const { className } = req.body;
     const Result = require("../models/Result");
     if (!className) {
+      await logReportDownloadDenied(req, {
+        reportType: "class",
+        reason: "missing_class_name"
+      }, "missing_class_name");
       return res.status(400).json({
         error: "Missing className"
       });
     }
-const teacherId = req.user.id;
-const results = await Result.find({
-  class: className,
-  teacherId: String(teacherId),
-  schoolId: req.user.schoolId
-})
-  .sort({ date: -1 })
-  .lean();
+    const resultFilter = {
+      class: className,
+      schoolId
+    };
+    if (req.user.role === "teacher") {
+      resultFilter.teacherId = String(req.user.id);
+    }
+    const results = await Result.find(resultFilter)
+      .sort({ date: -1 })
+      .lean();
     if (!results.length) {
+      await logReportDownloadDenied(req, {
+        reportType: "class",
+        reason: "no_results_or_not_authorized",
+        requestedClassName: String(className)
+      }, "no_results_or_not_authorized");
       return res.status(404).json({
         error: "No data found"
       });
@@ -148,8 +213,8 @@ const results = await Result.find({
       schoolId: req.user.schoolId || null,
       schoolCode: req.user.schoolCode || null,
       userId: req.user.id,
-      teacherId,
-      role: req.user.role || "teacher",
+      teacherId: req.user.role === "teacher" ? String(req.user.id) : null,
+      role: req.user.role,
       eventType: "report_downloaded",
       eventLabel: "Class report downloaded",
       resourceType: "class_report",
