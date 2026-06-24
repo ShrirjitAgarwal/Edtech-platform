@@ -356,7 +356,7 @@ exports.loginPage = (req, res) => {
               </button>
             </div>
             <div class="secondary-actions">
-              <a href="mailto:support@wzdm.io">Need help? Contact support</a>
+              <a href="mailto:support@wzdm.in">Need help? Contact support</a>
               <p class="help-text">New to the platform? Request a demo from the WZDM team.</p>
             </div>
           `
