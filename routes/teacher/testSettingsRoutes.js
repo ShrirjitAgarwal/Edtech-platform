@@ -492,6 +492,9 @@ loadSelectedTest();
 // ---------- SAVE TEST SETTINGS ----------
 async function saveTestSettingsHandler(req, res) {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      return res.status(403).json({ error: "Access denied" });
+    }
     const {
       testId,
       scheduledAt,
