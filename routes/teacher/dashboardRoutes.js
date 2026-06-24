@@ -34,6 +34,9 @@ window.addEventListener("pageshow", function(event){
 // ---------- TEACHER DASHBOARD ----------
 router.get("/teacher", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "teacher") {
+      return res.redirect("/");
+    }
     const content = `
 ${teacherGuardScript()}
 <div id="dashboard"></div>
@@ -544,6 +547,11 @@ fetch("/api/teacher-dashboard-data")
 // ---------- TEACHER DASHBOARD DATA API ----------
 router.get("/api/teacher-dashboard-data", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "teacher") {
+      return res.status(403).json({
+        error: "Access denied"
+      });
+    }
     const ClassSubject = require("../../models/ClassSubject");
     const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
