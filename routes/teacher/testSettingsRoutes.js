@@ -14,6 +14,9 @@ const Assignment = require("../../models/Assignment");
 // ---------- TEST SETTINGS PAGE ----------
 router.get("/test-settings", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      return res.redirect("/");
+    }
     const selectedTestId = req.query.id || "";
 const teacherId = String(req.user.id);
 const schoolId = req.user.schoolId || null;
