@@ -3,6 +3,23 @@ exports.home = (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "landing.html"));
 };
 exports.bookDemo = (req, res) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com assets.calendly.com",
+      "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com assets.calendly.com",
+      "img-src 'self' data: https://calendly.com https://*.calendly.com",
+      "font-src 'self' data: cdn.jsdelivr.net cdnjs.cloudflare.com fonts.googleapis.com fonts.gstatic.com",
+      "connect-src 'self' https://calendly.com",
+      "frame-src https://calendly.com",
+      "worker-src 'self' blob:"
+    ].join("; ")
+  );
   res.sendFile(path.join(__dirname, "..", "public", "book-demo.html"));
 };
 exports.privacyPolicy = (req, res) => {
