@@ -10,6 +10,9 @@ const { canCreateTest } = require("../../services/planEnforcement");
 const { escapeHtml, escapeAttribute, safeJsonForScript, escapeRegExp, buildExactNameRegex } = require("../../utils/html");
 
 router.get("/teacher-tests", authMiddleware, async (req, res) => {
+  if (!req.user || req.user.role !== "teacher") {
+    return res.redirect("/");
+  }
   const content = `
     <div style="
   display:flex;
@@ -472,6 +475,11 @@ headers:{
 // ---------- TEACHER TESTS DATA API ----------
 router.get("/api/teacher-tests-data", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "teacher") {
+      return res.status(403).json({
+        error: "Access denied"
+      });
+    }
     const Test = require("../../models/Test");
     const Assignment = require("../../models/Assignment");
     const Student = require("../../models/Student");
