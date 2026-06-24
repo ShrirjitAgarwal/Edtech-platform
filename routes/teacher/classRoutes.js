@@ -174,7 +174,7 @@ flex-wrap:wrap;
   />
   <button id="classSearchButton" style="
     padding:10px 14px;
-    background:#4f46e5;
+    background:#e0633a;
     color:white;
     border:none;
     border-radius:8px;
@@ -403,7 +403,7 @@ border-radius:16px;
 box-shadow:0 4px 12px rgba(0,0,0,0.06);
 ">
   <div style="
-    background:linear-gradient(135deg,#4f46e5,#6366f1);
+    background:linear-gradient(135deg,#e0633a,#c9542e);
     color:white;
     padding:18px 20px;
     border-radius:14px;
@@ -555,7 +555,7 @@ margin-bottom:15px;
     data-student-id="\${escapeHtml(student.studentId || "")}"
     style="
     padding:10px 14px;
-    background:#4f46e5;
+    background:#e0633a;
     color:white;
     border:none;
     border-radius:8px;
@@ -614,7 +614,7 @@ box-shadow:0 4px 12px rgba(0,0,0,0.06);
       padding:8px 12px;
       border:none;
       border-radius:8px;
-      background:#4f46e5;
+      background:#e0633a;
       color:white;
       cursor:pointer;
       opacity:\${paginationData.hasNextPage ? "1" : "0.5"};
@@ -731,7 +731,7 @@ window.loadResultPreview = function(testId, studentId, className){
         '<div style="margin-bottom:12px;">' +
         '<button id="backToStudentButton" type="button" style="' +
         'padding:8px 12px;' +
-        'background:#4f46e5;' +
+        'background:#e0633a;' +
         'color:white;' +
         'border:none;' +
         'border-radius:8px;' +

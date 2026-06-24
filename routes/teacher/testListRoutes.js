@@ -27,7 +27,7 @@ router.get("/teacher-tests", authMiddleware, async (req, res) => {
     <div style="margin-bottom:20px;">
       <button id="createTestFromListButton" style="
         padding:14px 20px;
-        background:linear-gradient(135deg,#4f46e5,#6366f1);
+        background:linear-gradient(135deg,#e0633a,#c9542e);
         color:white;
         border:none;
         border-radius:10px;
@@ -178,7 +178,7 @@ box-sizing:border-box;
                 <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
   <span style="
     font-size:12px;
-    background:#4f46e5;
+    background:#e0633a;
     color:white;
     padding:5px 10px;
     border-radius:999px;
@@ -188,7 +188,7 @@ box-sizing:border-box;
   </span>
   <span style="
     font-size:12px;
-    background:#6366f1;
+    background:#c9542e;
     color:white;
     padding:5px 10px;
     border-radius:999px;
@@ -214,7 +214,7 @@ box-sizing:border-box;
     <button
       class="edit-test-button"
       data-edit-url="\${escapeHtml(editUrl)}"
-      style="padding:10px 16px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
+      style="padding:10px 16px;background:#e0633a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">
       Edit
     </button>
   \` : ""}

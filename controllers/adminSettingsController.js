@@ -303,7 +303,7 @@ const studentRows = students.map(s => {
       class="update-student-class-button"
       data-student-record-id="${escapeAttribute(s._id)}"
       style="
-        background:#4f46e5;
+        background:#e0633a;
         color:white;
         border:none;
         padding:8px 12px;
@@ -559,7 +559,7 @@ const adminRows = admins.map(a => `
         ${customDropdownHtml("mapTeacherId", "Select Teacher", "", "220px")}
         <button id="saveMappingButton" style="
           padding:10px 16px;
-          background:#4f46e5;
+          background:#e0633a;
           color:white;
           border:none;
           border-radius:8px;

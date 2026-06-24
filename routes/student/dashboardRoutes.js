@@ -113,7 +113,7 @@ cursor:pointer;
   <h1>Student Details</h1>
   <button id="downloadStudentReportButton" style="
     padding:10px 16px;
-    background:#4f46e5;
+    background:#e0633a;
     color:white;
     border:none;
     border-radius:8px;
@@ -241,7 +241,7 @@ res.send(`
       </div>
       <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 8px 20px rgba(15,23,42,0.06);">
         <div style="font-size:13px;color:#64748b;font-weight:700;">Completed</div>
-        <div id="completedCount" style="font-size:28px;font-weight:800;color:#4f46e5;margin-top:8px;">0</div>
+        <div id="completedCount" style="font-size:28px;font-weight:800;color:#e0633a;margin-top:8px;">0</div>
       </div>
     </div>
 
@@ -359,7 +359,7 @@ function getStatusLabel(status){
 
 function getStatusColor(status){
   if(status === "completed"){
-    return "#4f46e5";
+    return "#e0633a";
   }
   if(status === "pending"){
     return "#ca8a04";
@@ -484,7 +484,7 @@ window.onload = function(){
       btn.style.borderRadius = "10px";
       btn.style.fontWeight = "800";
       btn.style.cursor = canStart ? "pointer" : "not-allowed";
-      btn.style.background = canStart ? "#4f46e5" : "#94a3b8";
+      btn.style.background = canStart ? "#e0633a" : "#94a3b8";
       btn.style.color = "white";
       btn.addEventListener("click", function(){
         if(canStart){

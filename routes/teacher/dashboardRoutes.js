@@ -300,7 +300,7 @@ fetch("/api/teacher-dashboard-data")
         </p>
       </div>
       <button id="createTestButton" style="
-        background:linear-gradient(135deg,#4f46e5,#6366f1);
+        background:linear-gradient(135deg,#e0633a,#c9542e);
         color:white;
         border:none;
         border-radius:12px;
@@ -378,7 +378,7 @@ fetch("/api/teacher-dashboard-data")
           <h2 style="margin:0;font-size:22px;">Previous Tests</h2>
           <button id="teacherTestsButton" style="
             border:none;
-            background:#4f46e5;
+            background:#e0633a;
             color:white;
             padding:8px 12px;
             border-radius:8px;

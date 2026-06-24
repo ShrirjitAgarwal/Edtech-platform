@@ -1,5 +1,6 @@
+const path = require("path");
 exports.home = (req, res) => {
-  res.redirect("/login");
+  res.sendFile(path.join(__dirname, "..", "public", "landing.html"));
 };
 exports.loginPage = (req, res) => {
   const rawRole = String(req.query.role || "").trim().toLowerCase();
@@ -38,7 +39,7 @@ exports.loginPage = (req, res) => {
     --text: #0f172a;
     --muted: #64748b;
     --border: #e2e8f0;
-    --primary: #4f46e5;
+    --primary: #e0633a;
     --primary-dark: #3730a3;
     --shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
     --radius: 18px;
@@ -507,7 +508,7 @@ text-align:center;
 <button id="registerButton" style="
 width:100%;
 padding:10px;
-background:#4f46e5;
+background:#e0633a;
 color:white;
 border:none;
 border-radius:8px;

@@ -19,7 +19,7 @@ margin-bottom:20px;
 ${backButton("/teacher")}
 <button id="libraryCreateQuestionButton" style="
 padding:10px 14px;
-background:#4f46e5;
+background:#e0633a;
 color:white;
 border:none;
 border-radius:8px;
@@ -628,7 +628,7 @@ escapeHtml(sourceLabel) +
 "</div>" +
 "<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
 "padding:10px 14px;" +
-"background:#4f46e5;" +
+"background:#e0633a;" +
 "color:white;" +
 "border:none;" +
 "border-radius:8px;" +
@@ -687,7 +687,7 @@ optionsHtml +
  "<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
  "margin-top:18px;" +
  "padding:10px 14px;" +
- "background:#4f46e5;" +
+ "background:#e0633a;" +
  "color:white;" +
  "border:none;" +
  "border-radius:8px;" +
@@ -727,7 +727,7 @@ paginationBox.innerHTML =
 (libraryPagination.hasNextPage ? "" : "disabled ") +
 "class='library-pagination-button' " +
 "data-page='" + (page + 1) + "' " +
-"style='padding:8px 12px;border:none;border-radius:8px;background:#4f46e5;color:white;cursor:pointer;font-weight:700;" +
+"style='padding:8px 12px;border:none;border-radius:8px;background:#e0633a;color:white;cursor:pointer;font-weight:700;" +
 (libraryPagination.hasNextPage ? "" : "opacity:0.45;cursor:not-allowed;") +
 "'>" +
 "Next" +

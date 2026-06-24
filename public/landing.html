@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wzdm.io — Online Assessment Platform for Schools & Colleges</title>
+<meta name="description" content="A secure, multi-school online assessment platform for schools and colleges. Run MCQ and coding tests, manage classes and students, import rosters in bulk, and download performance reports. Tenant-isolated, audit-logged, and built with student data protection in mind.">
+<meta name="keywords" content="online assessment platform for schools, online exam software for colleges, coding test platform for students, school assessment software, secure student data, MCQ and coding exams, classroom test management, bulk student import, student performance reports">
+<meta property="og:title" content="Wzdm.io — Online Assessment Platform for Schools & Colleges">
+<meta property="og:description" content="Run secure MCQ and coding assessments across multiple schools. Role-based portals for administrators, teachers, and students.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --ink:#11161d;
+    --ink-soft:#1b232e;
+    --slate:#3a4654;
+    --mist:#e8eaed;
+    --paper:#f6f4ef;
+    --line:rgba(255,255,255,0.10);
+    --line-dark:rgba(17,22,29,0.10);
+    --accent:#e0633a;
+    --accent-soft:#f3a981;
+    --gold:#d8b46a;
+    --sans:'Inter',system-ui,sans-serif;
+    --display:'Fraunces',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent);color:#fff}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+
+  /* ---------- nav ---------- */
+  nav{position:sticky;top:0;z-index:50;background:rgba(17,22,29,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{font-family:var(--display);font-size:23px;font-weight:600;color:#fff;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  .brand .dot{width:11px;height:11px;border-radius:3px;background:var(--accent);display:inline-block}
+  .navlinks{display:flex;gap:30px;align-items:center}
+  .navlinks a{color:var(--mist);font-size:14.5px;font-weight:400;transition:color .2s}
+  .navlinks a:hover{color:#fff}
+  .navbtn{background:var(--accent);color:#fff !important;padding:9px 18px;border-radius:8px;font-weight:500;font-size:14.5px;transition:transform .15s,background .2s}
+  .navbtn:hover{background:#c9542e;transform:translateY(-1px)}
+  @media(max-width:760px){.navlinks a:not(.navbtn){display:none}}
+
+  /* ---------- hero ---------- */
+  .hero{background:var(--ink);color:#fff;position:relative;overflow:hidden;padding:78px 0 92px}
+  .hero::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(680px 400px at 78% -8%,rgba(224,99,58,0.16),transparent 60%),
+    radial-gradient(520px 360px at 8% 108%,rgba(216,180,106,0.10),transparent 55%);pointer-events:none}
+  .hero .wrap{position:relative;display:grid;grid-template-columns:1.05fr 0.95fr;gap:54px;align-items:center}
+  @media(max-width:880px){.hero .wrap{grid-template-columns:1fr;gap:40px}}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.04em;color:var(--gold);font-weight:500;text-transform:uppercase;margin-bottom:22px}
+  .eyebrow .ln{width:26px;height:1px;background:var(--gold);opacity:.6}
+  h1{font-family:var(--display);font-weight:600;font-size:clamp(38px,5vw,60px);line-height:1.04;letter-spacing:-0.02em;margin-bottom:20px}
+  h1 .swap{color:var(--accent-soft);transition:opacity .35s}
+  .lede{font-size:18px;color:#c4ccd6;max-width:30em;margin-bottom:8px;min-height:3.2em;transition:opacity .35s}
+  .role-tabs{display:flex;gap:8px;margin:27px 0 18px;flex-wrap:wrap}
+  .role-tab{border:1px solid var(--line);background:rgba(255,255,255,0.04);color:var(--mist);padding:9px 15px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px}
+  .role-tab:hover{background:rgba(255,255,255,0.09)}
+  .role-tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hero-cta{display:flex;gap:13px;align-items:center;flex-wrap:wrap;margin-top:6px}
+  .btn-primary{background:var(--accent);color:#fff;padding:13px 26px;border-radius:9px;font-weight:500;font-size:15.5px;transition:transform .15s,background .2s;display:inline-flex;align-items:center;gap:9px}
+  .btn-primary:hover{background:#c9542e;transform:translateY(-1px)}
+  .btn-ghost{color:var(--mist);font-size:15px;font-weight:400;display:inline-flex;align-items:center;gap:7px;transition:color .2s}
+  .btn-ghost:hover{color:#fff}
+
+  /* ---------- hero mock panel ---------- */
+  .mock{background:var(--ink-soft);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -30px rgba(0,0,0,0.7)}
+  .mock-bar{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,0.02)}
+  .mock-bar .c{width:11px;height:11px;border-radius:50%}
+  .mock-bar .u{margin-left:12px;font-size:12.5px;color:#7d8896;font-family:var(--sans)}
+  .mock-body{padding:24px 22px;height:430px;overflow:hidden}
+  .mock-tag{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:14px}
+  .mock-h{font-family:var(--display);font-size:21px;font-weight:500;margin-bottom:18px;color:#fff}
+  .mrow{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:rgba(255,255,255,0.025)}
+  .mrow .l{font-size:14px;color:#dfe4ea}
+  .mrow .r{font-size:12.5px;color:#8b95a2}
+  .pill{font-size:11.5px;padding:3px 10px;border-radius:20px;font-weight:500}
+  .pill.live{background:rgba(96,200,120,0.16);color:#7fe0a0}
+  .pill.draft{background:rgba(216,180,106,0.18);color:var(--gold)}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:12.5px;color:#9aa4b1;margin-bottom:6px}
+  .field .inp{height:38px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,0.03);display:flex;align-items:center;padding:0 12px;font-size:13.5px;color:#cfd5dc}
+  .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .stat{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:rgba(255,255,255,0.025)}
+  .stat .n{font-family:var(--display);font-size:24px;font-weight:600;color:#fff}
+  .stat .k{font-size:12px;color:#8b95a2;margin-top:2px}
+
+  /* ---------- logos strip ---------- */
+  .strip{background:var(--ink);color:#7d8896;padding:0 0 46px;text-align:center}
+  .strip p{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+
+  /* ---------- sections ---------- */
+  section.block{padding:88px 0}
+  .sec-head{max-width:40em;margin-bottom:50px}
+  .sec-eyebrow{font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:14px}
+  h2{font-family:var(--display);font-weight:600;font-size:clamp(28px,3.4vw,40px);line-height:1.1;letter-spacing:-0.015em;margin-bottom:16px}
+  .sec-head p{font-size:17px;color:var(--slate)}
+
+  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:860px){.feat-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.feat-grid{grid-template-columns:1fr}}
+  .feat{background:#fff;border:1px solid var(--line-dark);border-radius:14px;padding:26px 24px;transition:transform .2s,border-color .2s}
+  .feat:hover{transform:translateY(-3px);border-color:rgba(224,99,58,0.4)}
+  .feat .ic{width:42px;height:42px;border-radius:11px;background:#fbeee7;color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:16px}
+  .feat h3{font-family:var(--display);font-size:19px;font-weight:600;margin-bottom:9px;letter-spacing:-0.01em}
+  .feat p{font-size:14.5px;color:var(--slate)}
+
+  /* ---------- how it works ---------- */
+  .how{background:var(--ink);color:#fff}
+  .how h2{color:#fff}
+  .how .sec-head p{color:#c4ccd6}
+  .steps{display:flex;align-items:flex-start;gap:0}
+  .step-arr{flex-shrink:0;color:var(--gold);font-size:20px;padding:0 4px;margin-top:36px;opacity:.7}
+  @media(max-width:860px){.steps{display:grid;grid-template-columns:1fr 1fr;gap:20px}.step-arr{display:none}}
+  @media(max-width:480px){.steps{grid-template-columns:1fr}}
+  .step{border:1px solid var(--line);border-radius:14px;padding:24px 22px;position:relative;background:rgba(255,255,255,0.02)}
+  .step .num{font-family:var(--display);font-size:15px;color:var(--ink);font-weight:600;width:30px;height:30px;border-radius:8px;background:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .step h3{font-size:16.5px;font-weight:600;margin-bottom:8px;color:#fff;font-family:var(--display)}
+  .step p{font-size:14px;color:#a8b1bc}
+
+  /* ---------- security ---------- */
+  .trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+  @media(max-width:860px){.trust-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:480px){.trust-grid{grid-template-columns:1fr}}
+
+  /* ---------- CTA ---------- */
+  .cta-final{background:linear-gradient(135deg,#e0633a,#c9542e);color:#fff;text-align:center;padding:78px 0}
+  .cta-final h2{color:#fff;margin-bottom:14px}
+  .cta-final p{font-size:17px;color:#ffe6dc;max-width:32em;margin:0 auto 30px}
+  .cta-final .btn-white{background:#fff;color:var(--accent);padding:14px 30px;border-radius:10px;font-weight:600;font-size:16px;display:inline-flex;align-items:center;gap:9px;transition:transform .15s}
+  .cta-final .btn-white:hover{transform:translateY(-2px)}
+
+  /* ---------- footer ---------- */
+  footer{background:var(--ink);color:#8b95a2;padding:52px 0 34px;border-top:1px solid var(--line)}
+  .foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:38px}
+  @media(max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}}
+  footer h4{color:#fff;font-size:13.5px;font-weight:600;margin-bottom:14px;letter-spacing:.02em}
+  footer ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+  footer a{font-size:14px;color:#9aa4b1;transition:color .2s}
+  footer a:hover{color:#fff}
+  .foot-brand{font-family:var(--display);font-size:21px;font-weight:600;color:#fff;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .foot-brand .dot{width:10px;height:10px;border-radius:3px;background:var(--accent)}
+  .foot-bottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;font-size:13px;flex-wrap:wrap;gap:10px}
+
+  @media(prefers-reduced-motion:reduce){*{transition:none !important;scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="#top" class="brand"><span class="dot"></span>Wzdm.io</a>
+    <div class="navlinks">
+      <a href="/login" class="navbtn">Login</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow"><span class="ln"></span>Built for schools &amp; colleges</span>
+      <h1>The online assessment platform for <span class="swap" id="h1swap">every classroom</span></h1>
+      <p class="lede" id="lede">Run secure MCQ and coding assessments across multiple schools, manage classes and students, and turn results into reports — all from one place.</p>
+
+      <div class="role-tabs" role="tablist" aria-label="Choose a role to preview">
+        <button class="role-tab on" data-role="admin" role="tab"><i class="ti ti-building"></i>School admin</button>
+        <button class="role-tab" data-role="teacher" role="tab"><i class="ti ti-chalkboard"></i>Teacher</button>
+        <button class="role-tab" data-role="student" role="tab"><i class="ti ti-user"></i>Student</button>
+      </div>
+
+      <div class="hero-cta">
+        <a class="btn-primary" id="ctaPrimary" href="/login">Get your school started <i class="ti ti-arrow-right"></i></a>
+        <a class="btn-ghost" id="ctaGhost" href="#how">See how it works <i class="ti ti-chevron-down"></i></a>
+      </div>
+    </div>
+
+    <div class="mock" aria-live="polite">
+      <div class="mock-bar">
+        <span class="c" style="background:#e0633a"></span>
+        <span class="c" style="background:#d8b46a"></span>
+        <span class="c" style="background:#3a4654"></span>
+        <span class="u" id="mockUrl">wzdm.io / admin</span>
+      </div>
+      <div class="mock-body" id="mockBody"></div>
+    </div>
+  </div>
+</header>
+
+
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow">What you can do</div>
+      <h2>Everything an institution needs to assess, in one system</h2>
+      <p>Save preparation time with a reusable question library, get instant per-student and per-class breakdowns the moment a test closes, and share downloadable reports — all without switching tools.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat"><div class="ic"><i class="ti ti-layout-dashboard"></i></div><h3>Role-specific dashboards</h3><p>Teachers see their classes and tests; admins see the whole school. Each view is scoped to exactly what that role needs.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-chart-bar"></i></div><h3>Class performance tracking</h3><p>Identify high and low performers at a glance. Results break down by student and class the moment a test closes.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-checks"></i></div><h3>Automatic test grading</h3><p>MCQ answers are graded the instant a student submits. Teachers review and publish scores without any manual marking.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-code"></i></div><h3>Coding auto-grading</h3><p>Student code is run against test cases automatically. No manual review needed for coding question submissions.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-clock-check"></i></div><h3>Proctoring settings</h3><p>Set time limits, schedule test windows, and control attempt rules so every assessment runs on your terms.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-file-analytics"></i></div><h3>Reports &amp; exports</h3><p>Download per-student and per-class reports for parent communication, internal records, and performance reviews.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block how" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow" style="color:var(--gold)">From sign-up to first test</div>
+      <h2>How a school gets running</h2>
+      <p>A guided path that takes an institution from agreement to a student's first submission.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3>Onboard the school</h3><p>Your school is created and an administrator account is set up and handed over securely.</p></div>
+      <div class="step-arr" aria-hidden="true"><i class="ti ti-chevron-right"></i></div>
+      <div class="step"><div class="num">2</div><h3>Set up classes</h3><p>The admin adds subjects, classes, teachers, and students, then maps who teaches what.</p></div>
+      <div class="step-arr" aria-hidden="true"><i class="ti ti-chevron-right"></i></div>
+      <div class="step"><div class="num">3</div><h3>Build assessments</h3><p>Teachers create MCQ and coding tests, set duration and schedule, then publish to a class.</p></div>
+      <div class="step-arr" aria-hidden="true"><i class="ti ti-chevron-right"></i></div>
+      <div class="step"><div class="num">4</div><h3>Students sit the test</h3><p>Students enter with the school code, take their assigned test, and results post to reports.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="security">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow">Trust &amp; data protection</div>
+      <h2>Student data, handled with care</h2>
+      <p>Assessment means handling minors' personal data. The platform is built so that protection is structural, not an afterthought.</p>
+    </div>
+    <div class="trust-grid">
+      <div class="feat"><div class="ic"><i class="ti ti-building"></i></div><h3>School isolation</h3><p>Every school's data is scoped at the server. No school can access another's students, tests, or results.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-lock"></i></div><h3>Role-based access</h3><p>Admin, teacher, and student each reach only what their role allows — enforced server-side on every request.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-list-check"></i></div><h3>Audit logging</h3><p>Sensitive actions like report downloads are logged with a user record and timestamp.</p></div>
+      <div class="feat"><div class="ic"><i class="ti ti-file-check"></i></div><h3>Data terms at sign-up</h3><p>Schools accept data processing terms at onboarding and acceptance is recorded.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final">
+  <div class="wrap">
+    <h2>Manage every class's performance from one platform built for schools</h2>
+    <p>Track results, spot high and low performers, and give each teacher and admin exactly the view they need — across every class your school runs.</p>
+    <a class="btn-white" href="/login">Get your school started <i class="ti ti-arrow-right"></i></a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand"><span class="dot"></span>Wzdm.io</div>
+        <p style="font-size:14px;max-width:24em">The secure online assessment platform for schools and colleges. MCQ and coding tests, role-based portals, and reporting in one place.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="#features">Features</a></li><li><a href="#how">How it works</a></li><li><a href="#security">Security</a></li></ul></div>
+      <div><h4>Get in</h4><ul><li><a href="/login">School login</a></li><li><a href="/student-entry">Student entry</a></li><li><a href="/platform-change-password">Change password</a></li></ul></div>
+      <div><h4>Roles</h4><ul><li><a href="/teacher">Teacher portal</a></li><li><a href="/admin-dashboard">Admin portal</a></li><li><a href="/my-tests">My tests</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Wzdm.io. Online assessment platform for schools &amp; colleges.</span>
+      <span>© Wzdm.io. All rights reserved.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  var roles = {
+    admin: {
+      h1: "every school you run",
+      lede: "Set up subjects, classes, teachers, and students, map who teaches what, and keep an eye on results — one administrator view per school.",
+      url: "wzdm.io / admin",
+      cta: {label: "Open admin portal", href: "/admin-dashboard"},
+      body: function(){return '<div class="mock-tag">School admin · dashboard</div>'
+        + '<div class="mock-h">Springfield High</div>'
+        + '<div class="mini-grid">'
+        + '<div class="stat"><div class="n">428</div><div class="k">Students</div></div>'
+        + '<div class="stat"><div class="n">19</div><div class="k">Teachers</div></div>'
+        + '<div class="stat"><div class="n">12</div><div class="k">Classes</div></div>'
+        + '<div class="stat"><div class="n">7</div><div class="k">Subjects</div></div>'
+        + '</div>'
+        + '<div class="mrow"><span class="l">Class 10A · Mathematics</span><span class="r">Mr. Rao</span></div>'
+        + '<div class="mrow"><span class="l">Class 11B · Computer Science</span><span class="r">Ms. Iyer</span></div>';}
+    },
+    teacher: {
+      h1: "every class you teach",
+      lede: "Author MCQ and coding questions, build tests for your mapped classes, set the schedule, and download performance reports.",
+      url: "wzdm.io / teacher",
+      cta: {label: "Open teacher portal", href: "/teacher"},
+      body: function(){return '<div class="mock-tag">Teacher · my tests</div>'
+        + '<div class="mock-h">Computer Science · 11B</div>'
+        + '<div class="mrow"><span class="l">Arrays &amp; loops — coding</span><span class="pill live">Published</span></div>'
+        + '<div class="mrow"><span class="l">Midterm MCQ</span><span class="pill live">Published</span></div>'
+        + '<div class="mrow"><span class="l">Recursion practice</span><span class="pill draft">Draft</span></div>'
+        + '<div class="mrow"><span class="l">Sorting algorithms</span><span class="pill draft">Draft</span></div>';}
+    },
+    student: {
+      h1: "every student, exam-ready",
+      lede: "No accounts to manage. Students enter with a school code and their details, take the assigned test, and see their result.",
+      url: "wzdm.io / my-tests",
+      cta: {label: "Go to student entry", href: "/student-entry"},
+      body: function(){return '<div class="mock-tag">Student · my tests</div>'
+        + '<div class="mock-h">Aarav Sharma · Class 10A</div>'
+        + '<div class="mrow"><span class="l">Mathematics · Midterm</span><span class="pill live">Available</span></div>'
+        + '<div class="mrow"><span class="l">Computer Science · Coding</span><span class="pill live">Available</span></div>'
+        + '<div class="mrow"><span class="l">English · Reading Test</span><span class="pill draft">Upcoming</span></div>'
+        + '<div class="mrow"><span class="l">Physics · Chapter 3</span><span class="pill draft">Upcoming</span></div>';}
+    },
+  };
+
+  var h1swap = document.getElementById('h1swap');
+  var lede = document.getElementById('lede');
+  var mockBody = document.getElementById('mockBody');
+  var mockUrl = document.getElementById('mockUrl');
+  var ctaPrimary = document.getElementById('ctaPrimary');
+  var tabs = document.querySelectorAll('.role-tab');
+
+  function setRole(key){
+    var r = roles[key];
+    h1swap.style.opacity = 0; lede.style.opacity = 0;
+    setTimeout(function(){
+      h1swap.textContent = r.h1;
+      lede.textContent = r.lede;
+      h1swap.style.opacity = 1; lede.style.opacity = 1;
+    },180);
+    mockBody.innerHTML = r.body();
+    mockUrl.textContent = r.url;
+  }
+
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      tabs.forEach(function(x){x.classList.remove('on')});
+      t.classList.add('on');
+      setRole(t.dataset.role);
+    });
+  });
+
+  setRole('admin');
+
+  // Measure every role's h1 height and lock to the tallest
+  // so switching tabs never resizes the hero section.
+  (function(){
+    var h1el = document.querySelector('h1');
+    var savedH1 = h1swap.textContent;
+    var maxH1 = 0;
+    Object.keys(roles).forEach(function(k){
+      h1swap.textContent = roles[k].h1;
+      maxH1 = Math.max(maxH1, h1el.offsetHeight);
+    });
+    h1swap.textContent = savedH1;
+    h1el.style.minHeight = maxH1 + 'px';
+  })();
+</script>
+</body>
+</html>

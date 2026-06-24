@@ -72,7 +72,7 @@ id="downloadStudentReportButton"
 style="
 margin-top:20px;
 padding:10px 16px;
-background:#4f46e5;
+background:#e0633a;
 color:white;
 border:none;
 border-radius:8px;
@@ -275,7 +275,7 @@ style="cursor:pointer;"
 >
 <td style="
 font-weight:600;
-color:#4f46e5;
+color:#e0633a;
 text-align:center;
 ">
 ${escapeHtml(s.name)}
@@ -385,7 +385,7 @@ id="classReportBackButton"
 style="
 margin-top:20px;
 padding:10px 16px;
-background:#4f46e5;
+background:#e0633a;
 color:white;
 border:none;
 border-radius:8px;

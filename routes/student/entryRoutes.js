@@ -52,7 +52,7 @@ router.get("/student-entry", (req, res) => {
     --text: #0f172a;
     --muted: #64748b;
     --border: #e2e8f0;
-    --primary: #4f46e5;
+    --primary: #e0633a;
     --primary-dark: #3730a3;
     --success: #16a34a;
     --secondary: #64748b;

@@ -169,7 +169,7 @@ Question.find({
         : 0;
       return `
         <tr class="admin-class-row" data-class-name="${escapeAttribute(className)}" style="cursor:pointer;">
-          <td style="font-weight:700;color:#4f46e5;">${escapeHtml(className)}</td>
+          <td style="font-weight:700;color:#e0633a;">${escapeHtml(className)}</td>
           <td>${classStudents.length}</td>
           <td>${classMappings.length}</td>
           <td>${escapeHtml(teacherNames.join(", ") || "Not mapped")}</td>
@@ -445,7 +445,7 @@ if(!user || user.role !== "admin"){
   </button>
   <button id="adminOpenSettingsButton" style="
     padding:12px 16px;
-    background:#4f46e5;
+    background:#e0633a;
     color:white;
     border:none;
     border-radius:10px;

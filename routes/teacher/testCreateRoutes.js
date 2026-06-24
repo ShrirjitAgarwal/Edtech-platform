@@ -341,7 +341,7 @@ ${noMappingsNotice}
       margin-top:18px;
       width:100%;
       padding:14px;
-      background:linear-gradient(135deg,#4f46e5,#6366f1);
+      background:linear-gradient(135deg,#e0633a,#c9542e);
       color:white;
       border:none;
       border-radius:12px;
@@ -470,7 +470,7 @@ function buildQuestionRow(q){
       style="
         display:block;
         padding:14px;
-        border:\${selected ? "2px solid #4f46e5" : "1px solid #e5e7eb"};
+        border:\${selected ? "2px solid #e0633a" : "1px solid #e5e7eb"};
         border-radius:14px;
         margin-bottom:12px;
         cursor:pointer;

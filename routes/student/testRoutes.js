@@ -329,7 +329,7 @@ return `
     width: 36px;
     height: 36px;
     border-radius: 12px;
-    background: #4f46e5;
+    background: #e0633a;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -396,7 +396,7 @@ return `
     font-size: 13px;
   }
   .student-test-question-row.is-current .student-test-question-number {
-    background: #4f46e5;
+    background: #e0633a;
   }
   .student-test-question-row.is-answered .student-test-question-number {
     background: #16a34a;
@@ -490,7 +490,7 @@ return `
     font-weight: 800;
   }
   #nextQuestionBtn {
-    background: #4f46e5;
+    background: #e0633a;
   }
   #previousQuestionBtn {
     background: #64748b;
@@ -547,7 +547,7 @@ z-index:9999;
 <button id="startExamBtn" style="
 padding:14px 22px;
 font-size:16px;
-background:#4f46e5;
+background:#e0633a;
 color:white;
 border:none;
 border-radius:8px;

@@ -424,7 +424,7 @@ exports.listSchoolsPage = async (req, res) => {
                         style="
                           display:inline-block;
                           padding:8px 10px;
-                          background:#2563eb;
+                          background:#e0633a;
                           color:white;
                           text-decoration:none;
                           border-radius:8px;
@@ -571,7 +571,7 @@ exports.listSchoolsPage = async (req, res) => {
                         <button type="submit" style="
                           margin-top:16px;
                           padding:10px 14px;
-                          background:#4f46e5;
+                          background:#e0633a;
                           color:white;
                           border:none;
                           border-radius:8px;
@@ -704,7 +704,7 @@ exports.listSchoolsPage = async (req, res) => {
       <div style="display:flex;gap:10px;">
  <button id="platformQuestionImportButton" style="
  padding:10px 14px;
- background:#4f46e5;
+ background:#e0633a;
  color:white;
  border:none;
  border-radius:8px;
@@ -803,7 +803,7 @@ exports.listSchoolsPage = async (req, res) => {
         />
         <button type="submit" style="
           padding:12px 18px;
-          background:#4f46e5;
+          background:#e0633a;
           color:white;
           border:none;
           border-radius:8px;
@@ -1564,7 +1564,7 @@ function renderComplianceDocumentCard(title, version, description) {
       padding:14px;
     ">
       <h3 style="margin:0 0 6px 0;color:#0f172a;">${escapeHtml(title)}</h3>
-      <div style="font-size:12px;font-weight:800;color:#2563eb;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:800;color:#e0633a;margin-bottom:8px;">
         Version ${escapeHtml(version)}
       </div>
       <p style="margin:0;color:#475569;line-height:1.5;font-size:14px;">
@@ -1738,7 +1738,7 @@ exports.schoolCompliancePage = async (req, res) => {
 
             <button type="submit" style="
               margin-top:8px;
-              background:#2563eb;
+              background:#e0633a;
               color:white;
               border:none;
               padding:12px 16px;

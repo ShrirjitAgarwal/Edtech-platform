@@ -33,7 +33,7 @@ exports.importPage = (req, res) => {
       <br>
       <button type="submit" style="
         padding:12px 18px;
-        background:#4f46e5;
+        background:#e0633a;
         color:white;
         border:none;
         border-radius:8px;

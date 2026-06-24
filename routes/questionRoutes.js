@@ -445,7 +445,7 @@ if(!pageUser || pageUser.role !== "teacher"){
   <button id="saveQuestionButton" style="
     margin-top:24px;
     padding:14px 20px;
-    background:#4f46e5;
+    background:#e0633a;
     color:white;
     border:none;
     border-radius:10px;
@@ -877,7 +877,7 @@ if(!pageUser || pageUser.role !== "teacher"){
       <h2 style="margin:0;">My Questions</h2>
       <button id="createQuestionButton" style="
         padding:10px 14px;
-        background:#4f46e5;
+        background:#e0633a;
         color:white;
         border:none;
         border-radius:8px;
@@ -961,7 +961,7 @@ function renderMyQuestions(){
             escapeClientHtml(q.question || "Untitled Question") +
           "</div>" +
           "<div style=\\"display:flex;gap:8px;flex-wrap:wrap;\\">" +
-            "<span style=\\"background:#4f46e5;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
+            "<span style=\\"background:#e0633a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
               escapeClientHtml(toTitleCase(q.subject || "No Subject")) +
             "</span>" +
             "<span style=\\"background:#0f172a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
@@ -973,7 +973,7 @@ function renderMyQuestions(){
           "</div>" +
         "</div>" +
         "<div style=\\"display:flex;gap:10px;flex-shrink:0;align-items:center;\\">" +
-          "<button class=\\"edit-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 12px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Edit</button>" +
+          "<button class=\\"edit-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 12px;background:#e0633a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Edit</button>" +
           "<button class=\\"delete-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Delete</button>" +
         "</div>" +
       "</div>";
