@@ -98,6 +98,9 @@ document.querySelectorAll(".teacher-student-row").forEach(row => {
 // ---------- VIEW CLASSES ----------
 router.get("/classes", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "teacher") {
+      return res.redirect("/");
+    }
     const content = `
 ${teacherGuardScript()}
 <div style="
@@ -764,6 +767,11 @@ loadClasses(1);
 // ---------- CLASSES DATA API ----------
 router.get("/api/classes-data", authMiddleware, async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "teacher") {
+      return res.status(403).json({
+        error: "Access denied"
+      });
+    }
     const ClassSubject = require("../../models/ClassSubject");
     const teacherId = String(req.user.id);
     const schoolId = req.user.schoolId || null;
