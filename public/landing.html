@@ -69,8 +69,8 @@
   .eyebrow .ln{width:26px;height:1px;background:var(--gold);opacity:.6}
   h1{font-family:var(--display);font-weight:600;font-size:clamp(38px,5vw,60px);line-height:1.04;letter-spacing:-0.02em;margin-bottom:20px}
   h1 .swap{color:var(--accent-soft);transition:opacity .35s}
-  .lede{font-size:18px;color:#c4ccd6;max-width:30em;margin-bottom:8px;min-height:3.2em;transition:opacity .35s}
-  .role-tabs{display:flex;gap:8px;margin:27px 0 18px;flex-wrap:wrap}
+  .lede{font-size:18px;color:#c4ccd6;max-width:30em;margin-bottom:20px;transition:opacity .35s}
+  .role-tabs{display:flex;gap:8px;margin:20px 0 18px;flex-wrap:wrap}
   .role-tab{border:1px solid var(--line);background:rgba(255,255,255,0.04);color:var(--mist);padding:9px 15px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px}
   .role-tab:hover{background:rgba(255,255,255,0.09)}
   .role-tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -195,10 +195,6 @@
         <button class="role-tab" data-role="student" role="tab"><i class="ti ti-user"></i>Student</button>
       </div>
 
-      <div class="hero-cta">
-        <a class="btn-primary" id="ctaPrimary" href="/login">Get your school started <i class="ti ti-arrow-right"></i></a>
-        <a class="btn-ghost" id="ctaGhost" href="#how">See how it works <i class="ti ti-chevron-down"></i></a>
-      </div>
     </div>
 
     <div class="mock" aria-live="polite">
@@ -341,7 +337,6 @@
   var lede = document.getElementById('lede');
   var mockBody = document.getElementById('mockBody');
   var mockUrl = document.getElementById('mockUrl');
-  var ctaPrimary = document.getElementById('ctaPrimary');
   var tabs = document.querySelectorAll('.role-tab');
 
   function setRole(key){
@@ -366,19 +361,24 @@
 
   setRole('admin');
 
-  // Measure every role's h1 height and lock to the tallest
-  // so switching tabs never resizes the hero section.
-  (function(){
+  // Lock h1 and lede to their tallest variant so tab switches never resize the hero.
+  // Runs after fonts load so measurements use actual typeface geometry, not fallback fonts.
+  document.fonts.ready.then(function(){
     var h1el = document.querySelector('h1');
     var savedH1 = h1swap.textContent;
-    var maxH1 = 0;
+    var savedLede = lede.textContent;
+    var maxH1 = 0, maxLede = 0;
     Object.keys(roles).forEach(function(k){
       h1swap.textContent = roles[k].h1;
+      lede.textContent = roles[k].lede;
       maxH1 = Math.max(maxH1, h1el.offsetHeight);
+      maxLede = Math.max(maxLede, lede.offsetHeight);
     });
     h1swap.textContent = savedH1;
+    lede.textContent = savedLede;
     h1el.style.minHeight = maxH1 + 'px';
-  })();
+    lede.style.minHeight = maxLede + 'px';
+  });
 </script>
 </body>
 </html>
