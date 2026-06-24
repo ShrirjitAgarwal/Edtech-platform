@@ -922,6 +922,9 @@ res.send("Error loading create test");
 // ---------- SAVE TEST ----------
 async function saveTestHandler(req, res) {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      return res.status(403).json({ error: "Access denied" });
+    }
     const { testId, name, questionIds, className, subject } = req.body;
     const normalizedName = String(name || "").trim();
     if (!normalizedName || !Array.isArray(questionIds) || !questionIds.length) {
