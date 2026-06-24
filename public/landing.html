@@ -45,7 +45,18 @@
   .navlinks a:hover{color:#fff}
   .navbtn{background:var(--accent);color:#fff !important;padding:9px 18px;border-radius:8px;font-weight:500;font-size:14.5px;transition:transform .15s,background .2s}
   .navbtn:hover{background:#c9542e;transform:translateY(-1px)}
-  @media(max-width:760px){.navlinks a:not(.navbtn){display:none}}
+  @media(max-width:760px){.navlinks a:not(.navbtn){display:none}.nav-dropdown{display:none}}
+
+  /* ---------- nav dropdown ---------- */
+  .nav-dropdown{position:relative;display:flex;align-items:center}
+  .nav-drop-btn{background:none;border:none;color:var(--mist);font-size:14.5px;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--sans);padding:0;transition:color .2s;line-height:1}
+  .nav-drop-btn:hover{color:#fff}
+  .nav-drop-menu{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%);background:#1b232e;border:1px solid var(--line);border-radius:11px;padding:6px;min-width:172px;display:none;flex-direction:column;gap:2px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .nav-dropdown:hover .nav-drop-menu,.nav-dropdown:focus-within .nav-drop-menu{display:flex}
+  .nav-drop-menu a{color:#c4ccd6;font-size:14px;padding:9px 13px;border-radius:7px;transition:background .15s,color .15s;display:flex;align-items:center;gap:8px}
+  .nav-drop-menu a:hover{background:rgba(255,255,255,0.08);color:#fff}
+  .navbtn-ghost{border:1px solid rgba(255,255,255,0.22);color:#fff !important;padding:8px 16px;border-radius:8px;font-weight:500;font-size:14.5px;transition:border-color .2s,background .2s}
+  .navbtn-ghost:hover{border-color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.06)}
 
   /* ---------- hero ---------- */
   .hero{background:var(--ink);color:#fff;position:relative;overflow:hidden;padding:78px 0 92px}
@@ -155,8 +166,17 @@
 
 <nav>
   <div class="wrap">
-    <a href="#top" class="brand"><span class="dot"></span>Wzdm.in</a>
+    <a href="/" class="brand"><span class="dot"></span>Wzdm.in</a>
     <div class="navlinks">
+      <div class="nav-dropdown">
+        <button class="nav-drop-btn">Features <i class="ti ti-chevron-down" style="font-size:13px"></i></button>
+        <div class="nav-drop-menu">
+          <a href="/#features"><i class="ti ti-layout-dashboard"></i>What you can do</a>
+          <a href="/#how"><i class="ti ti-route"></i>How it works</a>
+          <a href="/#security"><i class="ti ti-shield-check"></i>Security</a>
+        </div>
+      </div>
+      <a href="/book-demo" class="navbtn-ghost">Book a demo</a>
       <a href="/login" class="navbtn">Login</a>
     </div>
   </div>
@@ -262,13 +282,13 @@
         <div class="foot-brand"><span class="dot"></span>Wzdm.in</div>
         <p style="font-size:14px;max-width:24em">The secure online assessment platform for schools and colleges. MCQ and coding tests, role-based portals, and reporting in one place.</p>
       </div>
-      <div><h4>Product</h4><ul><li><a href="#features">Features</a></li><li><a href="#how">How it works</a></li><li><a href="#security">Security</a></li></ul></div>
+      <div><h4>Product</h4><ul><li><a href="/#features">Features</a></li><li><a href="/#how">How it works</a></li><li><a href="/#security">Security</a></li><li><a href="/book-demo">Book a demo</a></li><li><a href="/privacy">Privacy policy</a></li></ul></div>
       <div><h4>Get in</h4><ul><li><a href="/login">School login</a></li><li><a href="/student-entry">Student entry</a></li><li><a href="/platform-change-password">Change password</a></li></ul></div>
       <div><h4>Roles</h4><ul><li><a href="/teacher">Teacher portal</a></li><li><a href="/admin-dashboard">Admin portal</a></li><li><a href="/my-tests">My tests</a></li></ul></div>
     </div>
     <div class="foot-bottom">
-      <span>© 2026 Wzdm.in. Online assessment platform for schools &amp; colleges.</span>
-      <span>© Wzdm.in. All rights reserved.</span>
+      <span>© 2026 Wzdm.in. All rights reserved.</span>
+      <a href="/privacy" style="color:#9aa4b1;font-size:13px;transition:color .2s">Privacy policy</a>
     </div>
   </div>
 </footer>

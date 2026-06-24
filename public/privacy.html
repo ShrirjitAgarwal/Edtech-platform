@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Wzdm.in</title>
+<meta name="description" content="Privacy policy for Wzdm.in — how we collect, store, and protect data for schools, teachers, and students.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --ink:#11161d;
+    --ink-soft:#1b232e;
+    --slate:#3a4654;
+    --mist:#e8eaed;
+    --paper:#f6f4ef;
+    --line:rgba(255,255,255,0.10);
+    --line-dark:rgba(17,22,29,0.10);
+    --accent:#e0633a;
+    --gold:#d8b46a;
+    --sans:'Inter',system-ui,sans-serif;
+    --display:'Fraunces',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;background:rgba(17,22,29,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{font-family:var(--display);font-size:23px;font-weight:600;color:#fff;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  .brand .dot{width:11px;height:11px;border-radius:3px;background:var(--accent);display:inline-block}
+  .navlinks{display:flex;gap:30px;align-items:center}
+  .navlinks a{color:var(--mist);font-size:14.5px;font-weight:400;transition:color .2s}
+  .navlinks a:hover{color:#fff}
+  .navbtn{background:var(--accent);color:#fff !important;padding:9px 18px;border-radius:8px;font-weight:500;font-size:14.5px;transition:transform .15s,background .2s}
+  .navbtn:hover{background:#c9542e;transform:translateY(-1px)}
+  .navbtn-ghost{border:1px solid rgba(255,255,255,0.22);color:#fff !important;padding:8px 16px;border-radius:8px;font-weight:500;font-size:14.5px;transition:border-color .2s,background .2s}
+  .navbtn-ghost:hover{border-color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.06)}
+  .nav-dropdown{position:relative;display:flex;align-items:center}
+  .nav-drop-btn{background:none;border:none;color:var(--mist);font-size:14.5px;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--sans);padding:0;transition:color .2s;line-height:1}
+  .nav-drop-btn:hover{color:#fff}
+  .nav-drop-menu{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%);background:#1b232e;border:1px solid var(--line);border-radius:11px;padding:6px;min-width:172px;display:none;flex-direction:column;gap:2px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .nav-dropdown:hover .nav-drop-menu,.nav-dropdown:focus-within .nav-drop-menu{display:flex}
+  .nav-drop-menu a{color:#c4ccd6;font-size:14px;padding:9px 13px;border-radius:7px;transition:background .15s,color .15s;display:flex;align-items:center;gap:8px}
+  .nav-drop-menu a:hover{background:rgba(255,255,255,0.08);color:#fff}
+  @media(max-width:760px){.navlinks a:not(.navbtn){display:none}.nav-dropdown{display:none}}
+
+  /* page header */
+  .page-hero{background:var(--ink);color:#fff;padding:64px 0 56px;border-bottom:1px solid var(--line)}
+  .page-hero .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.04em;color:var(--gold);font-weight:500;text-transform:uppercase;margin-bottom:18px}
+  .page-hero .eyebrow .ln{width:26px;height:1px;background:var(--gold);opacity:.6}
+  .page-hero h1{font-family:var(--display);font-weight:600;font-size:clamp(32px,4vw,50px);line-height:1.08;letter-spacing:-0.02em;margin-bottom:14px}
+  .page-hero p{font-size:16px;color:#8b95a2}
+
+  /* policy content */
+  .policy{padding:64px 0 80px}
+  .policy-inner{max-width:720px}
+  .policy-inner h2{font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-0.01em;margin:40px 0 12px;color:var(--ink)}
+  .policy-inner h2:first-child{margin-top:0}
+  .policy-inner p{font-size:15.5px;color:var(--slate);margin-bottom:14px;line-height:1.7}
+  .policy-inner ul{margin:0 0 14px 20px;display:flex;flex-direction:column;gap:8px}
+  .policy-inner ul li{font-size:15.5px;color:var(--slate);line-height:1.7}
+  .policy-inner a{color:var(--accent);text-decoration:underline;text-decoration-color:rgba(224,99,58,0.35);text-underline-offset:2px}
+  .policy-inner a:hover{text-decoration-color:var(--accent)}
+  .divider{height:1px;background:var(--line-dark);margin:40px 0}
+
+  /* footer */
+  footer{background:var(--ink);color:#8b95a2;padding:52px 0 34px;border-top:1px solid var(--line)}
+  .foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:38px}
+  @media(max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}}
+  footer h4{color:#fff;font-size:13.5px;font-weight:600;margin-bottom:14px;letter-spacing:.02em}
+  footer ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+  footer a{font-size:14px;color:#9aa4b1;transition:color .2s}
+  footer a:hover{color:#fff}
+  .foot-brand{font-family:var(--display);font-size:21px;font-weight:600;color:#fff;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .foot-brand .dot{width:10px;height:10px;border-radius:3px;background:var(--accent)}
+  .foot-bottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;font-size:13px;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand"><span class="dot"></span>Wzdm.in</a>
+    <div class="navlinks">
+      <div class="nav-dropdown">
+        <button class="nav-drop-btn">Features <i class="ti ti-chevron-down" style="font-size:13px"></i></button>
+        <div class="nav-drop-menu">
+          <a href="/#features"><i class="ti ti-layout-dashboard"></i>What you can do</a>
+          <a href="/#how"><i class="ti ti-route"></i>How it works</a>
+          <a href="/#security"><i class="ti ti-shield-check"></i>Security</a>
+        </div>
+      </div>
+      <a href="/book-demo" class="navbtn-ghost">Book a demo</a>
+      <a href="/login" class="navbtn">Login</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ln"></span>Last updated June 2026</div>
+    <h1>Privacy Policy</h1>
+    <p>How Wzdm.in collects, stores, and protects data for schools, teachers, and students.</p>
+  </div>
+</section>
+
+<section class="policy">
+  <div class="wrap">
+    <div class="policy-inner">
+
+      <h2>1. Who we are</h2>
+      <p>Wzdm.in is an online assessment platform for schools and colleges. Schools subscribe to the platform to run MCQ and coding assessments for their teachers and students. When a school onboards, they accept our data processing terms, and we process personal data on their behalf as a data processor.</p>
+
+      <div class="divider"></div>
+
+      <h2>2. Data we collect</h2>
+      <p>We collect only what is necessary to provide the service:</p>
+      <ul>
+        <li><strong>School administrators</strong> — name, email address, and a hashed password.</li>
+        <li><strong>Teachers</strong> — name, email address, hashed password, and the classes they are assigned to.</li>
+        <li><strong>Students</strong> — name and class or section. Students do not create persistent accounts; they authenticate using a school code provided by their institution each time they sit a test.</li>
+        <li><strong>Assessment data</strong> — test questions, student answers, scores, and result timestamps.</li>
+        <li><strong>Audit data</strong> — logs of sensitive actions such as report downloads, recorded with a user identifier and timestamp.</li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <h2>3. How we use data</h2>
+      <ul>
+        <li>To operate the assessment service your school has contracted.</li>
+        <li>To generate performance reports for teachers and administrators.</li>
+        <li>To maintain an audit trail of access to sensitive data.</li>
+      </ul>
+      <p>We do not use personal data for advertising. We do not sell or share data with third parties for commercial purposes.</p>
+
+      <div class="divider"></div>
+
+      <h2>4. School isolation</h2>
+      <p>Every school's data is stored and queried under a unique school identifier. This is enforced at the server level on every database operation. No school can access another school's students, teachers, tests, questions, or results.</p>
+
+      <div class="divider"></div>
+
+      <h2>5. Role-based access</h2>
+      <p>Within a school, access is restricted by role. Administrators, teachers, and students each reach only what their role permits — enforced server-side on every request. A teacher cannot access another teacher's classes, and a student cannot access other students' results.</p>
+
+      <div class="divider"></div>
+
+      <h2>6. Security measures</h2>
+      <ul>
+        <li>Passwords are stored as one-way cryptographic hashes and are never stored or transmitted in plain text.</li>
+        <li>Authentication uses secure, HTTP-only cookies.</li>
+        <li>All data in transit is encrypted via HTTPS.</li>
+        <li>Sensitive actions are audit-logged with a user record and timestamp.</li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <h2>7. Student data and minors</h2>
+      <p>The platform is used by schools to assess students, including minors. Schools are responsible for obtaining any required parental or guardian consent before enrolling students on the platform. Wzdm.in processes student data solely on the instructions of the subscribing school.</p>
+
+      <div class="divider"></div>
+
+      <h2>8. Data retention</h2>
+      <p>Student, teacher, and assessment data is retained for the duration of your school's active subscription. Schools may request deletion of their data by contacting us at <a href="mailto:support@wzdm.in">support@wzdm.in</a>.</p>
+
+      <div class="divider"></div>
+
+      <h2>9. Your rights</h2>
+      <p>If you have a question about data held about you, contact your school's administrator. For data processing inquiries as a school, contact us at <a href="mailto:support@wzdm.in">support@wzdm.in</a>.</p>
+
+      <div class="divider"></div>
+
+      <h2>10. Changes to this policy</h2>
+      <p>We may update this policy. Schools will be notified of material changes by email ahead of them taking effect.</p>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand"><span class="dot"></span>Wzdm.in</div>
+        <p style="font-size:14px;max-width:24em">The secure online assessment platform for schools and colleges. MCQ and coding tests, role-based portals, and reporting in one place.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="/#features">Features</a></li><li><a href="/#how">How it works</a></li><li><a href="/#security">Security</a></li><li><a href="/book-demo">Book a demo</a></li><li><a href="/privacy">Privacy policy</a></li></ul></div>
+      <div><h4>Get in</h4><ul><li><a href="/login">School login</a></li><li><a href="/student-entry">Student entry</a></li></ul></div>
+      <div><h4>Roles</h4><ul><li><a href="/teacher">Teacher portal</a></li><li><a href="/admin-dashboard">Admin portal</a></li><li><a href="/my-tests">My tests</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Wzdm.in. All rights reserved.</span>
+      <a href="/privacy" style="color:#9aa4b1;font-size:13px;transition:color .2s">Privacy policy</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

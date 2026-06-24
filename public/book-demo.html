@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book a Demo — Wzdm.in</title>
+<meta name="description" content="Book a 30-minute walkthrough of Wzdm.in with the team.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --ink:#11161d;
+    --ink-soft:#1b232e;
+    --slate:#3a4654;
+    --mist:#e8eaed;
+    --paper:#f6f4ef;
+    --line:rgba(255,255,255,0.10);
+    --line-dark:rgba(17,22,29,0.10);
+    --accent:#e0633a;
+    --gold:#d8b46a;
+    --sans:'Inter',system-ui,sans-serif;
+    --display:'Fraunces',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;background:rgba(17,22,29,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{font-family:var(--display);font-size:23px;font-weight:600;color:#fff;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  .brand .dot{width:11px;height:11px;border-radius:3px;background:var(--accent);display:inline-block}
+  .navlinks{display:flex;gap:30px;align-items:center}
+  .navlinks a{color:var(--mist);font-size:14.5px;font-weight:400;transition:color .2s}
+  .navlinks a:hover{color:#fff}
+  .navbtn{background:var(--accent);color:#fff !important;padding:9px 18px;border-radius:8px;font-weight:500;font-size:14.5px;transition:transform .15s,background .2s}
+  .navbtn:hover{background:#c9542e;transform:translateY(-1px)}
+  .navbtn-ghost{border:1px solid rgba(255,255,255,0.22);color:#fff !important;padding:8px 16px;border-radius:8px;font-weight:500;font-size:14.5px;transition:border-color .2s,background .2s}
+  .navbtn-ghost:hover{border-color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.06)}
+  .nav-dropdown{position:relative;display:flex;align-items:center}
+  .nav-drop-btn{background:none;border:none;color:var(--mist);font-size:14.5px;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--sans);padding:0;transition:color .2s;line-height:1}
+  .nav-drop-btn:hover{color:#fff}
+  .nav-drop-menu{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%);background:#1b232e;border:1px solid var(--line);border-radius:11px;padding:6px;min-width:172px;display:none;flex-direction:column;gap:2px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .nav-dropdown:hover .nav-drop-menu,.nav-dropdown:focus-within .nav-drop-menu{display:flex}
+  .nav-drop-menu a{color:#c4ccd6;font-size:14px;padding:9px 13px;border-radius:7px;transition:background .15s,color .15s;display:flex;align-items:center;gap:8px}
+  .nav-drop-menu a:hover{background:rgba(255,255,255,0.08);color:#fff}
+  @media(max-width:760px){.navlinks a:not(.navbtn){display:none}.nav-dropdown{display:none}}
+
+  /* page header */
+  .page-hero{background:var(--ink);color:#fff;padding:64px 0 56px;border-bottom:1px solid var(--line)}
+  .page-hero .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.04em;color:var(--gold);font-weight:500;text-transform:uppercase;margin-bottom:18px}
+  .page-hero .eyebrow .ln{width:26px;height:1px;background:var(--gold);opacity:.6}
+  .page-hero h1{font-family:var(--display);font-weight:600;font-size:clamp(32px,4vw,50px);line-height:1.08;letter-spacing:-0.02em;margin-bottom:14px}
+  .page-hero p{font-size:17px;color:#c4ccd6;max-width:32em}
+
+  /* calendly section */
+  .demo-section{padding:52px 0 72px}
+  .calendly-wrap{background:#fff;border:1px solid var(--line-dark);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(17,22,29,0.07)}
+
+  /* footer */
+  footer{background:var(--ink);color:#8b95a2;padding:52px 0 34px;border-top:1px solid var(--line)}
+  .foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:38px}
+  @media(max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}}
+  footer h4{color:#fff;font-size:13.5px;font-weight:600;margin-bottom:14px;letter-spacing:.02em}
+  footer ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+  footer a{font-size:14px;color:#9aa4b1;transition:color .2s}
+  footer a:hover{color:#fff}
+  .foot-brand{font-family:var(--display);font-size:21px;font-weight:600;color:#fff;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .foot-brand .dot{width:10px;height:10px;border-radius:3px;background:var(--accent)}
+  .foot-bottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;font-size:13px;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand"><span class="dot"></span>Wzdm.in</a>
+    <div class="navlinks">
+      <div class="nav-dropdown">
+        <button class="nav-drop-btn">Features <i class="ti ti-chevron-down" style="font-size:13px"></i></button>
+        <div class="nav-drop-menu">
+          <a href="/#features"><i class="ti ti-layout-dashboard"></i>What you can do</a>
+          <a href="/#how"><i class="ti ti-route"></i>How it works</a>
+          <a href="/#security"><i class="ti ti-shield-check"></i>Security</a>
+        </div>
+      </div>
+      <a href="/book-demo" class="navbtn-ghost">Book a demo</a>
+      <a href="/login" class="navbtn">Login</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ln"></span>30 minutes</div>
+    <h1>See Wzdm.in in action</h1>
+    <p>Book a walkthrough with the team. We'll show you how the platform fits your school's setup — classes, teachers, assessments, and reports.</p>
+  </div>
+</section>
+
+<section class="demo-section">
+  <div class="wrap">
+    <div class="calendly-wrap">
+      <div class="calendly-inline-widget" data-url="https://calendly.com/shrirjitagarwal/30min" style="min-width:320px;height:700px;"></div>
+      <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand"><span class="dot"></span>Wzdm.in</div>
+        <p style="font-size:14px;max-width:24em">The secure online assessment platform for schools and colleges. MCQ and coding tests, role-based portals, and reporting in one place.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="/#features">Features</a></li><li><a href="/#how">How it works</a></li><li><a href="/#security">Security</a></li><li><a href="/book-demo">Book a demo</a></li><li><a href="/privacy">Privacy policy</a></li></ul></div>
+      <div><h4>Get in</h4><ul><li><a href="/login">School login</a></li><li><a href="/student-entry">Student entry</a></li></ul></div>
+      <div><h4>Roles</h4><ul><li><a href="/teacher">Teacher portal</a></li><li><a href="/admin-dashboard">Admin portal</a></li><li><a href="/my-tests">My tests</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Wzdm.in. All rights reserved.</span>
+      <a href="/privacy" style="color:#9aa4b1;font-size:13px;transition:color .2s">Privacy policy</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

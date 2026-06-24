@@ -5,4 +5,6 @@ router.get("/", publicController.home);
 router.get("/login", publicController.loginPage);
 router.get("/register", publicController.registerPage);
 router.get("/admin-login", publicController.adminLoginPage);
+router.get("/book-demo", publicController.bookDemo);
+router.get("/privacy", publicController.privacyPolicy);
 module.exports = router;

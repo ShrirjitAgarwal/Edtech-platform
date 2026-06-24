@@ -2,6 +2,12 @@ const path = require("path");
 exports.home = (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "landing.html"));
 };
+exports.bookDemo = (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "book-demo.html"));
+};
+exports.privacyPolicy = (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "privacy.html"));
+};
 exports.loginPage = (req, res) => {
   const rawRole = String(req.query.role || "").trim().toLowerCase();
   const selectedRole = ["admin", "teacher"].includes(rawRole)
