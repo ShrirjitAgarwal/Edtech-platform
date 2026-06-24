@@ -14,6 +14,9 @@ const ClassSubject = require("../../models/ClassSubject");
 
 router.get("/create-test", authMiddleware, async (req, res) => {
 try {
+if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+  return res.redirect("/");
+}
 const Question = require("../../models/Question");
 const ClassSubject = require("../../models/ClassSubject");
 const teacherId = String(req.user.id);
