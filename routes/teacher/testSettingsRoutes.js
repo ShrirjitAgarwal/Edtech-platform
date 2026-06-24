@@ -569,6 +569,9 @@ router.post("/api/teacher/tests/settings/save", authMiddleware, saveTestSettings
 // ---------- DELETE TEST ----------
 async function deleteTestHandler(req, res) {
   try {
+    if (!req.user || (req.user.role !== "teacher" && req.user.role !== "admin")) {
+      return res.status(403).json({ error: "Access denied" });
+    }
     const { id } = req.body;
     if (!id) {
       return res.status(400).json({ error: "Missing test id" });
