@@ -206,45 +206,48 @@ Question.find({
         </tr>
       `;
     }).join("");
-    const recentItems = [
-      ...teachers.slice(0, 3).map(item => ({
-        label: "Teacher",
-        title: item.name || item.email,
-        date: item.createdAt
-      })),
-      ...students.slice(0, 3).map(item => ({
-        label: "Student",
-        title: item.name || item.studentId,
-        date: item.createdAt
-      })),
-      ...classes.slice(0, 3).map(item => ({
-        label: "Class",
-        title: item.name,
-        date: item.createdAt
-      })),
-      ...subjects.slice(0, 3).map(item => ({
-        label: "Subject",
-        title: item.name,
-        date: item.createdAt
-      })),
-      ...tests.slice(0, 3).map(item => ({
-        label: "Test",
-        title: item.name,
-        date: item.createdAt
-      }))
-    ]
-      .filter(item => item.title)
-      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-      .slice(0, 8);
-    const recentActivityHtml = recentItems.map(item => `
-      <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(17,22,29,0.08);">
-        <div>
-          <span style="font-weight:600;font-size:14px;">${escapeHtml(item.title)}</span><br>
-          <span style="color:#3a4654;font-size:13px;">${escapeHtml(item.label)}</span>
-        </div>
-        <span style="color:#3a4654;font-size:13px;white-space:nowrap;">${escapeHtml(formatDate(item.date))}</span>
-      </div>
-    `).join("");
+    const classTestResultMap = {};
+    results.forEach(result => {
+      const className = result.className || result.class || "Unknown";
+      const testId = String(result.testId || "");
+      const key = className + "||" + testId;
+      if (!classTestResultMap[key]) {
+        const testObj = tests.find(t => String(t._id) === testId) || null;
+        classTestResultMap[key] = {
+          className,
+          testName: testObj ? (testObj.name || "Untitled") : "Unknown Test",
+          subject: testObj ? (testObj.subject || "—") : "—",
+          totalScore: 0,
+          totalMarks: 0,
+          count: 0,
+          latestDate: null
+        };
+      }
+      classTestResultMap[key].totalScore += Number(result.score || 0);
+      classTestResultMap[key].totalMarks += Number(result.total || 0);
+      classTestResultMap[key].count++;
+      const d = new Date(result.date || result.createdAt || 0);
+      if (!classTestResultMap[key].latestDate || d > new Date(classTestResultMap[key].latestDate)) {
+        classTestResultMap[key].latestDate = result.date || result.createdAt;
+      }
+    });
+    const recentActivityRows = Object.values(classTestResultMap)
+      .sort((a, b) => new Date(b.latestDate || 0) - new Date(a.latestDate || 0))
+      .slice(0, 12)
+      .map(item => {
+        const avgScore = item.totalMarks > 0 ? Math.round((item.totalScore / item.totalMarks) * 100) : null;
+        const scoreColor = avgScore === null ? "var(--slate)" : avgScore >= 80 ? "#16a34a" : avgScore >= 50 ? "#ca8a04" : "#dc2626";
+        return `
+          <tr>
+            <td style="font-weight:600;color:var(--accent);">${escapeHtml(item.className)}</td>
+            <td style="font-weight:500;">${escapeHtml(item.testName)}</td>
+            <td>${escapeHtml(item.subject)}</td>
+            <td style="text-align:center;font-weight:600;color:${scoreColor};">${avgScore !== null ? avgScore + "%" : "—"}</td>
+            <td style="text-align:center;">${item.count}</td>
+            <td style="color:var(--slate);font-size:13px;white-space:nowrap;">${escapeHtml(formatDate(item.latestDate))}</td>
+          </tr>
+        `;
+      }).join("");
     const assignedStudents = new Set();
     assignments.forEach(assignment => {
       const className = assignment.className || assignment.class || "Unknown";
@@ -477,8 +480,18 @@ if(!user || user.role !== "admin"){
         </table>
       </div>
       <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow-y:auto;max-height:400px;">
-        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Recent Activity</h2>
-        ${recentActivityHtml || "<p style='color:var(--slate);font-size:14px;'>No recent activity yet.</p>"}
+        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Recent Results by Class</h2>
+        ${recentActivityRows ? `<table class="dash-table">
+          <thead><tr>
+            <th>Class</th>
+            <th>Test</th>
+            <th>Subject</th>
+            <th style="text-align:center;">Avg Score</th>
+            <th style="text-align:center;">Submissions</th>
+            <th>Last Submission</th>
+          </tr></thead>
+          <tbody>${recentActivityRows}</tbody>
+        </table>` : "<p style='color:var(--slate);font-size:14px;'>No results yet.</p>"}
       </div>
     </section>
 
