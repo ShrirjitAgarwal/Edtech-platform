@@ -325,6 +325,7 @@ Question.find({
         href: "/create-test"
       }
     ];
+    const allSetupDone = setupItems.every(item => item.done);
     const setupHtml = setupItems.map(item => `
       <div class="admin-setup-link" data-href="${escapeAttribute(item.href)}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border:1px solid rgba(17,22,29,0.08);border-radius:10px;margin-bottom:8px;cursor:pointer;background:${item.done ? "#f0fdf4" : "#fef9f0"};transition:border-color .15s;">
         <span style="font-size:14px;font-weight:500;color:#11161d;">${escapeHtml(item.label)}</span>
@@ -455,12 +456,12 @@ if(!user || user.role !== "admin"){
       ${cardHtml}
     </section>
 
-    <section style="display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:20px;margin-bottom:24px;align-items:start;">
+    <section style="display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:20px;margin-bottom:24px;">
       <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
         <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Setup Checklist</h2>
         ${setupHtml}
       </div>
-      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow-y:auto;">
         <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Performance Summary</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
           <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${results.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempts</div></div>
@@ -474,8 +475,8 @@ if(!user || user.role !== "admin"){
       </div>
     </section>
 
-    <section style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;align-items:start;">
-      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow:auto;">
+    <section style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow-y:auto;max-height:400px;">
         <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Teacher Workload</h2>
         <table class="dash-table">
           <thead><tr>
@@ -488,13 +489,13 @@ if(!user || user.role !== "admin"){
           <tbody>${teacherWorkloadRows || "<tr><td colspan='5' style='color:var(--slate);padding:16px;'>No teachers found</td></tr>"}</tbody>
         </table>
       </div>
-      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow-y:auto;max-height:400px;">
         <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Recent Activity</h2>
         ${recentActivityHtml || "<p style='color:var(--slate);font-size:14px;'>No recent activity yet.</p>"}
       </div>
     </section>
 
-    <section style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow:auto;margin-bottom:24px;">
+    ${allSetupDone ? "" : `<section style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow:auto;margin-bottom:24px;">
       <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Class Overview</h2>
       <table class="dash-table">
         <thead><tr>
@@ -508,7 +509,7 @@ if(!user || user.role !== "admin"){
         </tr></thead>
         <tbody>${classOverviewRows || "<tr><td colspan='7' style='color:var(--slate);padding:16px;'>No classes found</td></tr>"}</tbody>
       </table>
-    </section>
+    </section>`}
   </main>
 </div>
 <script>
