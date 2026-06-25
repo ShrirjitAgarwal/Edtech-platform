@@ -133,7 +133,10 @@ Question.find({
           students: new Set(),
           totalScore: 0,
           totalMarks: 0,
-          attempts: 0
+          attempts: 0,
+          low: 0,
+          mid: 0,
+          high: 0
         };
       }
       if (result.studentId) {
@@ -142,6 +145,10 @@ Question.find({
       classPerformanceMap[className].totalScore += Number(result.score || 0);
       classPerformanceMap[className].totalMarks += Number(result.total || 0);
       classPerformanceMap[className].attempts += 1;
+      const p = percent(result.score, result.total);
+      if (p < 50) classPerformanceMap[className].low++;
+      else if (p <= 80) classPerformanceMap[className].mid++;
+      else classPerformanceMap[className].high++;
     });
     const classOverviewRows = classes.map(classItem => {
       const className = classItem.name || "Unknown";
@@ -327,6 +334,30 @@ Question.find({
         </tr>
       `;
     }).join("");
+    const classPerfSummaryRows = classes.map(classItem => {
+      const className = classItem.name || "Unknown";
+      const classStudents = students.filter(s => String(s.class || "") === String(className));
+      const classTests = tests.filter(t => String(t.className || t.class || "") === String(className));
+      const perf = classPerformanceMap[className] || null;
+      const avgScore = perf && perf.totalMarks > 0 ? Math.round((perf.totalScore / perf.totalMarks) * 100) : null;
+      const scoreColor = avgScore === null ? "var(--slate)" : avgScore >= 80 ? "#16a34a" : avgScore >= 50 ? "#ca8a04" : "#dc2626";
+      const assignedCount = assignmentsByClass[className]?.size || 0;
+      const attemptedCount = perf?.students?.size || 0;
+      const completion = assignedCount > 0 ? Math.round((attemptedCount / assignedCount) * 100) : null;
+      return `
+        <tr>
+          <td style="font-weight:600;color:var(--accent);">${escapeHtml(className)}</td>
+          <td style="text-align:center;">${classStudents.length}</td>
+          <td style="text-align:center;">${classTests.length}</td>
+          <td style="text-align:center;">${perf?.attempts || "—"}</td>
+          <td style="text-align:center;font-weight:600;color:${scoreColor};">${avgScore !== null ? avgScore + "%" : "—"}</td>
+          <td style="text-align:center;color:#dc2626;font-weight:500;">${perf?.low || "—"}</td>
+          <td style="text-align:center;color:#ca8a04;font-weight:500;">${perf?.mid || "—"}</td>
+          <td style="text-align:center;color:#16a34a;font-weight:500;">${perf?.high || "—"}</td>
+          <td style="text-align:center;">${completion !== null ? completion + "%" : "—"}</td>
+        </tr>
+      `;
+    }).join("");
     const allSetupDone = admins.length > 0 && teachers.length > 0 && classes.length > 0 && subjects.length > 0 && mappings.length > 0 && students.length > 0 && tests.length > 0;
     const cardData = [
       {
@@ -454,14 +485,21 @@ if(!user || user.role !== "admin"){
 
     <section style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);margin-bottom:24px;">
       <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Performance Summary</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
-        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${results.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempts</div></div>
-        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${averageScore}%</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Avg Score</div></div>
-        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${assignedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Assigned</div></div>
-        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${attemptedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempted</div></div>
-        <div style="background:#fef2f2;padding:16px;border-radius:12px;border:1px solid rgba(220,38,38,0.12);"><div style="font-size:22px;font-weight:700;color:#dc2626;">${low}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Below 50%</div></div>
-        <div style="background:#fefce8;padding:16px;border-radius:12px;border:1px solid rgba(202,138,4,0.15);"><div style="font-size:22px;font-weight:700;color:#ca8a04;">${mid}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">50–80%</div></div>
-        <div style="background:#f0fdf4;padding:16px;border-radius:12px;border:1px solid rgba(22,163,74,0.15);"><div style="font-size:22px;font-weight:700;color:#16a34a;">${high}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Above 80%</div></div>
+      <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+        <table class="dash-table">
+          <thead><tr>
+            <th>Class</th>
+            <th style="text-align:center;">Students</th>
+            <th style="text-align:center;">Tests</th>
+            <th style="text-align:center;">Attempts</th>
+            <th style="text-align:center;">Avg Score</th>
+            <th style="text-align:center;color:#dc2626;">&lt;50%</th>
+            <th style="text-align:center;color:#ca8a04;">50–80%</th>
+            <th style="text-align:center;color:#16a34a;">&gt;80%</th>
+            <th style="text-align:center;">Completion</th>
+          </tr></thead>
+          <tbody>${classPerfSummaryRows || "<tr><td colspan='9' style='color:var(--slate);padding:16px;'>No class data yet</td></tr>"}</tbody>
+        </table>
       </div>
     </section>
 
