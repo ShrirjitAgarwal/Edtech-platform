@@ -1,4 +1,5 @@
 const { escapeHtml, escapeAttribute } = require("../utils/html");
+const sidebar = require("../views/sidebar");
 exports.schoolDashboardPage = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -168,14 +169,14 @@ Question.find({
         ? Math.round((attemptedCount / assignedCount) * 100)
         : 0;
       return `
-        <tr class="admin-class-row" data-class-name="${escapeAttribute(className)}" style="cursor:pointer;">
-          <td style="font-weight:700;color:#e0633a;">${escapeHtml(className)}</td>
-          <td>${classStudents.length}</td>
-          <td>${classMappings.length}</td>
+        <tr class="admin-class-row" data-class-name="${escapeAttribute(className)}">
+          <td style="font-weight:600;color:#e0633a;">${escapeHtml(className)}</td>
+          <td style="text-align:center;">${classStudents.length}</td>
+          <td style="text-align:center;">${classMappings.length}</td>
           <td>${escapeHtml(teacherNames.join(", ") || "Not mapped")}</td>
-          <td>${classTests.length}</td>
-          <td>${avgScore}%</td>
-          <td>${completion}%</td>
+          <td style="text-align:center;">${classTests.length}</td>
+          <td style="text-align:center;">${avgScore}%</td>
+          <td style="text-align:center;">${completion}%</td>
         </tr>
       `;
     }).join("");
@@ -197,11 +198,11 @@ Question.find({
       );
       return `
         <tr>
-          <td><b>${escapeHtml(teacher.name || teacher.email || "Unnamed Teacher")}</b><br><span style="color:#64748b;font-size:13px;">${escapeHtml(teacher.email || "")}</span></td>
-          <td>${mappedClasses.length}</td>
-          <td>${mappedSubjects.length}</td>
-          <td>${assignedStudents.length}</td>
-          <td>${teacherTests.length}</td>
+          <td><span style="font-weight:600;">${escapeHtml(teacher.name || teacher.email || "Unnamed Teacher")}</span><br><span style="color:#3a4654;font-size:13px;">${escapeHtml(teacher.email || "")}</span></td>
+          <td style="text-align:center;">${mappedClasses.length}</td>
+          <td style="text-align:center;">${mappedSubjects.length}</td>
+          <td style="text-align:center;">${assignedStudents.length}</td>
+          <td style="text-align:center;">${teacherTests.length}</td>
         </tr>
       `;
     }).join("");
@@ -236,12 +237,12 @@ Question.find({
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
       .slice(0, 8);
     const recentActivityHtml = recentItems.map(item => `
-      <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e5e7eb;">
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(17,22,29,0.08);">
         <div>
-          <b>${escapeHtml(item.title)}</b><br>
-          <span style="color:#64748b;font-size:13px;">${escapeHtml(item.label)}</span>
+          <span style="font-weight:600;font-size:14px;">${escapeHtml(item.title)}</span><br>
+          <span style="color:#3a4654;font-size:13px;">${escapeHtml(item.label)}</span>
         </div>
-        <span style="color:#64748b;font-size:13px;white-space:nowrap;">${escapeHtml(formatDate(item.date))}</span>
+        <span style="color:#3a4654;font-size:13px;white-space:nowrap;">${escapeHtml(formatDate(item.date))}</span>
       </div>
     `).join("");
     const assignedStudents = new Set();
@@ -325,9 +326,9 @@ Question.find({
       }
     ];
     const setupHtml = setupItems.map(item => `
-      <div class="admin-setup-link" data-href="${escapeAttribute(item.href)}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:10px;cursor:pointer;background:${item.done ? "#ecfdf5" : "#fff7ed"};">
-        <span style="font-weight:700;">${escapeHtml(item.label)}</span>
-        <span style="font-weight:800;color:${item.done ? "#16a34a" : "#ea580c"};">${item.done ? "Done" : "Pending"}</span>
+      <div class="admin-setup-link" data-href="${escapeAttribute(item.href)}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border:1px solid rgba(17,22,29,0.08);border-radius:10px;margin-bottom:8px;cursor:pointer;background:${item.done ? "#f0fdf4" : "#fef9f0"};transition:border-color .15s;">
+        <span style="font-size:14px;font-weight:500;color:#11161d;">${escapeHtml(item.label)}</span>
+        <span style="font-size:13px;font-weight:600;color:${item.done ? "#16a34a" : "#ea580c"};">${item.done ? "Done" : "Pending"}</span>
       </div>
     `).join("");
     const cardData = [
@@ -383,13 +384,45 @@ Question.find({
       }
     ];
     const cardHtml = cardData.map(card => `
-      <div style="background:white;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
-        <div style="color:#64748b;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;">${escapeHtml(card.label)}</div>
-        <div style="font-size:34px;font-weight:900;margin-top:10px;color:#0f172a;">${card.value}</div>
+      <div onclick="go('${escapeAttribute(card.href)}')" style="background:#fbeee7;border:1px solid rgba(224,99,58,0.15);border-radius:14px;padding:18px;box-shadow:0 4px 24px rgba(17,22,29,0.06);cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='rgba(224,99,58,0.35)'" onmouseout="this.style.borderColor='rgba(224,99,58,0.15)'">
+        <div style="color:#3a4654;font-weight:500;font-size:13px;">${escapeHtml(card.label)}</div>
+        <div style="font-size:28px;font-weight:700;margin-top:8px;color:#11161d;">${card.value}</div>
       </div>
     `).join("");
-    res.send(`
-<body style="margin:0;font-family:Arial;background:#eef2ff;">
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#11161d;
+    --slate:#3a4654;
+    --paper:#f6f4ef;
+    --line:rgba(17,22,29,0.10);
+    --line-soft:rgba(17,22,29,0.08);
+    --accent:#e0633a;
+    --accent-bg:#fbeee7;
+    --accent-border:rgba(224,99,58,0.15);
+    --sans:'Inter',system-ui,sans-serif;
+    --display:'Fraunces',Georgia,serif;
+  }
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none}
+  .dash-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .dash-table th{background:var(--paper);padding:10px 14px;text-align:left;font-weight:600;color:var(--slate);border-bottom:1px solid var(--line-soft);white-space:nowrap;}
+  .dash-table td{padding:10px 14px;border-bottom:1px solid var(--line-soft);color:var(--ink);vertical-align:middle;}
+  .dash-table tbody tr:last-child td{border-bottom:none;}
+  .dash-table tbody tr:hover td{background:var(--accent-bg);}
+  .admin-class-row{cursor:pointer;}
+  #adminPreviousPageButton:hover{background:rgba(17,22,29,0.06)!important;}
+  #adminOpenSettingsButton:hover{background:#c9542e!important;transform:translateY(-1px);}
+</style>
+</head>
+<body>
 <script>
 const user = JSON.parse(localStorage.getItem("user") || "null");
 if(!user || user.role !== "admin"){
@@ -397,123 +430,87 @@ if(!user || user.role !== "admin"){
 }
 </script>
 <div style="display:flex;height:100vh;overflow:hidden;">
-  <aside style="
-    width:150px;
-    min-width:150px;
-    height:100vh;
-    background:#1e293b;
-    color:white;
-    padding:20px 16px;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    box-sizing:border-box;
-    flex-shrink:0;
-  ">
-    <div>
-      <h2 style="margin-bottom:25px;">Admin</h2>
-      <div class="admin-nav-link" data-href="/admin-dashboard" style="padding:12px 14px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">Dashboard</div>
-      <div class="admin-nav-link" data-href="/admin-settings" style="padding:12px 14px;border-radius:8px;cursor:pointer;margin-bottom:10px;">Settings</div>
-    </div>
-    <div id="adminLogoutButton" style="padding:12px 14px;border-radius:8px;cursor:pointer;color:#f87171;">Logout</div>
-  </aside>
+  ${sidebar("admin-dashboard", "admin")}
   <main style="
     flex:1;
     height:100vh;
-    padding:30px;
-    background:#eef2ff;
+    padding:32px 40px;
+    background:var(--paper);
     overflow-y:auto;
     overflow-x:hidden;
     box-sizing:border-box;
   ">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:28px;">
       <div>
-        <h1 style="margin:0 0 8px 0;">Dashboard</h1>
-        <p style="margin:0;color:#64748b;">${escapeHtml(school?.name || "School")} ${school?.code ? "(" + escapeHtml(school.code) + ")" : ""}</p>
+        <h1 style="margin:0 0 4px 0;font-family:var(--display);font-size:30px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;">Dashboard</h1>
+        <p style="margin:0;color:var(--slate);font-size:14px;">${escapeHtml(school?.name || "School")}${school?.code ? " (" + escapeHtml(school.code) + ")" : ""}</p>
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
- <button id="adminPreviousPageButton" style="
-    padding:12px 16px;
-    background:#f59e0b;
-    color:white;
-    border:none;
-    border-radius:10px;
-    font-weight:800;
-    cursor:pointer;
-  ">
-    ← Previous Page
-  </button>
-  <button id="adminOpenSettingsButton" style="
-    padding:12px 16px;
-    background:#e0633a;
-    color:white;
-    border:none;
-    border-radius:10px;
-    font-weight:800;
-    cursor:pointer;
-  ">
-    Open Settings
-  </button>
-</div>
+        <button id="adminPreviousPageButton" style="padding:10px 18px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;">← Previous Page</button>
+        <button id="adminOpenSettingsButton" style="padding:10px 18px;background:var(--accent);color:white;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s;">Open Settings</button>
+      </div>
     </div>
-    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:22px;">
+
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:24px;">
       ${cardHtml}
     </section>
-    <section style="display:grid;grid-template-columns:minmax(280px,420px) minmax(0,1fr);gap:20px;margin-bottom:22px;align-items:start;">
-      <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
-        <h2 style="margin-top:0;">Setup Checklist</h2>
+
+    <section style="display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:20px;margin-bottom:24px;align-items:start;">
+      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Setup Checklist</h2>
         ${setupHtml}
       </div>
-      <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
-        <h2 style="margin-top:0;">Performance Summary</h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;">
-          <div style="background:#f8fafc;padding:16px;border-radius:12px;"><b>${results.length}</b><br><span style="color:#64748b;">Attempts</span></div>
-          <div style="background:#f8fafc;padding:16px;border-radius:12px;"><b>${averageScore}%</b><br><span style="color:#64748b;">Avg Score</span></div>
-          <div style="background:#f8fafc;padding:16px;border-radius:12px;"><b>${assignedStudents.size}</b><br><span style="color:#64748b;">Assigned</span></div>
-          <div style="background:#f8fafc;padding:16px;border-radius:12px;"><b>${attemptedStudents.size}</b><br><span style="color:#64748b;">Attempted</span></div>
-          <div style="background:#fee2e2;padding:16px;border-radius:12px;"><b>${low}</b><br><span style="color:#64748b;">Below 50%</span></div>
-          <div style="background:#fef3c7;padding:16px;border-radius:12px;"><b>${mid}</b><br><span style="color:#64748b;">50–80%</span></div>
-          <div style="background:#dcfce7;padding:16px;border-radius:12px;"><b>${high}</b><br><span style="color:#64748b;">Above 80%</span></div>
+      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Performance Summary</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
+          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${results.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempts</div></div>
+          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${averageScore}%</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Avg Score</div></div>
+          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${assignedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Assigned</div></div>
+          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${attemptedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempted</div></div>
+          <div style="background:#fef2f2;padding:16px;border-radius:12px;border:1px solid rgba(220,38,38,0.12);"><div style="font-size:22px;font-weight:700;color:#dc2626;">${low}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Below 50%</div></div>
+          <div style="background:#fefce8;padding:16px;border-radius:12px;border:1px solid rgba(202,138,4,0.15);"><div style="font-size:22px;font-weight:700;color:#ca8a04;">${mid}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">50–80%</div></div>
+          <div style="background:#f0fdf4;padding:16px;border-radius:12px;border:1px solid rgba(22,163,74,0.15);"><div style="font-size:22px;font-weight:700;color:#16a34a;">${high}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Above 80%</div></div>
         </div>
       </div>
     </section>
-    <section style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;align-items:start;">
-      <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;overflow:auto;">
-        <h2 style="margin-top:0;">Teacher Workload</h2>
-        <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
-          <tr style="background:#f1f5f9;">
+
+    <section style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;align-items:start;">
+      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow:auto;">
+        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Teacher Workload</h2>
+        <table class="dash-table">
+          <thead><tr>
             <th>Teacher</th>
-            <th>Classes</th>
-            <th>Subjects</th>
-            <th>Students</th>
-            <th>Tests</th>
-          </tr>
-          ${teacherWorkloadRows || "<tr><td colspan='5'>No teachers found</td></tr>"}
+            <th style="text-align:center;">Classes</th>
+            <th style="text-align:center;">Subjects</th>
+            <th style="text-align:center;">Students</th>
+            <th style="text-align:center;">Tests</th>
+          </tr></thead>
+          <tbody>${teacherWorkloadRows || "<tr><td colspan='5' style='color:var(--slate);padding:16px;'>No teachers found</td></tr>"}</tbody>
         </table>
       </div>
-      <div style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
-        <h2 style="margin-top:0;">Recent Activity</h2>
-        ${recentActivityHtml || "<p style='color:#64748b;'>No recent activity yet.</p>"}
+      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Recent Activity</h2>
+        ${recentActivityHtml || "<p style='color:var(--slate);font-size:14px;'>No recent activity yet.</p>"}
       </div>
     </section>
-    <section style="background:white;border-radius:16px;padding:22px;box-shadow:0 4px 12px rgba(0,0,0,0.06);border:1px solid #e5e7eb;overflow:auto;">
-      <h2 style="margin-top:0;">Class Overview</h2>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;text-align:center;background:white;">
-        <tr style="background:#f1f5f9;">
+
+    <section style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow:auto;margin-bottom:24px;">
+      <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Class Overview</h2>
+      <table class="dash-table">
+        <thead><tr>
           <th>Class</th>
-          <th>Students</th>
-          <th>Mapped Subjects</th>
+          <th style="text-align:center;">Students</th>
+          <th style="text-align:center;">Mapped Subjects</th>
           <th>Teachers</th>
-          <th>Tests</th>
-          <th>Avg Score</th>
-          <th>Completion</th>
-        </tr>
-        ${classOverviewRows || "<tr><td colspan='7'>No classes found</td></tr>"}
+          <th style="text-align:center;">Tests</th>
+          <th style="text-align:center;">Avg Score</th>
+          <th style="text-align:center;">Completion</th>
+        </tr></thead>
+        <tbody>${classOverviewRows || "<tr><td colspan='7' style='color:var(--slate);padding:16px;'>No classes found</td></tr>"}</tbody>
       </table>
     </section>
   </main>
 </div>
-</script>
 <script>
 document.addEventListener("click", function(event){
   const classRow = event.target.closest(".admin-class-row");
@@ -568,6 +565,7 @@ function goToClass(cls){
 }
 </script>
 </body>
+</html>
 `);
   } catch (err) {
     console.error("ADMIN DASHBOARD ERROR:", err);
