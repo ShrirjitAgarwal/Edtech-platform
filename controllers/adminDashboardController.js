@@ -288,50 +288,7 @@ Question.find({
     const averageScore = totalMarks > 0
       ? Math.round((totalScore / totalMarks) * 100)
       : 0;
-    const setupItems = [
-      {
-        label: "School admin created",
-        done: admins.length > 0,
-        href: "/admin-settings#admins"
-      },
-      {
-        label: "Teachers added",
-        done: teachers.length > 0,
-        href: "/admin-settings#teachers"
-      },
-      {
-        label: "Classes created",
-        done: classes.length > 0,
-        href: "/admin-settings#classes"
-      },
-      {
-        label: "Subjects created",
-        done: subjects.length > 0,
-        href: "/admin-settings#subjects"
-      },
-      {
-        label: "Teacher mappings created",
-        done: mappings.length > 0,
-        href: "/admin-settings#mappings"
-      },
-      {
-        label: "Students added",
-        done: students.length > 0,
-        href: "/admin-settings#add-students"
-      },
-      {
-        label: "Tests created",
-        done: tests.length > 0,
-        href: "/create-test"
-      }
-    ];
-    const allSetupDone = setupItems.every(item => item.done);
-    const setupHtml = setupItems.map(item => `
-      <div class="admin-setup-link" data-href="${escapeAttribute(item.href)}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border:1px solid rgba(17,22,29,0.08);border-radius:10px;margin-bottom:8px;cursor:pointer;background:${item.done ? "#f0fdf4" : "#fef9f0"};transition:border-color .15s;">
-        <span style="font-size:14px;font-weight:500;color:#11161d;">${escapeHtml(item.label)}</span>
-        <span style="font-size:13px;font-weight:600;color:${item.done ? "#16a34a" : "#ea580c"};">${item.done ? "Done" : "Pending"}</span>
-      </div>
-    `).join("");
+    const allSetupDone = admins.length > 0 && teachers.length > 0 && classes.length > 0 && subjects.length > 0 && mappings.length > 0 && students.length > 0 && tests.length > 0;
     const cardData = [
       {
         label: "Students",
@@ -456,22 +413,16 @@ if(!user || user.role !== "admin"){
       ${cardHtml}
     </section>
 
-    <section style="display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:20px;margin-bottom:24px;">
-      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
-        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Setup Checklist</h2>
-        ${setupHtml}
-      </div>
-      <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow-y:auto;">
-        <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Performance Summary</h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
-          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${results.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempts</div></div>
-          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${averageScore}%</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Avg Score</div></div>
-          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${assignedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Assigned</div></div>
-          <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${attemptedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempted</div></div>
-          <div style="background:#fef2f2;padding:16px;border-radius:12px;border:1px solid rgba(220,38,38,0.12);"><div style="font-size:22px;font-weight:700;color:#dc2626;">${low}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Below 50%</div></div>
-          <div style="background:#fefce8;padding:16px;border-radius:12px;border:1px solid rgba(202,138,4,0.15);"><div style="font-size:22px;font-weight:700;color:#ca8a04;">${mid}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">50–80%</div></div>
-          <div style="background:#f0fdf4;padding:16px;border-radius:12px;border:1px solid rgba(22,163,74,0.15);"><div style="font-size:22px;font-weight:700;color:#16a34a;">${high}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Above 80%</div></div>
-        </div>
+    <section style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);margin-bottom:24px;">
+      <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Performance Summary</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
+        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${results.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempts</div></div>
+        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${averageScore}%</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Avg Score</div></div>
+        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${assignedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Assigned</div></div>
+        <div style="background:var(--paper);padding:16px;border-radius:12px;border:1px solid var(--line-soft);"><div style="font-size:22px;font-weight:700;color:var(--ink);">${attemptedStudents.size}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Attempted</div></div>
+        <div style="background:#fef2f2;padding:16px;border-radius:12px;border:1px solid rgba(220,38,38,0.12);"><div style="font-size:22px;font-weight:700;color:#dc2626;">${low}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Below 50%</div></div>
+        <div style="background:#fefce8;padding:16px;border-radius:12px;border:1px solid rgba(202,138,4,0.15);"><div style="font-size:22px;font-weight:700;color:#ca8a04;">${mid}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">50–80%</div></div>
+        <div style="background:#f0fdf4;padding:16px;border-radius:12px;border:1px solid rgba(22,163,74,0.15);"><div style="font-size:22px;font-weight:700;color:#16a34a;">${high}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Above 80%</div></div>
       </div>
     </section>
 
@@ -517,12 +468,6 @@ document.addEventListener("click", function(event){
   const classRow = event.target.closest(".admin-class-row");
   if(classRow){
     goToClass(classRow.dataset.className || "");
-    return;
-  }
-
-  const setupLink = event.target.closest(".admin-setup-link");
-  if(setupLink){
-    go(setupLink.dataset.href || "/admin-settings");
     return;
   }
 
