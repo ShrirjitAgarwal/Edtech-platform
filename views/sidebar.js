@@ -9,52 +9,53 @@ function sidebar(active = "", role = "__USER_ROLE__") {
 
   const sidebarItems = sidebarIsStudent
     ? [
-        { key: "my-tests", label: "Dashboard", path: "/my-tests" }
+        { key: "my-tests", label: "Dashboard", path: "/my-tests", icon: "ti-layout-dashboard" }
       ]
     : sidebarIsAdmin
       ? [
-          { key: "admin-dashboard", label: "Admin Dashboard", path: "/admin-dashboard" },
-          { key: "admin-settings", label: "Admin Settings", path: "/admin-settings" },
-          { key: "dashboard", label: "Teacher Dashboard", path: "/teacher" },
-          { key: "library", label: "Library", path: "/library" },
-          { key: "tests", label: "Tests", path: "/teacher-tests" },
-          { key: "classes", label: "Classes", path: "/classes" },
-          { key: "settings", label: "Teacher Settings", path: "/teacher-settings" }
+          { key: "admin-dashboard", label: "Admin Dashboard", path: "/admin-dashboard", icon: "ti-layout-dashboard" },
+          { key: "admin-settings",  label: "Admin Settings",  path: "/admin-settings",  icon: "ti-settings" },
+          { key: "dashboard",       label: "Teacher Dashboard",path: "/teacher",         icon: "ti-home" },
+          { key: "library",         label: "Library",          path: "/library",         icon: "ti-books" },
+          { key: "tests",           label: "Tests",            path: "/teacher-tests",   icon: "ti-clipboard-list" },
+          { key: "classes",         label: "Classes",          path: "/classes",         icon: "ti-users" },
+          { key: "settings",        label: "Teacher Settings", path: "/teacher-settings",icon: "ti-settings-2" }
         ]
       : [
-          { key: "dashboard", label: "Dashboard", path: "/teacher" },
-          { key: "library", label: "Library", path: "/library" },
-          { key: "tests", label: "Tests", path: "/teacher-tests" },
-          { key: "classes", label: "Classes", path: "/classes" },
-          { key: "settings", label: "Settings", path: "/teacher-settings" }
+          { key: "dashboard", label: "Dashboard", path: "/teacher",         icon: "ti-layout-dashboard" },
+          { key: "library",   label: "Library",   path: "/library",         icon: "ti-books" },
+          { key: "tests",     label: "Tests",     path: "/teacher-tests",   icon: "ti-clipboard-list" },
+          { key: "classes",   label: "Classes",   path: "/classes",         icon: "ti-users" },
+          { key: "settings",  label: "Settings",  path: "/teacher-settings",icon: "ti-settings" }
         ];
-
-  const sidebarTitle = sidebarIsStudent
-    ? "Student"
-    : sidebarIsAdmin
-      ? "Admin"
-      : "Wizdm.io";
 
   const activeKey = "${active}";
 
   const itemsHtml = sidebarItems.map(item => {
     const isActive = activeKey === item.key;
-
     return \`
       <div
         class="sidebar-nav-item"
         data-path="\${item.path}"
         style="
-          padding:12px 12px;
+          padding:10px 14px;
           border-radius:10px;
-          margin-bottom:12px;
+          margin-bottom:4px;
           cursor:pointer;
-          font-size:15px;
-          \${isActive ? "background:#334155;font-weight:700;" : ""}
+          font-size:14px;
+          font-weight:\${isActive ? "600" : "400"};
+          display:flex;
+          align-items:center;
+          gap:10px;
+          color:\${isActive ? "#e0633a" : "rgba(255,255,255,0.72)"};
+          background:\${isActive ? "rgba(224,99,58,0.15)" : "transparent"};
+          transition:background .15s,color .15s;
         "
-        onmouseover="this.style.background='#334155'"
-        onmouseout="this.style.background='\${isActive ? "#334155" : "transparent"}'"
+        onmouseover="if(!this.dataset.active){this.style.background='rgba(255,255,255,0.07)';this.style.color='#fff'}"
+        onmouseout="if(!this.dataset.active){this.style.background='transparent';this.style.color='rgba(255,255,255,0.72)'}"
+        \${isActive ? 'data-active="1"' : ""}
       >
+        <i class="ti \${item.icon}" style="font-size:17px;flex-shrink:0;"></i>
         \${item.label}
       </div>
     \`;
@@ -62,11 +63,28 @@ function sidebar(active = "", role = "__USER_ROLE__") {
 
   document.getElementById("sidebarContent").innerHTML = \`
     <div>
-      <h2 style="
-        margin:0 0 28px 0;
-        text-align:center;
-        font-size:24px;
-      ">\${sidebarTitle}</h2>
+      <div style="
+        font-family:'Fraunces',Georgia,serif;
+        font-size:21px;
+        font-weight:600;
+        color:#fff;
+        letter-spacing:-0.01em;
+        display:flex;
+        align-items:center;
+        gap:8px;
+        margin-bottom:32px;
+        padding:0 4px;
+      ">
+        <span style="
+          width:10px;
+          height:10px;
+          border-radius:3px;
+          background:#e0633a;
+          display:inline-block;
+          flex-shrink:0;
+        "></span>
+        Wizdm.io
+      </div>
       \${itemsHtml}
     </div>
 
@@ -74,15 +92,20 @@ function sidebar(active = "", role = "__USER_ROLE__") {
       <div
         id="sidebarLogoutButton"
         style="
-          padding:12px 12px;
+          padding:10px 14px;
           border-radius:10px;
           cursor:pointer;
-          color:#f87171;
-          font-size:15px;
+          color:rgba(248,113,113,0.85);
+          font-size:14px;
+          display:flex;
+          align-items:center;
+          gap:10px;
+          transition:background .15s,color .15s;
         "
-        onmouseover="this.style.background='#7f1d1d';this.style.color='white'"
-        onmouseout="this.style.background='transparent';this.style.color='#f87171'"
+        onmouseover="this.style.background='rgba(127,29,29,0.4)';this.style.color='#fca5a5'"
+        onmouseout="this.style.background='transparent';this.style.color='rgba(248,113,113,0.85)'"
       >
+        <i class="ti ti-logout" style="font-size:17px;flex-shrink:0;"></i>
         Logout
       </div>
     </div>
@@ -101,10 +124,7 @@ function sidebar(active = "", role = "__USER_ROLE__") {
         window.logout();
         return;
       }
-
-      fetch("/logout", {
-        method: "POST"
-      }).finally(() => {
+      fetch("/logout", { method: "POST" }).finally(() => {
         localStorage.clear();
         window.location.replace("/");
       });
@@ -118,14 +138,14 @@ function sidebar(active = "", role = "__USER_ROLE__") {
 <div
   id="sidebarContent"
   style="
-    width:150px;
-    min-width:150px;
-    max-width:150px;
-    flex:0 0 150px;
+    width:210px;
+    min-width:210px;
+    max-width:210px;
+    flex:0 0 210px;
     box-sizing:border-box;
-    background:#1e293b;
+    background:#11161d;
     color:white;
-    padding:20px 12px;
+    padding:24px 14px;
     display:flex;
     flex-direction:column;
     justify-content:space-between;

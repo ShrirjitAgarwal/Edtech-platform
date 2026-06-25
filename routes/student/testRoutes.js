@@ -194,10 +194,13 @@ return `
         "></div>
       </div>
     </div>
-    <div style="
+    <div class="editor-area-wrapper" data-question-id="${qid}" style="
       display:flex;
-      min-height:360px;
+      height:360px;
+      min-height:180px;
       background:#020617;
+      resize:vertical;
+      overflow:hidden;
     ">
       <div
         id="cm-${qid}"
@@ -207,8 +210,7 @@ return `
           display:none;
           flex:1;
           width:100%;
-          min-height:360px;
-          height:360px;
+          height:100%;
         "
       ></div>
       <textarea
@@ -222,8 +224,7 @@ return `
         data-line-numbers="line-numbers-${qid}"
         style="
           flex:1;
-          min-height:360px;
-          height:360px;
+          height:100%;
           font-family:Consolas, Monaco, 'Courier New', monospace;
           font-size:14px;
           background:#020617;
@@ -231,7 +232,6 @@ return `
           padding:14px;
           border:none;
           outline:none;
-          resize:vertical;
           box-sizing:border-box;
           line-height:1.6;
           tab-size:2;
@@ -248,11 +248,11 @@ return `
         background:#0f172a;
         border-top:1px solid #1e293b;
         padding:14px;
-        color:#e2e8f0;
+        color:#94a3b8;
         font-family:Consolas, Monaco, monospace;
         font-size:13px;
         min-height:110px;
-        white-space:pre-wrap;
+        overflow-y:auto;
       "
     >Run code to see output...</div>
   </div>
@@ -652,6 +652,60 @@ Click to Start
   </main>
 </div>
 <script>
+function escapeOutput(s){
+  return String(s==null?"":s)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+function renderTestResults(data){
+  const results = Array.isArray(data.testResults) ? data.testResults : [];
+  if(!results.length){
+    return '<span style="color:#94a3b8">' + escapeOutput(data.output||"No output") + '</span>';
+  }
+  let html = '';
+  results.forEach(function(r,i){
+    const pass = !!r.passed;
+    const hidden = !!r.isHidden;
+    const border = pass ? '#166534' : '#7f1d1d';
+    const bg = pass ? 'rgba(34,197,94,0.07)' : 'rgba(239,68,68,0.07)';
+    const badgeColor = pass ? '#22c55e' : '#ef4444';
+    const badgeBg = pass ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.18)';
+    html += '<div style="margin-bottom:10px;padding:10px 12px;border-radius:8px;border:1px solid '+border+';background:'+bg+'">';
+    html += '<div style="display:flex;align-items:center;gap:8px'+(hidden?'':';margin-bottom:8px')+'">';
+    html += '<span style="font-size:12px;font-weight:700;color:#cbd5e1">Test '+(i+1)+(hidden?' (Hidden)':'')+'</span>';
+    html += '<span style="padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700;background:'+badgeBg+';color:'+badgeColor+'">'+(pass?'PASS':'FAIL')+'</span>';
+    html += '</div>';
+    if(!hidden){
+      html += '<div style="font-size:12px;line-height:1.7;font-family:Consolas,monospace">';
+      html += '<span style="color:#64748b">Input: </span><span style="color:#e2e8f0">'+escapeOutput(r.input||'')+'</span><br>';
+      html += '<span style="color:#64748b">Expected: </span><span style="color:#e2e8f0">'+escapeOutput(r.expectedOutput||'')+'</span><br>';
+      if(r.error){
+        html += '<span style="color:#64748b">Error: </span><span style="color:#fca5a5">'+escapeOutput(r.error)+'</span>';
+      } else {
+        const recColor = pass ? '#86efac' : '#fca5a5';
+        html += '<span style="color:#64748b">Received: </span><span style="color:'+recColor+'">'+escapeOutput(String(r.actualOutput??''))+'</span>';
+      }
+      html += '</div>';
+      if(Array.isArray(r.logs) && r.logs.length){
+        html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #1e293b">';
+        html += '<div style="font-size:11px;color:#64748b;margin-bottom:3px">Console output:</div>';
+        r.logs.forEach(function(line){
+          html += '<div style="font-size:12px;color:#fbbf24;font-family:Consolas,monospace">'+escapeOutput(line)+'</div>';
+        });
+        html += '</div>';
+      }
+    }
+    html += '</div>';
+  });
+  const count = data.passedCount||0;
+  const total = data.total||results.length;
+  const allPass = !!data.passed;
+  const summaryColor = allPass ? '#22c55e' : '#f59e0b';
+  html += '<div style="font-size:13px;font-weight:700;color:'+summaryColor+';margin-top:4px">'+count+' / '+total+' test cases passed</div>';
+  return html;
+}
 const qs = ${safeJsonForScript(testQuestions)};
 window.__testQuestions = qs;
 const questionTimersEnabled = ${test.questionTimersEnabled ? "true" : "false"};
@@ -715,7 +769,7 @@ window.runCode = async function(qid){
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, 5000);
+  }, 20000);
   try {
     const res = await fetch("/api/code/run", {
       method:"POST",
@@ -740,17 +794,17 @@ window.runCode = async function(qid){
     clearTimeout(timeoutId);
     const data = await res.json();
     if(data.error){
-      outputBox.textContent = "Error:\\n\\n" + data.error;
+      outputBox.innerHTML = '<span style="color:#fca5a5">Error: ' + escapeOutput(data.error) + '</span>';
     } else {
-      outputBox.textContent = data.output || "No output";
+      outputBox.innerHTML = renderTestResults(data);
     }
   } catch(err){
     clearTimeout(timeoutId);
     if(err.name === "AbortError"){
-      outputBox.textContent =
-        "Execution timed out. Check for infinite loops or server /run-code issue.";
+      outputBox.innerHTML =
+        '<span style="color:#fca5a5">Request timed out — the server is still busy. Check for infinite loops in your code, then try again.</span>';
     } else {
-      outputBox.textContent = "Execution failed";
+      outputBox.innerHTML = '<span style="color:#fca5a5">Execution failed. Please try again.</span>';
     }
   }
   if(runBtn){
@@ -1284,7 +1338,7 @@ const savedLanguage = question?.codingMeta?.language || "javascript";
       savedLanguage === "python" ? python() : javascript(),
       EditorView.theme({
         "&": {
-          height: "360px",
+          height: "100%",
           backgroundColor: "#020617",
           color: "#e2e8f0",
           fontSize: "14px"
@@ -1348,8 +1402,15 @@ const savedLanguage = question?.codingMeta?.language || "javascript";
   host.style.display = "block";
   host.style.flex = "1";
   host.style.width = "100%";
+  host.style.height = "100%";
   if(textarea){
     textarea.style.display = "none";
+  }
+  const wrapper = host.closest(".editor-area-wrapper");
+  if(wrapper && typeof ResizeObserver !== "undefined"){
+    new ResizeObserver(function(){
+      editor.requestMeasure();
+    }).observe(wrapper);
   }
   const languageBadge = document.querySelector(
     '.language-badge[data-question-id="' + questionId + '"]'

@@ -431,15 +431,47 @@ if(!pageUser || pageUser.role !== "teacher"){
       "
         >${escapeHtml(editQuestion?.codingMeta?.starterCode || "")}</textarea>
             <h3 style="margin-top:20px;">Test Cases</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <input id="testInput1" value="${escapeAttribute(editQuestion?.testCases?.[0]?.input || "")}" placeholder="Test Case 1 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput1" value="${escapeAttribute(editQuestion?.testCases?.[0]?.expectedOutput || "")}" placeholder="Test Case 1 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testInput2" value="${escapeAttribute(editQuestion?.testCases?.[1]?.input || "")}" placeholder="Test Case 2 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput2" value="${escapeAttribute(editQuestion?.testCases?.[1]?.expectedOutput || "")}" placeholder="Test Case 2 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testInput3" value="${escapeAttribute(editQuestion?.testCases?.[2]?.input || "")}" placeholder="Test Case 3 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput3" value="${escapeAttribute(editQuestion?.testCases?.[2]?.expectedOutput || "")}" placeholder="Test Case 3 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testInput4" value="${escapeAttribute(editQuestion?.testCases?.[3]?.input || "")}" placeholder="Test Case 4 Input" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
-      <input id="testOutput4" value="${escapeAttribute(editQuestion?.testCases?.[3]?.expectedOutput || "")}" placeholder="Test Case 4 Expected Output" style="padding:12px;border-radius:8px;border:1px solid #cbd5e1;">
+    <p style="font-size:13px;color:#64748b;margin:6px 0 14px 0;line-height:1.6;">
+      Input format: comma-separated argument values matching your function's parameters.<br>
+      Single number: <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">5</code> &nbsp;
+      Two numbers: <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">3, 7</code> &nbsp;
+      String: <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">"hello"</code> &nbsp;
+      Array: <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px">[1, 2, 3]</code><br>
+      Use the <b>Hidden</b> checkbox to control which tests students can see. Hidden tests still count toward the score.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;font-weight:600;color:#64748b;min-width:52px;">Test 1</span>
+        <input id="testInput1" value="${escapeAttribute(editQuestion?.testCases?.[0]?.input || "")}" placeholder="Input" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <input id="testOutput1" value="${escapeAttribute(editQuestion?.testCases?.[0]?.expectedOutput || "")}" placeholder="Expected Output" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:#64748b;cursor:pointer;white-space:nowrap;user-select:none;">
+          <input type="checkbox" id="testHidden1" ${editQuestion?.testCases?.[0]?.isHidden ? "checked" : ""}> Hidden
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;font-weight:600;color:#64748b;min-width:52px;">Test 2</span>
+        <input id="testInput2" value="${escapeAttribute(editQuestion?.testCases?.[1]?.input || "")}" placeholder="Input" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <input id="testOutput2" value="${escapeAttribute(editQuestion?.testCases?.[1]?.expectedOutput || "")}" placeholder="Expected Output" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:#64748b;cursor:pointer;white-space:nowrap;user-select:none;">
+          <input type="checkbox" id="testHidden2" ${editQuestion?.testCases?.[1]?.isHidden ? "checked" : ""}> Hidden
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;font-weight:600;color:#64748b;min-width:52px;">Test 3</span>
+        <input id="testInput3" value="${escapeAttribute(editQuestion?.testCases?.[2]?.input || "")}" placeholder="Input" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <input id="testOutput3" value="${escapeAttribute(editQuestion?.testCases?.[2]?.expectedOutput || "")}" placeholder="Expected Output" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:#64748b;cursor:pointer;white-space:nowrap;user-select:none;">
+          <input type="checkbox" id="testHidden3" ${(editQuestion?.testCases?.[2]?.isHidden !== false) ? "checked" : ""}> Hidden
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;font-weight:600;color:#64748b;min-width:52px;">Test 4</span>
+        <input id="testInput4" value="${escapeAttribute(editQuestion?.testCases?.[3]?.input || "")}" placeholder="Input" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <input id="testOutput4" value="${escapeAttribute(editQuestion?.testCases?.[3]?.expectedOutput || "")}" placeholder="Expected Output" style="flex:1;padding:12px;border-radius:8px;border:1px solid #cbd5e1;box-sizing:border-box;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:#64748b;cursor:pointer;white-space:nowrap;user-select:none;">
+          <input type="checkbox" id="testHidden4" ${(editQuestion?.testCases?.[3]?.isHidden !== false) ? "checked" : ""}> Hidden
+        </label>
+      </div>
     </div>
   </div>
   <button id="saveQuestionButton" style="
@@ -648,7 +680,7 @@ function saveQuestion(){
     payload.testCases = [1, 2, 3, 4].map(i => ({
       input: document.getElementById("testInput" + i).value.trim(),
       expectedOutput: document.getElementById("testOutput" + i).value.trim(),
-      isHidden: i > 2
+      isHidden: !!document.getElementById("testHidden" + i)?.checked
     })).filter(tc => tc.input || tc.expectedOutput);
     if(!payload.codingMeta.functionName){
       return alert("Function name required");

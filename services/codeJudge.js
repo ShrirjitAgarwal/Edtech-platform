@@ -217,13 +217,15 @@ async function judgeSubmission({
     let actualOutput = "";
     let expectedOutput = normalizeOutput(tc.expectedOutput);
     let executionError = null;
+    let consoleLogs = [];
     try {
-      const result = await executeCode({
+      const { result, logs } = await executeCode({
         language: safeLanguage,
         code: safeCode,
         functionName: safeFunctionName,
         args
       });
+      consoleLogs = Array.isArray(logs) ? logs : [];
       actualOutput = normalizeOutput(result);
       passed = valuesEqual(
         actualOutput,
@@ -234,6 +236,7 @@ async function judgeSubmission({
       }
     } catch (err) {
       executionError = err.message;
+      consoleLogs = Array.isArray(err.logs) ? err.logs : [];
     }
     testResults.push({
       index,
@@ -242,7 +245,9 @@ async function judgeSubmission({
       normalizedExpectedOutput: expectedOutput,
       actualOutput,
       passed,
-      error: executionError
+      error: executionError,
+      logs: consoleLogs,
+      isHidden: !!tc.isHidden
     });
   }
   return {

@@ -77,8 +77,10 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.style.cursor = "pointer";
     option.style.fontSize = "13px";
     option.style.boxSizing = "border-box";
+    option.style.fontFamily = "'Inter',sans-serif";
+    option.style.color = "#11161d";
     option.onmouseenter = function(){
-      option.style.background = "#eef2ff";
+      option.style.background = "#fbeee7";
     };
     option.onmouseleave = function(){
       option.style.background = "white";
@@ -157,22 +159,25 @@ fetch("/api/teacher-dashboard-data")
         data-test-id="\${escapeClientHtml(t._id)}"
         style="
           padding:12px 0;
-          border-bottom:1px solid #e5e7eb;
+          border-bottom:1px solid rgba(17,22,29,0.08);
           cursor:pointer;
+          transition:opacity .15s;
         "
+        onmouseover="this.style.opacity='0.75'"
+        onmouseout="this.style.opacity='1'"
       >
-        <div style="font-weight:700;margin-bottom:5px;">
+        <div style="font-weight:600;font-size:14px;color:#11161d;margin-bottom:4px;">
           \${escapeClientHtml(t.name || "Untitled Test")}
         </div>
-        <div style="font-size:13px;color:#64748b;">
-          \${escapeClientHtml(t.subject || "No Subject")} • \${escapeClientHtml(t.className || "No Class")}
+        <div style="font-size:13px;color:#3a4654;">
+          \${escapeClientHtml(t.subject || "No Subject")} &bull; \${escapeClientHtml(t.className || "No Class")}
         </div>
-        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
+        <div style="font-size:12px;color:#94a3b8;margin-top:3px;">
           \${new Date(t.createdAt).toLocaleDateString()}
         </div>
       </div>
     \`).join("")
-    : "<p style='color:#64748b;margin:0;'>No tests created in the last 30 days.</p>";
+    : "<p style='color:#3a4654;margin:12px 0 0;font-size:14px;'>No tests created in the last 30 days.</p>";
   function getTestStats(testId){
     const test = myTests.find(t => String(t._id) === String(testId));
     if(!test){
@@ -221,191 +226,237 @@ fetch("/api/teacher-dashboard-data")
     if(!filteredTests.length){
       return "<p style='color:#64748b;'>No test data found.</p>";
     }
+    const bd = "1px solid rgba(17,22,29,0.08)";
     return \`
       <table style="
         width:100%;
         border-collapse:collapse;
-        background:white;
+        font-size:13.5px;
+        font-family:'Inter',sans-serif;
       ">
-        <tr style="background:#f8fafc;text-align:left;">
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Test</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Class</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Subject</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Avg Score</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Attempts</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Total Students</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Passed</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Failed</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Not Attempted</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Completion</th>
-          <th style="padding:12px;border-bottom:1px solid #e5e7eb;">Created</th>
-        </tr>
+        <thead>
+          <tr style="background:#f6f4ef;text-align:left;">
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;white-space:nowrap;">Test</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Class</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Subject</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Avg Score</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Attempts</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Total Students</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Passed</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Failed</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;white-space:nowrap;">Not Attempted</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Completion</th>
+            <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Created</th>
+          </tr>
+        </thead>
+        <tbody>
         \${filteredTests.map(t => {
           const stats = getTestStats(t._id);
           return \`
-            <tr class="teacher-tests-link" style="cursor:pointer;">
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;font-weight:700;">
+            <tr class="teacher-tests-link" style="cursor:pointer;transition:background .12s;"
+              onmouseover="this.style.background='#fbeee7'"
+              onmouseout="this.style.background='transparent'"
+            >
+              <td style="padding:11px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">
                 \${escapeClientHtml(stats.test.name || "Untitled Test")}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${escapeClientHtml(stats.test.className || "N/A")}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${escapeClientHtml(stats.test.subject || "N/A")}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${stats.avgScore}%
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${stats.attempted}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${stats.totalStudents}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#16a34a;font-weight:700;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#16a34a;font-weight:600;">
                 \${stats.passed}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#dc2626;font-weight:700;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#dc2626;font-weight:600;">
                 \${stats.failed}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${stats.notAttempted}
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${stats.totalStudents ? Math.round((stats.attempted / stats.totalStudents) * 100) : 0}%
               </td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;">
+              <td style="padding:11px 12px;border-bottom:\${bd};color:#3a4654;">
                 \${stats.test.createdAt ? new Date(stats.test.createdAt).toLocaleDateString() : "N/A"}
               </td>
             </tr>
           \`;
         }).join("")}
+        </tbody>
       </table>
     \`;
   }
   document.getElementById("dashboard").innerHTML = \`
-<div style="
+    <div style="
       display:flex;
       justify-content:space-between;
       align-items:flex-start;
       gap:20px;
-      margin-bottom:24px;
+      margin-bottom:28px;
     ">
       <div>
-        <h1 style="margin:0 0 8px 0;font-size:32px;">
+        <h1 style="
+          margin:0 0 6px 0;
+          font-size:30px;
+          font-family:'Fraunces',Georgia,serif;
+          font-weight:600;
+          letter-spacing:-0.02em;
+          color:#11161d;
+          line-height:1.2;
+        ">
           Welcome, \${escapeClientHtml(user.name || "Teacher")}
         </h1>
-        <p style="margin:0;color:#64748b;font-size:16px;">
+        <p style="margin:0;color:#3a4654;font-size:15px;">
           Here is your teaching overview.
         </p>
       </div>
       <button id="createTestButton" style="
-        background:linear-gradient(135deg,#e0633a,#c9542e);
+        background:#e0633a;
         color:white;
         border:none;
-        border-radius:12px;
-        padding:14px 22px;
+        border-radius:10px;
+        padding:12px 20px;
         cursor:pointer;
-        font-size:15px;
-        font-weight:800;
-        box-shadow:0 4px 14px rgba(0,0,0,0.08);
-      ">
+        font-size:14.5px;
+        font-weight:600;
+        font-family:'Inter',sans-serif;
+        transition:background .2s,transform .15s;
+        white-space:nowrap;
+        flex-shrink:0;
+      "
+      onmouseover="this.style.background='#c9542e';this.style.transform='translateY(-1px)'"
+      onmouseout="this.style.background='#e0633a';this.style.transform='none'"
+      >
         + New Test
       </button>
     </div>
-<div style="
+
+    <div style="
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:20px;
-      margin-bottom:28px;
+      margin-bottom:24px;
       align-items:stretch;
     ">
       <div style="
         background:white;
-        height:260px;
-        border-radius:18px;
-        box-shadow:0 4px 14px rgba(0,0,0,0.06);
+        height:264px;
+        border-radius:16px;
+        border:1px solid rgba(17,22,29,0.10);
+        box-shadow:0 4px 24px rgba(17,22,29,0.06);
         padding:22px;
         box-sizing:border-box;
         overflow-y:auto;
       ">
-        <h2 style="margin:0 0 18px 0;font-size:22px;">Teacher Overview</h2>
+        <h2 style="
+          margin:0 0 16px 0;
+          font-size:20px;
+          font-family:'Fraunces',Georgia,serif;
+          font-weight:600;
+          letter-spacing:-0.01em;
+          color:#11161d;
+        ">Teacher Overview</h2>
         <div style="
           display:grid;
           grid-template-columns:repeat(2, minmax(0, 1fr));
-          gap:14px;
+          gap:12px;
         ">
-          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
-            <b style="font-size:26px;">\${totalClassesAssigned}</b><br>
-            <span style="color:#64748b;font-size:14px;">Classes Assigned</span>
+          <div style="background:#fbeee7;padding:14px;border-radius:12px;border:1px solid rgba(224,99,58,0.15);">
+            <div style="font-size:26px;font-weight:700;color:#11161d;line-height:1.1;">\${totalClassesAssigned}</div>
+            <div style="color:#3a4654;font-size:13px;margin-top:3px;">Classes Assigned</div>
           </div>
-          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
-            <b style="font-size:26px;">\${totalStudentsMapped}</b><br>
-            <span style="color:#64748b;font-size:14px;">Students Mapped</span>
+          <div style="background:#fbeee7;padding:14px;border-radius:12px;border:1px solid rgba(224,99,58,0.15);">
+            <div style="font-size:26px;font-weight:700;color:#11161d;line-height:1.1;">\${totalStudentsMapped}</div>
+            <div style="color:#3a4654;font-size:13px;margin-top:3px;">Students Mapped</div>
           </div>
-          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
-            <b style="font-size:26px;">\${totalTestsCreated}</b><br>
-            <span style="color:#64748b;font-size:14px;">Tests Created</span>
+          <div style="background:#fbeee7;padding:14px;border-radius:12px;border:1px solid rgba(224,99,58,0.15);">
+            <div style="font-size:26px;font-weight:700;color:#11161d;line-height:1.1;">\${totalTestsCreated}</div>
+            <div style="color:#3a4654;font-size:13px;margin-top:3px;">Tests Created</div>
           </div>
-          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
-            <b style="font-size:26px;">\${totalTestsCompleted}</b><br>
-            <span style="color:#64748b;font-size:14px;">Tests Completed</span>
+          <div style="background:#fbeee7;padding:14px;border-radius:12px;border:1px solid rgba(224,99,58,0.15);">
+            <div style="font-size:26px;font-weight:700;color:#11161d;line-height:1.1;">\${totalTestsCompleted}</div>
+            <div style="color:#3a4654;font-size:13px;margin-top:3px;">Tests Completed</div>
           </div>
-          <div style="background:#f8fafc;padding:14px;border-radius:14px;border:1px solid #e5e7eb;">
-            <b style="font-size:26px;">\${totalSubjectsMapped}</b><br>
-            <span style="color:#64748b;font-size:14px;">Subjects Mapped</span>
+          <div style="background:#fbeee7;padding:14px;border-radius:12px;border:1px solid rgba(224,99,58,0.15);">
+            <div style="font-size:26px;font-weight:700;color:#11161d;line-height:1.1;">\${totalSubjectsMapped}</div>
+            <div style="color:#3a4654;font-size:13px;margin-top:3px;">Subjects Mapped</div>
           </div>
         </div>
       </div>
-            <div style="
+
+      <div style="
         background:white;
-        height:260px;
-        max-height:260px;
-        border-radius:18px;
-        box-shadow:0 4px 14px rgba(0,0,0,0.06);
+        height:264px;
+        border-radius:16px;
+        border:1px solid rgba(17,22,29,0.10);
+        box-shadow:0 4px 24px rgba(17,22,29,0.06);
         overflow:hidden;
         display:flex;
         flex-direction:column;
       ">
         <div style="
           padding:18px 20px;
-          border-bottom:1px solid #e5e7eb;
+          border-bottom:1px solid rgba(17,22,29,0.08);
           display:flex;
           justify-content:space-between;
           align-items:center;
           flex-shrink:0;
         ">
-          <h2 style="margin:0;font-size:22px;">Previous Tests</h2>
+          <h2 style="
+            margin:0;
+            font-size:20px;
+            font-family:'Fraunces',Georgia,serif;
+            font-weight:600;
+            letter-spacing:-0.01em;
+            color:#11161d;
+          ">Previous Tests</h2>
           <button id="teacherTestsButton" style="
             border:none;
             background:#e0633a;
             color:white;
-            padding:8px 12px;
+            padding:7px 14px;
             border-radius:8px;
             cursor:pointer;
-          ">
+            font-size:13.5px;
+            font-weight:500;
+            font-family:'Inter',sans-serif;
+            transition:background .2s;
+          "
+          onmouseover="this.style.background='#c9542e'"
+          onmouseout="this.style.background='#e0633a'"
+          >
             View All
           </button>
         </div>
-                <div style="
-          padding:10px 20px 18px 20px;
+        <div style="
+          padding:6px 20px 16px 20px;
           overflow-y:auto;
-          overflow-x:hidden;
           flex:1;
-          max-height:180px;
         ">
           \${recentTestsHtml}
         </div>
       </div>
     </div>
+
     <div style="
       background:white;
-      border-radius:18px;
-      padding:20px;
-      box-shadow:0 4px 14px rgba(0,0,0,0.06);
+      border-radius:16px;
+      border:1px solid rgba(17,22,29,0.10);
+      box-shadow:0 4px 24px rgba(17,22,29,0.06);
+      padding:22px;
       margin-bottom:28px;
       height:360px;
-      max-height:360px;
       box-sizing:border-box;
       display:flex;
       flex-direction:column;
@@ -417,14 +468,22 @@ fetch("/api/teacher-dashboard-data")
         align-items:center;
         margin-bottom:18px;
         flex-wrap:wrap;
+        flex-shrink:0;
       ">
         <div>
-          <h2 style="margin:0 0 6px 0;">Test Analytics</h2>
-          <p style="margin:0;color:#64748b;">
+          <h2 style="
+            margin:0 0 4px 0;
+            font-size:20px;
+            font-family:'Fraunces',Georgia,serif;
+            font-weight:600;
+            letter-spacing:-0.01em;
+            color:#11161d;
+          ">Test Analytics</h2>
+          <p style="margin:0;color:#3a4654;font-size:13.5px;">
             Select a test to view performance details.
           </p>
         </div>
-        <div style="position:relative;min-width:260px;">
+        <div style="position:relative;min-width:240px;">
           <button
             id="testFilterButton"
             type="button"
@@ -432,9 +491,9 @@ fetch("/api/teacher-dashboard-data")
             data-dropdown-id="testFilter"
             style="
               width:100%;
-              padding:10px 12px;
+              padding:9px 12px;
               border-radius:10px;
-              border:1px solid #cbd5e1;
+              border:1px solid rgba(17,22,29,0.12);
               background:white;
               cursor:pointer;
               text-align:left;
@@ -442,10 +501,13 @@ fetch("/api/teacher-dashboard-data")
               justify-content:space-between;
               align-items:center;
               box-sizing:border-box;
+              font-family:'Inter',sans-serif;
+              font-size:14px;
+              color:#11161d;
             "
           >
             <span id="testFilterLabel">All Tests</span>
-            <span>▾</span>
+            <span style="color:#3a4654;font-size:12px;">▾</span>
           </button>
           <div
             id="testFilterMenu"
@@ -456,9 +518,9 @@ fetch("/api/teacher-dashboard-data")
               left:0;
               right:0;
               background:white;
-              border:1px solid #cbd5e1;
+              border:1px solid rgba(17,22,29,0.12);
               border-radius:10px;
-              box-shadow:0 8px 24px rgba(15,23,42,0.16);
+              box-shadow:0 8px 24px rgba(17,22,29,0.12);
               max-height:240px;
               overflow-y:auto;
               z-index:120;

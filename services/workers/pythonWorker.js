@@ -16,7 +16,8 @@ if (!policyResult.ok) {
   if (process.send) {
     process.send({
       ok: false,
-      error: policyResult.error
+      error: policyResult.error,
+      logs: []
     });
   }
   return;
@@ -32,6 +33,10 @@ try:
  resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
 except Exception:
  pass
+__logs__ = []
+def __capture_print(*args, **kwargs):
+ sep = kwargs.get('sep', ' ')
+ __logs__.append(sep.join(str(a) for a in args))
 SAFE_BUILTINS = {
  "abs": abs,
  "all": all,
@@ -48,6 +53,7 @@ SAFE_BUILTINS = {
  "max": max,
  "min": min,
  "pow": pow,
+ "print": __capture_print,
  "range": range,
  "round": round,
  "set": set,
@@ -63,23 +69,26 @@ student_globals = {
 exec(${JSON.stringify(code)}, student_globals)
 function_name = "${functionName}"
 if function_name not in student_globals:
-    print(json.dumps({
+    sys.stdout.write(json.dumps({
         "ok": False,
-        "error": "Function not found"
-    }))
+        "error": "Function not found",
+        "logs": __logs__
+    }) + "\\n")
     sys.exit(0)
 try:
     parsed_args = json.loads("""${serializedArgs}""")
     result = student_globals[function_name](*parsed_args)
-    print(json.dumps({
+    sys.stdout.write(json.dumps({
         "ok": True,
-        "result": result
-    }))
+        "result": result,
+        "logs": __logs__
+    }) + "\\n")
 except Exception as err:
-    print(json.dumps({
+    sys.stdout.write(json.dumps({
         "ok": False,
-        "error": str(err)
-    }))
+        "error": str(err),
+        "logs": __logs__
+    }) + "\\n")
 `;
   execFile(
     "python3",
@@ -95,7 +104,8 @@ if (err) {
  ok: false,
  error: err.killed
    ? "Python execution timed out"
-   : "Python execution failed or exceeded memory limit"
+   : "Python execution failed or exceeded memory limit",
+ logs: []
  });
  }
  return;
@@ -111,7 +121,8 @@ if (err) {
         if (process.send) {
           process.send({
             ok: false,
-            error: "Invalid Python output"
+            error: "Invalid Python output",
+            logs: []
           });
         }
       }

@@ -45,6 +45,21 @@ function buildJavaScriptSource({
   args
 }) {
   return `
+const __logs__ = [];
+const __origLog = console.log.bind(console);
+const __origWarn = console.warn.bind(console);
+const __origError = console.error.bind(console);
+function __fmt__(args) {
+  return Array.from(args).map(function(a){
+    if(a===null) return "null";
+    if(a===undefined) return "undefined";
+    if(typeof a==="object"){try{return JSON.stringify(a);}catch(e){return String(a);}}
+    return String(a);
+  }).join(" ");
+}
+console.log = function(){ __logs__.push(__fmt__(arguments)); };
+console.warn = function(){ __logs__.push("[warn] " + __fmt__(arguments)); };
+console.error = function(){ __logs__.push("[error] " + __fmt__(arguments)); };
 ${code}
 (function(){
   const functionName = ${JSON.stringify(functionName)};
@@ -61,20 +76,23 @@ ${code}
       }
     }
     if (typeof targetFunction !== "function") {
-      console.log(JSON.stringify({
+      __origLog("__LOGS__:" + JSON.stringify(__logs__));
+      __origLog("__RESULT__:" + JSON.stringify({
         ok: false,
         error: "Function not found"
       }));
       return;
     }
     const result = targetFunction(...args);
-    console.log(JSON.stringify({
+    __origLog("__LOGS__:" + JSON.stringify(__logs__));
+    __origLog("__RESULT__:" + JSON.stringify({
       ok: true,
       result,
       isUndefined: result === undefined
     }));
   } catch (err) {
-    console.log(JSON.stringify({
+    __origLog("__LOGS__:" + JSON.stringify(__logs__));
+    __origLog("__RESULT__:" + JSON.stringify({
       ok: false,
       error: String(err && err.message ? err.message : err)
     }));
@@ -89,6 +107,11 @@ function buildPythonSource({
 }) {
   return `
 import json
+import sys
+__logs__ = []
+def print(*args, **kwargs):
+    sep = kwargs.get('sep', ' ')
+    __logs__.append(sep.join(str(a) for a in args))
 ${code}
 function_name = ${JSON.stringify(functionName)}
 args = json.loads(${JSON.stringify(JSON.stringify(args || []))})
@@ -103,22 +126,25 @@ try:
         if matched_name:
             target_function = globals().get(matched_name)
     if not callable(target_function):
-        print(json.dumps({
+        sys.__stdout__.write("__LOGS__:" + json.dumps(__logs__) + "\\n")
+        sys.__stdout__.write("__RESULT__:" + json.dumps({
             "ok": False,
             "error": "Function not found"
-        }))
+        }) + "\\n")
     else:
         result = target_function(*args)
-        print(json.dumps({
+        sys.__stdout__.write("__LOGS__:" + json.dumps(__logs__) + "\\n")
+        sys.__stdout__.write("__RESULT__:" + json.dumps({
             "ok": True,
             "result": result,
             "isUndefined": False
-        }))
+        }) + "\\n")
 except Exception as err:
-    print(json.dumps({
+    sys.__stdout__.write("__LOGS__:" + json.dumps(__logs__) + "\\n")
+    sys.__stdout__.write("__RESULT__:" + json.dumps({
         "ok": False,
         "error": str(err)
-    }))
+    }) + "\\n")
 `;
 }
 function buildSource({
@@ -220,6 +246,23 @@ async function getSubmission({
   }
   return response.json();
 }
+function parseSentinelOutput(stdout) {
+  const lines = String(stdout || "").split("\n");
+  let resultLine = null;
+  let logsLine = null;
+  for (const line of lines) {
+    if (line.startsWith("__RESULT__:")) {
+      resultLine = line.slice("__RESULT__:".length);
+    } else if (line.startsWith("__LOGS__:")) {
+      logsLine = line.slice("__LOGS__:".length);
+    }
+  }
+  let logs = [];
+  if (logsLine) {
+    try { logs = JSON.parse(logsLine); } catch(e) { logs = []; }
+  }
+  return { resultLine, logs };
+}
 function parseJudge0Output(submission) {
   const statusId = submission?.status?.id;
   const statusDescription =
@@ -230,31 +273,53 @@ function parseJudge0Output(submission) {
       submission.stderr ||
       submission.message ||
       statusDescription;
-    throw new Error(
+    const err = new Error(
       "Judge0 execution failed: " + String(errorOutput).trim()
     );
+    err.logs = [];
+    throw err;
   }
   const stdout = String(submission.stdout || "").trim();
   if (!stdout) {
-    throw new Error("Judge0 returned empty output");
+    const err = new Error("Judge0 returned empty output");
+    err.logs = [];
+    throw err;
+  }
+  const { resultLine, logs } = parseSentinelOutput(stdout);
+  if (!resultLine) {
+    // Legacy fallback: try parsing whole stdout as JSON
+    let parsed;
+    try {
+      parsed = JSON.parse(stdout);
+    } catch (e) {
+      const err = new Error("Judge0 returned invalid output");
+      err.logs = [];
+      throw err;
+    }
+    if (!parsed.ok) {
+      const err = new Error(parsed.error || "Judge0 code execution failed");
+      err.logs = [];
+      throw err;
+    }
+    return { result: parsed.isUndefined ? undefined : parsed.result, logs: [] };
   }
   let parsed;
   try {
-    parsed = JSON.parse(stdout);
-  } catch (err) {
-    throw new Error(
-      "Judge0 returned invalid JSON output"
-    );
+    parsed = JSON.parse(resultLine);
+  } catch (e) {
+    const err = new Error("Judge0 returned invalid JSON output");
+    err.logs = logs;
+    throw err;
   }
   if (!parsed.ok) {
-    throw new Error(
-      parsed.error || "Judge0 code execution failed"
-    );
+    const err = new Error(parsed.error || "Judge0 code execution failed");
+    err.logs = logs;
+    throw err;
   }
-  if (parsed.isUndefined) {
-    return undefined;
-  }
-  return parsed.result;
+  return {
+    result: parsed.isUndefined ? undefined : parsed.result,
+    logs
+  };
 }
 async function waitForSubmission({
   apiUrl,
@@ -277,7 +342,9 @@ async function waitForSubmission({
     }
     await sleep(EXECUTION_LIMITS.JUDGE0_POLL_INTERVAL_MS);
   }
-  throw new Error("Judge0 execution timed out while polling");
+  const err = new Error("Judge0 execution timed out while polling");
+  err.logs = [];
+  throw err;
 }
 async function runJudge0Code({
   language,

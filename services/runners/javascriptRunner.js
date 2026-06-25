@@ -49,13 +49,11 @@ function runJavaScriptCode({
       clearTimeout(timer);
       child.kill();
       if (message.ok) {
-        resolve(message.result);
+        resolve({ result: message.result, logs: message.logs || [] });
       } else {
-        reject(
-          new Error(
-            message.error || "Execution failed"
-          )
-        );
+        const err = new Error(message.error || "Execution failed");
+        err.logs = message.logs || [];
+        reject(err);
       }
     });
     child.on("error", (err) => {

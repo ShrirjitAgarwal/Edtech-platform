@@ -46,14 +46,11 @@ function runPythonCode({
         clearTimeout(timer);
         child.kill();
         if (message.ok) {
-          resolve(message.result);
+          resolve({ result: message.result, logs: message.logs || [] });
         } else {
-          reject(
-            new Error(
-              message.error ||
-              "Python execution failed"
-            )
-          );
+          const err = new Error(message.error || "Python execution failed");
+          err.logs = message.logs || [];
+          reject(err);
         }
       });
       child.on("error", (err) => {
