@@ -446,7 +446,6 @@ Question.find({
   .dash-table tbody tr:last-child td{border-bottom:none;}
   .dash-table tbody tr:hover td{background:var(--accent-bg);}
   .admin-class-row{cursor:pointer;}
-  #adminPreviousPageButton:hover{background:rgba(17,22,29,0.06)!important;}
   #adminOpenSettingsButton:hover{background:#c9542e!important;transform:translateY(-1px);}
 </style>
 </head>
@@ -474,7 +473,7 @@ if(!user || user.role !== "admin"){
         <p style="margin:0;color:var(--slate);font-size:14px;">${escapeHtml(school?.name || "School")}${school?.code ? " (" + escapeHtml(school.code) + ")" : ""}</p>
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
-        <button id="adminPreviousPageButton" style="padding:10px 18px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;">← Previous Page</button>
+        <button id="adminPreviousPageButton" style="padding:10px 14px;background:#f59e0b;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;">← Previous Page</button>
         <button id="adminOpenSettingsButton" style="padding:10px 18px;background:var(--accent);color:white;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s;">Open Settings</button>
       </div>
     </div>

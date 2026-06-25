@@ -482,7 +482,7 @@ if(!user || user.role !== "admin"){
         <h1 style="font-family:var(--display);font-size:26px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;">Admin Settings</h1>
         <p style="margin-top:3px;color:var(--slate);font-size:14px;">${escapeHtml(school?.name || "School")} &middot; Manage teachers, students, classes, and mappings</p>
       </div>
-      <button id="adminSettingsPreviousPageButton" style="padding:10px 18px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s;" onmouseover="this.style.background='rgba(17,22,29,0.06)'" onmouseout="this.style.background='transparent'">← Previous Page</button>
+      <button id="adminSettingsPreviousPageButton" style="padding:10px 14px;background:#f59e0b;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;">← Previous Page</button>
     </div>
     <div style="flex:1;overflow:hidden;display:grid;grid-template-columns:190px minmax(0,1fr);">
       <div style="background:white;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto;flex-shrink:0;">
