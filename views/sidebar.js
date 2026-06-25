@@ -14,12 +14,7 @@ function sidebar(active = "", role = "__USER_ROLE__") {
     : sidebarIsAdmin
       ? [
           { key: "admin-dashboard", label: "Admin Dashboard", path: "/admin-dashboard", icon: "ti-layout-dashboard" },
-          { key: "admin-settings",  label: "Admin Settings",  path: "/admin-settings",  icon: "ti-settings" },
-          { key: "dashboard",       label: "Teacher Dashboard",path: "/teacher",         icon: "ti-home" },
-          { key: "library",         label: "Library",          path: "/library",         icon: "ti-books" },
-          { key: "tests",           label: "Tests",            path: "/teacher-tests",   icon: "ti-clipboard-list" },
-          { key: "classes",         label: "Classes",          path: "/classes",         icon: "ti-users" },
-          { key: "settings",        label: "Teacher Settings", path: "/teacher-settings",icon: "ti-settings-2" }
+          { key: "admin-settings",  label: "Admin Settings",  path: "/admin-settings",  icon: "ti-settings" }
         ]
       : [
           { key: "dashboard", label: "Dashboard", path: "/teacher",         icon: "ti-layout-dashboard" },

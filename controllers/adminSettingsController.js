@@ -1,4 +1,5 @@
 const { escapeHtml, escapeAttribute, safeJsonForScript } = require("../utils/html");
+const sidebar = require("../views/sidebar");
 exports.adminSettingsPage = async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
@@ -14,8 +15,8 @@ exports.adminSettingsPage = async (req, res) => {
     data-dropdown-id="${escapeAttribute(id)}"
     style="
       width:100%;
-      padding:8px;
-      border:1px solid #cbd5e1;
+      padding:10px 12px;
+      border:1px solid rgba(17,22,29,0.12);
       border-radius:8px;
       background:white;
       cursor:pointer;
@@ -24,10 +25,13 @@ exports.adminSettingsPage = async (req, res) => {
       justify-content:space-between;
       align-items:center;
       box-sizing:border-box;
+      font-family:'Inter',system-ui,sans-serif;
+      font-size:14px;
+      color:#11161d;
     "
   >
     <span id="${escapeAttribute(id)}Label">${escapeHtml(label)}</span>
-    <span>▾</span>
+    <i class="ti ti-chevron-down" style="font-size:13px;color:#3a4654;flex-shrink:0;"></i>
   </button>
   <div
     id="${escapeAttribute(id)}Menu"
@@ -38,9 +42,9 @@ exports.adminSettingsPage = async (req, res) => {
       left:0;
       right:0;
       background:white;
-      border:1px solid #cbd5e1;
+      border:1px solid rgba(17,22,29,0.12);
       border-radius:10px;
-      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      box-shadow:0 8px 24px rgba(17,22,29,0.12);
       max-height:220px;
       overflow-y:auto;
       z-index:9999;
@@ -238,7 +242,7 @@ const teacherRows = teachers.map(t => `
   <td>
     ${
       String(t._id) === String(req.user.id)
-        ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
+        ? `<span style="color:#3a4654;font-weight:500;font-size:13px;">Current User</span>`
         : `
           <button
             class="delete-teacher-button"
@@ -407,7 +411,7 @@ const adminRows = admins.map(a => `
   <td>
     ${
       String(a._id) === String(req.user.id)
-        ? `<span style="color:#64748b;font-weight:600;">Current User</span>`
+        ? `<span style="color:#3a4654;font-weight:500;font-size:13px;">Current User</span>`
         : `
           <button
             class="delete-user-button"
@@ -428,552 +432,223 @@ const adminRows = admins.map(a => `
   </td>
 </tr>
 `).join("");
-    res.send(`
-<body style="margin:0;font-family:Arial;background:#eef2ff;">
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#11161d;
+    --slate:#3a4654;
+    --paper:#f6f4ef;
+    --line:rgba(17,22,29,0.10);
+    --line-soft:rgba(17,22,29,0.08);
+    --accent:#e0633a;
+    --accent-bg:#fbeee7;
+    --accent-border:rgba(224,99,58,0.15);
+    --sans:'Inter',system-ui,sans-serif;
+    --display:'Fraunces',Georgia,serif;
+  }
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none}
+  .dash-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .dash-table th{background:var(--paper);padding:10px 14px;text-align:left;font-weight:600;color:var(--slate);border-bottom:1px solid var(--line-soft);white-space:nowrap;}
+  .dash-table td{padding:10px 14px;border-bottom:1px solid var(--line-soft);color:var(--ink);vertical-align:middle;}
+  .dash-table tbody tr:last-child td{border-bottom:none;}
+  .dash-table tbody tr:hover td{background:var(--accent-bg);}
+  .admin-input{padding:10px 12px;border:1px solid rgba(17,22,29,0.12);border-radius:8px;font-family:var(--sans);font-size:14px;color:var(--ink);background:white;width:100%;box-sizing:border-box;}
+  .admin-input:focus{outline:none;border-color:rgba(224,99,58,0.5);}
+  .panel-card{background:white;border:1px solid var(--line);border-radius:14px;margin-bottom:20px;overflow:auto;}
+  .panel-card-body{padding:20px;}
+  .panel-card-header{padding:14px 20px;border-bottom:1px solid var(--line-soft);}
+</style>
+</head>
+<body>
+<script>
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user || user.role !== "admin"){
+  window.location.replace("/");
+}
+</script>
 <div style="display:flex;height:100vh;overflow:hidden;">
-<aside style="
- width:150px;
- min-width:150px;
- height:100vh;
- background:#1e293b;
- color:white;
- padding:20px 16px;
- box-sizing:border-box;
- display:flex;
- flex-direction:column;
- justify-content:space-between;
- flex-shrink:0;
-">
-    <div>
-      <h2>Admin</h2>
-      <div class="admin-settings-nav-link" data-href="/admin-dashboard" style="padding:12px;border-radius:8px;cursor:pointer;margin-bottom:10px;">
-        Dashboard
+  ${sidebar("admin-settings", "admin")}
+  <div style="flex:1;height:100vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:24px 40px;display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line);background:var(--paper);flex-shrink:0;">
+      <div>
+        <h1 style="font-family:var(--display);font-size:26px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;">Admin Settings</h1>
+        <p style="margin-top:3px;color:var(--slate);font-size:14px;">${escapeHtml(school?.name || "School")} &middot; Manage teachers, students, classes, and mappings</p>
       </div>
-      <div class="admin-settings-nav-link" data-href="/admin-settings" style="padding:12px;border-radius:8px;cursor:pointer;background:#334155;margin-bottom:10px;">
-        Settings
-      </div>
+      <button id="adminSettingsPreviousPageButton" style="padding:10px 18px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s;" onmouseover="this.style.background='rgba(17,22,29,0.06)'" onmouseout="this.style.background='transparent'">← Previous Page</button>
     </div>
-    <div id="adminSettingsLogoutButton" style="padding:12px;border-radius:8px;cursor:pointer;color:#f87171;">
-      Logout
-    </div>
-</aside>
-<div style="
- flex:1;
- height:100vh;
- padding:30px 36px;
- overflow-y:auto;
- overflow-x:hidden;
- box-sizing:border-box;
- background:#eef2ff;
-">
-    <div style="
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:14px;
-  margin-bottom:20px;
-">
-  <h1 style="margin:0;">Admin Settings</h1>
-  <button id="adminSettingsPreviousPageButton" style="
-    padding:12px 16px;
-    background:#f59e0b;
-    color:white;
-    border:none;
-    border-radius:10px;
-    font-weight:800;
-    cursor:pointer;
-  ">
-    ← Previous Page
-  </button>
-</div>
-    <div style="
-      display:grid;
-      grid-template-columns:220px minmax(0, 1fr);
-      gap:20px;
-      align-items:start;
-      width:100%;
-      box-sizing:border-box;
-    ">
-      <div style="
-        background:white;
-        padding:14px;
-        border-radius:16px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.06);
-        position:sticky;
-        top:20px;
-        box-sizing:border-box;
-      ">
-               <button class="adminPanelButton" data-panel="overview" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#334155;color:white;cursor:pointer;text-align:left;font-weight:700;">
-          Overview
-        </button>
-                <button class="adminPanelButton" data-panel="teachers" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-          Teachers
-        </button>
-                <button class="adminPanelButton" data-panel="admins" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-          Admins
-        </button>
-                <button class="adminPanelButton" data-panel="classes" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-          Classes
-        </button>
-                <button class="adminPanelButton" data-panel="subjects" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-  Subjects
-</button>
-                               <button class="adminPanelButton" data-panel="students" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-          Students
-        </button>
-                <button class="adminPanelButton" data-panel="add-students" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-          Add Students
-        </button>
-                <button class="adminPanelButton" data-panel="mappings" style="width:100%;padding:14px 14px;margin-bottom:12px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-          Teacher Mappings
-        </button>
-                <button class="adminPanelButton" data-panel="payments" style="width:100%;padding:14px 14px;border:none;border-radius:8px;background:#f8fafc;color:#0f172a;cursor:pointer;text-align:left;font-weight:700;">
-          Payments
-        </button>
+    <div style="flex:1;overflow:hidden;display:grid;grid-template-columns:190px minmax(0,1fr);">
+      <div style="background:white;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto;flex-shrink:0;">
+        <button class="adminPanelButton" data-panel="overview" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:rgba(224,99,58,0.12);color:#e0633a;cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-layout-dashboard" style="font-size:15px;flex-shrink:0;"></i>Overview</button>
+        <button class="adminPanelButton" data-panel="teachers" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-users" style="font-size:15px;flex-shrink:0;"></i>Teachers</button>
+        <button class="adminPanelButton" data-panel="admins" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-shield-check" style="font-size:15px;flex-shrink:0;"></i>Admins</button>
+        <button class="adminPanelButton" data-panel="classes" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-building" style="font-size:15px;flex-shrink:0;"></i>Classes</button>
+        <button class="adminPanelButton" data-panel="subjects" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-books" style="font-size:15px;flex-shrink:0;"></i>Subjects</button>
+        <button class="adminPanelButton" data-panel="students" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-id-badge" style="font-size:15px;flex-shrink:0;"></i>Students</button>
+        <button class="adminPanelButton" data-panel="add-students" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-user-plus" style="font-size:15px;flex-shrink:0;"></i>Add Students</button>
+        <button class="adminPanelButton" data-panel="mappings" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-arrows-exchange" style="font-size:15px;flex-shrink:0;"></i>Mappings</button>
+        <button class="adminPanelButton" data-panel="payments" style="width:100%;padding:9px 12px;margin-bottom:3px;border:none;border-radius:8px;background:transparent;color:var(--slate);cursor:pointer;text-align:left;font-family:var(--sans);font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;"><i class="ti ti-credit-card" style="font-size:15px;flex-shrink:0;"></i>Payments</button>
       </div>
-      <div style="
-        width:100%;
-        min-width:0;
-        box-sizing:border-box;
-        display:block;
-      ">
-    <div id="panel-overview" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;width:100%;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
-      <h2>School Overview</h2>
-      <p><b>School Name:</b> ${escapeHtml(school?.name || "N/A")}</p>
-      <p><b>School Code:</b> ${escapeHtml(school?.code || req.user.schoolCode || "N/A")}</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:24px;width:100%;">
-        <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${admins.length}</b><br>Admins</div>
-        <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${teachers.length}</b><br>Teachers</div>
-        <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${students.length}</b><br>Students</div>
-        <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${classes.length}</b><br>Classes</div>
-        <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${tests.length}</b><br>Tests</div>
-        <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${results.length}</b><br>Results</div>
-        <div style="background:#f8fafc;padding:22px;border-radius:14px;border:1px solid #e5e7eb;"><b>${mappings.length}</b><br>Mappings</div>
-      </div>
-    </div>
-    <div id="panel-mappings" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
-      <h2>Map Teacher to Class and Subject</h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;">
-        ${customDropdownHtml("mapClassName", "Select Class", "", "180px")}
-        ${customDropdownHtml("mapSubject", "Select Subject", "", "180px")}
-        ${customDropdownHtml("mapTeacherId", "Select Teacher", "", "220px")}
-        <button id="saveMappingButton" style="
-          padding:10px 16px;
-          background:#e0633a;
-          color:white;
-          border:none;
-          border-radius:8px;
-          cursor:pointer;
-          font-weight:700;
-        ">
-          Save
-        </button>
-      </div>
-      <h3 style="margin-top:24px;">Current Mappings</h3>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;">
-<tr>
-  <th>Class</th>
-  <th>Subject</th>
-  <th>Teacher</th>
-  <th>Action</th>
-</tr>
-        ${mappingRows || "<tr><td colspan='4'>No mappings found</td></tr>"}
-      </table>
-    </div>
-        <div id="panel-teachers" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:18px;
-        margin-bottom:20px;
-      ">
-        <div>
-          <h2 style="margin:0 0 6px 0;">Teachers</h2>
-          <p style="margin:0;color:#64748b;">
-            Create teachers and manage teacher accounts for this school.
-          </p>
-        </div>
-      </div>
-      <div style="
-        background:#f8fafc;
-        border:1px solid #e5e7eb;
-        padding:16px;
-        border-radius:12px;
-        margin-bottom:22px;
-      ">
-        <h3 style="margin-top:0;">Create Teacher</h3>
-        <div style="
-          display:grid;
-          grid-template-columns:1fr 1fr 1fr auto;
-          gap:12px;
-          align-items:center;
-        ">
-          <input id="newTeacherName" placeholder="Teacher name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <input id="newTeacherEmail" placeholder="Teacher email" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <input id="newTeacherPassword" placeholder="Temporary password" type="password" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <button class="add-user-role-button" data-role="teacher" data-prefix="newTeacher" style="
-            padding:11px 16px;
-            background:#16a34a;
-            color:white;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:700;
-          ">
-            Add Teacher
-          </button>
-        </div>
-      </div>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
-<tr>
-  <th>Name</th>
-  <th>Email</th>
-  <th>Role</th>
-  <th>Created By</th>
-  <th>Created Date</th>
-  <th>Action</th>
-</tr>
-        ${teacherRows || "<tr><td colspan='6'>No teachers found</td></tr>"}
-      </table>
-    </div>
-            <div id="panel-classes" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:18px;
-        margin-bottom:20px;
-      ">
-        <div>
-          <h2 style="margin:0 0 6px 0;">Classes</h2>
-          <p style="margin:0;color:#64748b;">
-            Create and manage classes for this school.
-          </p>
-        </div>
-      </div>
-      <div style="
-        background:#f8fafc;
-        border:1px solid #e5e7eb;
-        padding:16px;
-        border-radius:12px;
-        margin-bottom:22px;
-      ">
-        <h3 style="margin-top:0;">Create Class</h3>
-        <div style="
-          display:grid;
-          grid-template-columns:1fr auto;
-          gap:12px;
-          align-items:center;
-        ">
-          <input
-            id="newClassName"
-            placeholder="Class name, example C1"
-            style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
-          />
-          <button id="createClassButton" style="
-            padding:11px 16px;
-            background:#16a34a;
-            color:white;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:700;
-          ">
-            Add Class
-          </button>
-        </div>
-      </div>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
-<tr>
-  <th>Class</th>
-  <th>Students</th>
-  <th>Mapped Teachers</th>
-  <th>Mapped Subjects</th>
-  <th>Created Date</th>
-  <th>Action</th>
-</tr>
-        ${classRows || "<tr><td colspan='6'>No classes found</td></tr>"}
-      </table>
-    </div>
-    <div id="panel-subjects" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
-  <div style="
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:18px;
-    margin-bottom:20px;
-  ">
-    <div>
-      <h2 style="margin:0 0 6px 0;">Subjects</h2>
-      <p style="margin:0;color:#64748b;">
-        Create and manage subjects for this school.
-      </p>
-    </div>
-  </div>
-  <div style="
-    background:#f8fafc;
-    border:1px solid #e5e7eb;
-    padding:16px;
-    border-radius:12px;
-    margin-bottom:22px;
-  ">
-    <h3 style="margin-top:0;">Create Subject</h3>
-    <div style="
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:12px;
-      align-items:center;
-    ">
-      <input
-        id="newSubjectName"
-        placeholder="Subject name, example Maths"
-        style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
-      />
-      <button id="createSubjectButton" style="
-        padding:11px 16px;
-        background:#16a34a;
-        color:white;
-        border:none;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:700;
-      ">
-        Add Subject
-      </button>
-    </div>
-  </div>
-  <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
-<tr>
-  <th>Subject</th>
-  <th>Mapped Classes</th>
-  <th>Mapped Teachers</th>
-  <th>Created Date</th>
-  <th>Action</th>
-</tr>
-    ${subjectRows || "<tr><td colspan='5'>No subjects found</td></tr>"}
-  </table>
-</div>
-        <div id="panel-students" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:18px;
-        margin-bottom:20px;
-      ">
-        <div>
-          <h2 style="margin:0 0 6px 0;">Students</h2>
-          <p style="margin:0;color:#64748b;">
-            View students, assign them to classes, map them to teachers, and delete records.
-          </p>
-        </div>
-      </div>
-      <div style="
-        background:#f8fafc;
-        border:1px solid #e5e7eb;
-        padding:16px;
-        border-radius:12px;
-        margin-bottom:18px;
-      ">
-        <div style="
-          display:grid;
-          grid-template-columns:minmax(220px, 1fr) 180px 220px 130px;
-          gap:12px;
-          align-items:center;
-          margin-bottom:12px;
-        ">
-          <input
-            id="studentSearchInput"
-            placeholder="Search name or student ID"
-            style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;"
-          />
-          ${customDropdownHtml("studentFilterClass", "All Classes", "", "180px")}
-          ${customDropdownHtml("studentFilterTeacher", "All Teachers", "", "220px")}
-          <select
-            id="studentPageSize"
-            style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;background:white;"
-          >
-            <option value="10">10 / page</option>
-            <option value="25">25 / page</option>
-            <option value="50">50 / page</option>
-            <option value="100">100 / page</option>
-          </select>
-        </div>
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          gap:12px;
-          flex-wrap:wrap;
-        ">
-          <div id="studentFilteredCount" style="color:#475569;font-weight:700;">
-            Showing ${students.length} students
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <button
-              id="studentPrevPageButton"
-              class="student-page-button"
-              data-page-delta="-1"
-              style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;cursor:pointer;font-weight:700;"
-            >
-              Previous
-            </button>
-            <span id="studentPageInfo" style="color:#475569;font-weight:700;">Page 1</span>
-            <button
-              id="studentNextPageButton"
-              class="student-page-button"
-              data-page-delta="1"
-              style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;cursor:pointer;font-weight:700;"
-            >
-              Next
-            </button>
+      <div style="padding:28px 36px;overflow-y:auto;background:var(--paper);">
+
+        <div id="panel-overview" class="adminPanel" style="display:block;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:4px;">School Overview</h2>
+          <p style="color:var(--slate);font-size:14px;margin-bottom:20px;"><b style="color:var(--ink);">Name:</b> ${escapeHtml(school?.name || "N/A")} &nbsp;&middot;&nbsp; <b style="color:var(--ink);">Code:</b> ${escapeHtml(school?.code || req.user.schoolCode || "N/A")}</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;">
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);padding:18px;border-radius:14px;"><div style="font-size:24px;font-weight:700;color:var(--ink);">${admins.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Admins</div></div>
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);padding:18px;border-radius:14px;"><div style="font-size:24px;font-weight:700;color:var(--ink);">${teachers.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Teachers</div></div>
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);padding:18px;border-radius:14px;"><div style="font-size:24px;font-weight:700;color:var(--ink);">${students.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Students</div></div>
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);padding:18px;border-radius:14px;"><div style="font-size:24px;font-weight:700;color:var(--ink);">${classes.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Classes</div></div>
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);padding:18px;border-radius:14px;"><div style="font-size:24px;font-weight:700;color:var(--ink);">${tests.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Tests</div></div>
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);padding:18px;border-radius:14px;"><div style="font-size:24px;font-weight:700;color:var(--ink);">${results.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Results</div></div>
+            <div style="background:var(--accent-bg);border:1px solid var(--accent-border);padding:18px;border-radius:14px;"><div style="font-size:24px;font-weight:700;color:var(--ink);">${mappings.length}</div><div style="color:var(--slate);font-size:13px;margin-top:2px;">Mappings</div></div>
           </div>
         </div>
-      </div>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
-<thead>
-<tr>
-  <th>Name</th>
-  <th>Student ID</th>
-  <th>Class</th>
-  <th>Current Teacher</th>
-  <th>Assign Class</th>
-  <th>Assign Teacher</th>
-  <th>Action</th>
-</tr>
-</thead>
-<tbody id="studentTableBody">
-        ${studentRows}
-<tr id="studentNoResultsRow" style="display:none;">
-  <td colspan="7">No students found</td>
-</tr>
-</tbody>
-      </table>
-    </div>
-        <div id="panel-admins" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);overflow:auto;">
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:18px;
-        margin-bottom:20px;
-      ">
-        <div>
-          <h2 style="margin:0 0 6px 0;">Admins</h2>
-          <p style="margin:0;color:#64748b;">
-            Create school admins and manage admin accounts for this school.
-          </p>
+
+        <div id="panel-mappings" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:20px;">Teacher Mappings</h2>
+          <div class="panel-card"><div class="panel-card-body">
+            <h3 style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;">Map Teacher to Class and Subject</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+              ${customDropdownHtml("mapClassName", "Select Class", "", "100%")}
+              ${customDropdownHtml("mapSubject", "Select Subject", "", "100%")}
+              ${customDropdownHtml("mapTeacherId", "Select Teacher", "", "100%")}
+              <button id="saveMappingButton" style="padding:10px 16px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Save Mapping</button>
+            </div>
+          </div></div>
+          <div class="panel-card">
+            <div class="panel-card-header"><h3 style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);">Current Mappings</h3></div>
+            <table class="dash-table"><thead><tr><th>Class</th><th>Subject</th><th>Teacher</th><th>Action</th></tr></thead>
+            <tbody>${mappingRows || "<tr><td colspan='4' style='color:var(--slate);padding:16px;'>No mappings found</td></tr>"}</tbody></table>
+          </div>
         </div>
-      </div>
-      <div style="
-        background:#f8fafc;
-        border:1px solid #e5e7eb;
-        padding:16px;
-        border-radius:12px;
-        margin-bottom:22px;
-      ">
-        <h3 style="margin-top:0;">Create Admin</h3>
-        <div style="
-          display:grid;
-          grid-template-columns:1fr 1fr 1fr auto;
-          gap:12px;
-          align-items:center;
-        ">
-          <input id="newAdminName" placeholder="Admin name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <input id="newAdminEmail" placeholder="Admin email" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <input id="newAdminPassword" placeholder="Temporary password" type="password" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />
-          <button class="add-user-role-button" data-role="admin" data-prefix="newAdmin" style="
-            padding:11px 16px;
-            background:#16a34a;
-            color:white;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:700;
-          ">
-            Add Admin
-          </button>
+
+        <div id="panel-teachers" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:4px;">Teachers</h2>
+          <p style="color:var(--slate);font-size:14px;margin-bottom:20px;">Create teachers and manage teacher accounts for this school.</p>
+          <div class="panel-card"><div class="panel-card-body">
+            <h3 style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;">Create Teacher</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+              <input id="newTeacherName" placeholder="Teacher name" class="admin-input" />
+              <input id="newTeacherEmail" placeholder="Teacher email" class="admin-input" />
+              <input id="newTeacherPassword" placeholder="Temporary password" type="password" class="admin-input" />
+              <button class="add-user-role-button" data-role="teacher" data-prefix="newTeacher" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Teacher</button>
+            </div>
+          </div></div>
+          <div class="panel-card">
+            <table class="dash-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created By</th><th>Created Date</th><th>Action</th></tr></thead>
+            <tbody>${teacherRows || "<tr><td colspan='6' style='color:var(--slate);padding:16px;'>No teachers found</td></tr>"}</tbody></table>
+          </div>
         </div>
-      </div>
-      <table border="1" cellpadding="10" style="width:100%;border-collapse:collapse;background:white;">
-<tr>
-  <th>Name</th>
-  <th>Email</th>
-  <th>Role</th>
-  <th>Created By</th>
-  <th>Created Date</th>
-  <th>Action</th>
-</tr>
-        ${adminRows || "<tr><td colspan='6'>No admins found</td></tr>"}
-      </table>
-    </div>
-        <div id="panel-add-students" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:18px;
-        margin-bottom:20px;
-      ">
-        <div>
-          <h2 style="margin:0 0 6px 0;">Add Students</h2>
-          <p style="margin:0;color:#64748b;">
-            Select one class and teacher, then add multiple students in one go.
-          </p>
+
+        <div id="panel-classes" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:4px;">Classes</h2>
+          <p style="color:var(--slate);font-size:14px;margin-bottom:20px;">Create and manage classes for this school.</p>
+          <div class="panel-card"><div class="panel-card-body">
+            <h3 style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;">Create Class</h3>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;">
+              <input id="newClassName" placeholder="Class name, example C1" class="admin-input" />
+              <button id="createClassButton" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Class</button>
+            </div>
+          </div></div>
+          <div class="panel-card">
+            <table class="dash-table"><thead><tr><th>Class</th><th>Students</th><th>Mapped Teachers</th><th>Mapped Subjects</th><th>Created Date</th><th>Action</th></tr></thead>
+            <tbody>${classRows || "<tr><td colspan='6' style='color:var(--slate);padding:16px;'>No classes found</td></tr>"}</tbody></table>
+          </div>
         </div>
-      </div>
-      <div style="
-        background:#f8fafc;
-        border:1px solid #e5e7eb;
-        padding:18px;
-        border-radius:12px;
-        margin-bottom:22px;
-      ">
-        <div style="
-          display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:14px;
-          margin-bottom:18px;
-        ">
-          ${customDropdownHtml("bulkStudentClass", "Select Class", "", "100%")}
-          ${customDropdownHtml("bulkStudentTeacherId", "Select Teacher", "", "100%")}
+
+        <div id="panel-subjects" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:4px;">Subjects</h2>
+          <p style="color:var(--slate);font-size:14px;margin-bottom:20px;">Create and manage subjects for this school.</p>
+          <div class="panel-card"><div class="panel-card-body">
+            <h3 style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;">Create Subject</h3>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;">
+              <input id="newSubjectName" placeholder="Subject name, example Maths" class="admin-input" />
+              <button id="createSubjectButton" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Subject</button>
+            </div>
+          </div></div>
+          <div class="panel-card">
+            <table class="dash-table"><thead><tr><th>Subject</th><th>Mapped Classes</th><th>Mapped Teachers</th><th>Created Date</th><th>Action</th></tr></thead>
+            <tbody>${subjectRows || "<tr><td colspan='5' style='color:var(--slate);padding:16px;'>No subjects found</td></tr>"}</tbody></table>
+          </div>
         </div>
-        <div id="bulkStudentRows"></div>
-        <div style="
-          display:flex;
-          gap:12px;
-          margin-top:18px;
-        ">
-          <button id="addBulkStudentRowButton" style="
-            padding:11px 16px;
-            background:#334155;
-            color:white;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:700;
-          ">
-            Add Row
-          </button>
-          <button id="saveBulkStudentsButton" style="
-            padding:11px 16px;
-            background:#16a34a;
-            color:white;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:700;
-          ">
-            Save All Students
-          </button>
+
+        <div id="panel-students" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:4px;">Students</h2>
+          <p style="color:var(--slate);font-size:14px;margin-bottom:20px;">View students, assign them to classes, map them to teachers, and delete records.</p>
+          <div class="panel-card"><div class="panel-card-body">
+            <div style="display:grid;grid-template-columns:minmax(180px,1fr) 160px 200px 120px;gap:12px;align-items:center;margin-bottom:12px;">
+              <input id="studentSearchInput" placeholder="Search name or student ID" class="admin-input" />
+              ${customDropdownHtml("studentFilterClass", "All Classes", "", "100%")}
+              ${customDropdownHtml("studentFilterTeacher", "All Teachers", "", "100%")}
+              <select id="studentPageSize" style="padding:10px 12px;border:1px solid rgba(17,22,29,0.12);border-radius:8px;background:white;font-family:var(--sans);font-size:14px;color:var(--ink);width:100%;">
+                <option value="10">10 / page</option><option value="25">25 / page</option><option value="50">50 / page</option><option value="100">100 / page</option>
+              </select>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div id="studentFilteredCount" style="color:var(--slate);font-size:13px;font-weight:500;">Showing ${students.length} students</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <button id="studentPrevPageButton" class="student-page-button" data-page-delta="-1" style="padding:7px 12px;border:1px solid rgba(17,22,29,0.12);border-radius:8px;background:white;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;">Previous</button>
+                <span id="studentPageInfo" style="color:var(--slate);font-size:13px;font-weight:500;">Page 1</span>
+                <button id="studentNextPageButton" class="student-page-button" data-page-delta="1" style="padding:7px 12px;border:1px solid rgba(17,22,29,0.12);border-radius:8px;background:white;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;">Next</button>
+              </div>
+            </div>
+          </div></div>
+          <div class="panel-card">
+            <table class="dash-table"><thead><tr><th>Name</th><th>Student ID</th><th>Class</th><th>Current Teacher</th><th>Assign Class</th><th>Assign Teacher</th><th>Action</th></tr></thead>
+            <tbody id="studentTableBody">
+              ${studentRows}
+              <tr id="studentNoResultsRow" style="display:none;"><td colspan="7" style="color:var(--slate);padding:16px;">No students found</td></tr>
+            </tbody></table>
+          </div>
         </div>
-      </div>
-    </div>
-    <div id="panel-payments" class="adminPanel" style="background:white;padding:32px;border-radius:16px;margin-bottom:20px;display:none;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
-      <h2>Payments and Invoices</h2>
-      <p style="color:#64748b;">Coming later.</p>
-    </div>
+
+        <div id="panel-admins" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:4px;">Admins</h2>
+          <p style="color:var(--slate);font-size:14px;margin-bottom:20px;">Create school admins and manage admin accounts for this school.</p>
+          <div class="panel-card"><div class="panel-card-body">
+            <h3 style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;">Create Admin</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+              <input id="newAdminName" placeholder="Admin name" class="admin-input" />
+              <input id="newAdminEmail" placeholder="Admin email" class="admin-input" />
+              <input id="newAdminPassword" placeholder="Temporary password" type="password" class="admin-input" />
+              <button class="add-user-role-button" data-role="admin" data-prefix="newAdmin" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Admin</button>
+            </div>
+          </div></div>
+          <div class="panel-card">
+            <table class="dash-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created By</th><th>Created Date</th><th>Action</th></tr></thead>
+            <tbody>${adminRows || "<tr><td colspan='6' style='color:var(--slate);padding:16px;'>No admins found</td></tr>"}</tbody></table>
+          </div>
+        </div>
+
+        <div id="panel-add-students" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:4px;">Add Students</h2>
+          <p style="color:var(--slate);font-size:14px;margin-bottom:20px;">Select one class and teacher, then add multiple students in one go.</p>
+          <div class="panel-card"><div class="panel-card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+              ${customDropdownHtml("bulkStudentClass", "Select Class", "", "100%")}
+              ${customDropdownHtml("bulkStudentTeacherId", "Select Teacher", "", "100%")}
+            </div>
+            <div id="bulkStudentRows"></div>
+            <div style="display:flex;gap:12px;margin-top:18px;">
+              <button id="addBulkStudentRowButton" style="padding:10px 16px;background:var(--ink);color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;">Add Row</button>
+              <button id="saveBulkStudentsButton" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;">Save All Students</button>
+            </div>
+          </div></div>
+        </div>
+
+        <div id="panel-payments" class="adminPanel" style="display:none;">
+          <h2 style="font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;margin-bottom:8px;">Payments and Invoices</h2>
+          <p style="color:var(--slate);font-size:14px;">Coming later.</p>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1038,7 +713,7 @@ function setCustomDropdownOptions(inputId, options, onSelect){
     option.style.fontSize = "13px";
     option.style.boxSizing = "border-box";
     option.onmouseenter = function(){
-      option.style.background = "#eef2ff";
+      option.style.background = "#fbeee7";
     };
     option.onmouseleave = function(){
       option.style.background = "white";
@@ -1350,12 +1025,14 @@ function showAdminPanel(panelName, button){
   }
   selectedPanel.style.display = "block";
   document.querySelectorAll(".adminPanelButton").forEach(btn => {
-    btn.style.background = "#f8fafc";
-    btn.style.color = "#0f172a";
+    btn.style.background = "transparent";
+    btn.style.color = "#3a4654";
+    btn.style.fontWeight = "500";
   });
   if(button){
-    button.style.background = "#334155";
-    button.style.color = "white";
+    button.style.background = "rgba(224,99,58,0.12)";
+    button.style.color = "#e0633a";
+    button.style.fontWeight = "600";
   }
 }
 function go(path){
@@ -1562,8 +1239,8 @@ headers:{
   row.style.gap = "12px";
   row.style.marginBottom = "12px";
   row.innerHTML =
-    '<input class="bulkStudentName" placeholder="Student name" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />' +
-    '<input class="bulkStudentId" placeholder="Student ID" style="padding:11px;border:1px solid #cbd5e1;border-radius:8px;" />' +
+    '<input class="bulkStudentName" placeholder="Student name" style="padding:10px 12px;border:1px solid rgba(17,22,29,0.12);border-radius:8px;font-family:var(--sans);font-size:14px;color:var(--ink);background:white;" />' +
+    '<input class="bulkStudentId" placeholder="Student ID" style="padding:10px 12px;border:1px solid rgba(17,22,29,0.12);border-radius:8px;font-family:var(--sans);font-size:14px;color:var(--ink);background:white;" />' +
       '<button class="remove-bulk-student-row-button" style="padding:11px 14px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Remove</button>';
   container.appendChild(row);
 }
@@ -1779,6 +1456,7 @@ function addUserWithRole(role, prefix){
 }
 </script>
 </body>
+</html>
 `);
   } catch (err) {
     console.error("ADMIN SETTINGS ERROR:", err);
