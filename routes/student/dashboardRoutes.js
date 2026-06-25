@@ -191,16 +191,39 @@ ${pageReloadScript()}
 // ======================================================
 // ---------- STUDENT DASHBOARD / TEST LIST ----------
 router.get("/my-tests", requireStudentPageSession, async (req, res) => {
-res.send(`
-<body style="margin:0;font-family:Arial;background:#eef2ff;overflow:hidden;">
+res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#11161d;
+    --slate:#3a4654;
+    --paper:#f6f4ef;
+    --line:rgba(17,22,29,0.10);
+    --line-soft:rgba(17,22,29,0.08);
+    --accent:#e0633a;
+    --accent-bg:#fbeee7;
+    --accent-border:rgba(224,99,58,0.15);
+    --sans:'Inter',system-ui,sans-serif;
+    --display:'Fraunces',Georgia,serif;
+  }
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;overflow:hidden;}
+  a{color:inherit;text-decoration:none}
+</style>
+</head>
+<body>
 <div style="display:flex;height:100vh;">
-     ${sidebar("my-tests", "student")}
-  <!-- CONTENT -->
+  ${sidebar("my-tests", "student")}
   <div style="
     flex:1;
     height:100vh;
-    padding:30px;
-    background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 100%);
+    padding:32px 40px;
+    background:var(--paper);
     overflow-y:auto;
     overflow-x:hidden;
     box-sizing:border-box;
@@ -210,11 +233,11 @@ res.send(`
       justify-content:space-between;
       align-items:flex-start;
       gap:16px;
-      margin-bottom:20px;
+      margin-bottom:28px;
     ">
       <div>
-        <h1 style="margin:0;font-size:30px;color:#0f172a;">Student Dashboard</h1>
-        <p id="studentWelcomeText" style="margin:8px 0 0 0;color:#64748b;font-size:15px;">
+        <h1 style="margin:0;font-family:var(--display);font-size:30px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;">Student Dashboard</h1>
+        <p id="studentWelcomeText" style="margin:6px 0 0 0;color:var(--slate);font-size:15px;">
           Welcome back. Select a subject to view your assigned tests.
         </p>
       </div>
@@ -225,74 +248,72 @@ res.send(`
       display:grid;
       grid-template-columns:repeat(4,minmax(150px,1fr));
       gap:14px;
-      margin-bottom:20px;
+      margin-bottom:24px;
     ">
-      <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 8px 20px rgba(15,23,42,0.06);">
-        <div style="font-size:13px;color:#64748b;font-weight:700;">Assigned Tests</div>
-        <div id="assignedCount" style="font-size:28px;font-weight:800;color:#0f172a;margin-top:8px;">0</div>
+      <div style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:14px;padding:18px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+        <div style="font-size:13px;color:var(--slate);font-weight:500;">Assigned Tests</div>
+        <div id="assignedCount" style="font-size:28px;font-weight:700;color:var(--ink);margin-top:8px;">0</div>
       </div>
-      <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 8px 20px rgba(15,23,42,0.06);">
-        <div style="font-size:13px;color:#64748b;font-weight:700;">Available</div>
-        <div id="availableCount" style="font-size:28px;font-weight:800;color:#16a34a;margin-top:8px;">0</div>
+      <div style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:14px;padding:18px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+        <div style="font-size:13px;color:var(--slate);font-weight:500;">Available</div>
+        <div id="availableCount" style="font-size:28px;font-weight:700;color:#16a34a;margin-top:8px;">0</div>
       </div>
-      <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 8px 20px rgba(15,23,42,0.06);">
-        <div style="font-size:13px;color:#64748b;font-weight:700;">Pending</div>
-        <div id="pendingCount" style="font-size:28px;font-weight:800;color:#ca8a04;margin-top:8px;">0</div>
+      <div style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:14px;padding:18px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+        <div style="font-size:13px;color:var(--slate);font-weight:500;">Pending</div>
+        <div id="pendingCount" style="font-size:28px;font-weight:700;color:#ca8a04;margin-top:8px;">0</div>
       </div>
-      <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 8px 20px rgba(15,23,42,0.06);">
-        <div style="font-size:13px;color:#64748b;font-weight:700;">Completed</div>
-        <div id="completedCount" style="font-size:28px;font-weight:800;color:#e0633a;margin-top:8px;">0</div>
+      <div style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:14px;padding:18px;box-shadow:0 4px 24px rgba(17,22,29,0.06);">
+        <div style="font-size:13px;color:var(--slate);font-weight:500;">Completed</div>
+        <div id="completedCount" style="font-size:28px;font-weight:700;color:var(--accent);margin-top:8px;">0</div>
       </div>
     </div>
 
     <div style="
       background:white;
-      border:1px solid #e2e8f0;
+      border:1px solid var(--line);
       border-radius:16px;
-      padding:20px;
-      box-shadow:0 10px 28px rgba(15,23,42,0.08);
-      margin-bottom:20px;
+      padding:24px;
+      box-shadow:0 4px 24px rgba(17,22,29,0.06);
+      margin-bottom:24px;
     ">
       <div style="
         display:flex;
         justify-content:space-between;
         align-items:center;
         gap:16px;
-        margin-bottom:16px;
+        margin-bottom:20px;
       ">
         <div>
-          <h2 style="margin:0;color:#0f172a;">Assigned Tests</h2>
-          <p style="margin:6px 0 0 0;color:#64748b;font-size:14px;">
+          <h2 style="margin:0;font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Assigned Tests</h2>
+          <p style="margin:4px 0 0 0;color:var(--slate);font-size:14px;">
             View tests assigned to you by your teacher.
           </p>
         </div>
-        <div
-          id="subjectDropdown"
-          style="
-            position:relative;
-            width:280px;
-          "
-        >
+        <div id="subjectDropdown" style="position:relative;width:240px;">
           <button
             id="subjectDropdownButton"
             type="button"
             style="
               width:100%;
-              padding:12px 14px;
-              border:1px solid #cbd5e1;
+              padding:10px 14px;
+              border:1px solid rgba(17,22,29,0.12);
               border-radius:10px;
               background:white;
               cursor:pointer;
               text-align:left;
-              font-weight:700;
+              font-family:var(--sans);
+              font-size:14px;
+              font-weight:500;
+              color:var(--ink);
               display:flex;
               justify-content:space-between;
               align-items:center;
               box-sizing:border-box;
+              transition:border-color .15s;
             "
           >
             <span id="selectedSubjectLabel">Select Subject</span>
-            <span>▾</span>
+            <i class="ti ti-chevron-down" style="font-size:15px;color:var(--slate);"></i>
           </button>
           <div
             id="subjectDropdownMenu"
@@ -303,9 +324,9 @@ res.send(`
               left:0;
               right:0;
               background:white;
-              border:1px solid #cbd5e1;
+              border:1px solid rgba(17,22,29,0.12);
               border-radius:10px;
-              box-shadow:0 8px 24px rgba(15,23,42,0.16);
+              box-shadow:0 8px 24px rgba(17,22,29,0.12);
               max-height:220px;
               overflow-y:auto;
               z-index:50;
@@ -348,27 +369,18 @@ function formatDate(value){
 }
 
 function getStatusLabel(status){
-  if(status === "completed"){
-    return "Completed";
-  }
-  if(status === "pending"){
-    return "Pending";
-  }
+  if(status === "completed") return "Completed";
+  if(status === "pending") return "Pending";
   return "Available";
 }
 
 function getStatusColor(status){
-  if(status === "completed"){
-    return "#e0633a";
-  }
-  if(status === "pending"){
-    return "#ca8a04";
-  }
+  if(status === "completed") return "#e0633a";
+  if(status === "pending") return "#ca8a04";
   return "#16a34a";
 }
 
 const student = JSON.parse(localStorage.getItem("student") || "null");
-// AUTH CHECK
 if (
   !student ||
   !student.studentRecordId ||
@@ -385,7 +397,6 @@ if(studentWelcomeText){
     "Welcome back, " + (student.name || "Student") + ". Select a subject to view your assigned tests.";
 }
 
-// GLOBAL FUNCTIONS
 window.logout = function(){
   localStorage.clear();
   window.location.replace("/");
@@ -395,9 +406,7 @@ window.startTest = function(id){
   if (document.documentElement.requestFullscreen) {
     document.documentElement.requestFullscreen();
   }
-  window.location.href =
-    "/test?id=" +
-    encodeURIComponent(id);
+  window.location.href = "/test?id=" + encodeURIComponent(id);
 };
 
 window.onbeforeunload = function () {
@@ -423,9 +432,9 @@ window.onload = function(){
   function updateSummary(tests){
     const safeTests = Array.isArray(tests) ? tests : [];
     assignedCount.innerText = safeTests.length;
-    availableCount.innerText = safeTests.filter(test => test.studentStatus === "available").length;
-    pendingCount.innerText = safeTests.filter(test => test.studentStatus === "pending").length;
-    completedCount.innerText = safeTests.filter(test => test.studentStatus === "completed").length;
+    availableCount.innerText = safeTests.filter(t => t.studentStatus === "available").length;
+    pendingCount.innerText = safeTests.filter(t => t.studentStatus === "pending").length;
+    completedCount.innerText = safeTests.filter(t => t.studentStatus === "completed").length;
   }
 
   function renderTests(tests){
@@ -434,7 +443,7 @@ window.onload = function(){
 
     if(!tests.length){
       testList.innerHTML =
-        "<div style='padding:22px;border:1px dashed #cbd5e1;border-radius:14px;color:#64748b;background:#f8fafc;'>" +
+        "<div style='padding:22px;border:1px dashed rgba(17,22,29,0.12);border-radius:14px;color:#3a4654;background:#f6f4ef;font-size:14px;'>" +
           "No tests found for this subject." +
         "</div>";
       return;
@@ -444,52 +453,38 @@ window.onload = function(){
       const status = t.studentStatus || "available";
       const canStart = status === "available";
       const card = document.createElement("div");
-      card.style.background = "#f8fafc";
-      card.style.border = "1px solid #e2e8f0";
-      card.style.borderRadius = "14px";
-      card.style.padding = "18px";
-      card.style.margin = "12px 0";
-      card.style.display = "grid";
-      card.style.gridTemplateColumns = "1fr auto";
-      card.style.gap = "16px";
-      card.style.alignItems = "center";
+      card.style.cssText = "background:#f6f4ef;border:1px solid rgba(17,22,29,0.08);border-radius:14px;padding:18px;margin:10px 0;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;transition:border-color .15s;";
+      card.onmouseenter = function(){ this.style.borderColor = "rgba(17,22,29,0.16)"; };
+      card.onmouseleave = function(){ this.style.borderColor = "rgba(17,22,29,0.08)"; };
 
       const details = document.createElement("div");
       details.innerHTML =
         "<div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;'>" +
-          "<h3 style='margin:0;color:#0f172a;'>" + escapeHtml(t.name || "Untitled Test") + "</h3>" +
-          "<span style='background:" + getStatusColor(status) + ";color:white;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;'>" +
+          "<h3 style='margin:0;font-family:\\'Fraunces\\',Georgia,serif;font-size:17px;font-weight:600;color:#11161d;letter-spacing:-0.01em;'>" + escapeHtml(t.name || "Untitled Test") + "</h3>" +
+          "<span style='background:" + getStatusColor(status) + ";color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;'>" +
             escapeHtml(getStatusLabel(status)) +
           "</span>" +
         "</div>" +
-        "<div style='display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:8px;color:#475569;font-size:14px;'>" +
-          "<div><b>Subject:</b> " + escapeHtml(t.subject || "N/A") + "</div>" +
-          "<div><b>Type:</b> " + escapeHtml(t.testType || "practice") + "</div>" +
-          "<div><b>Assigned by:</b> " + escapeHtml(t.assignedBy || "Teacher") + "</div>" +
-          "<div><b>Assigned on:</b> " + escapeHtml(formatDate(t.assignedOn)) + "</div>" +
-          "<div><b>Duration:</b> " + escapeHtml(t.durationMinutes || 60) + " minutes</div>" +
-          "<div><b>Scheduled:</b> " + escapeHtml(t.scheduledAt ? formatDate(t.scheduledAt) : "Available now") + "</div>" +
+        "<div style='display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:6px;color:#3a4654;font-size:13.5px;'>" +
+          "<div><b style='color:#11161d;'>Subject:</b> " + escapeHtml(t.subject || "N/A") + "</div>" +
+          "<div><b style='color:#11161d;'>Type:</b> " + escapeHtml(t.testType || "practice") + "</div>" +
+          "<div><b style='color:#11161d;'>Assigned by:</b> " + escapeHtml(t.assignedBy || "Teacher") + "</div>" +
+          "<div><b style='color:#11161d;'>Assigned on:</b> " + escapeHtml(formatDate(t.assignedOn)) + "</div>" +
+          "<div><b style='color:#11161d;'>Duration:</b> " + escapeHtml(t.durationMinutes || 60) + " minutes</div>" +
+          "<div><b style='color:#11161d;'>Scheduled:</b> " + escapeHtml(t.scheduledAt ? formatDate(t.scheduledAt) : "Available now") + "</div>" +
         "</div>";
 
       const actionWrap = document.createElement("div");
       const btn = document.createElement("button");
-      btn.innerText = canStart
-        ? "Start Test"
-        : status === "completed"
-          ? "Completed"
-          : "Not Yet Available";
+      btn.innerText = canStart ? "Start Test" : status === "completed" ? "Completed" : "Not Yet Available";
       btn.disabled = !canStart;
-      btn.style.padding = "12px 16px";
-      btn.style.border = "none";
-      btn.style.borderRadius = "10px";
-      btn.style.fontWeight = "800";
-      btn.style.cursor = canStart ? "pointer" : "not-allowed";
-      btn.style.background = canStart ? "#e0633a" : "#94a3b8";
-      btn.style.color = "white";
+      btn.style.cssText = "padding:10px 18px;border:none;border-radius:10px;font-family:'Inter',system-ui,sans-serif;font-size:14px;font-weight:600;cursor:" + (canStart ? "pointer" : "not-allowed") + ";background:" + (canStart ? "#e0633a" : "rgba(17,22,29,0.15)") + ";color:" + (canStart ? "white" : "#3a4654") + ";transition:background .15s,transform .1s;";
+      if(canStart){
+        btn.onmouseenter = function(){ this.style.background = "#c9542e"; this.style.transform = "translateY(-1px)"; };
+        btn.onmouseleave = function(){ this.style.background = "#e0633a"; this.style.transform = ""; };
+      }
       btn.addEventListener("click", function(){
-        if(canStart){
-          startTest(t._id);
-        }
+        if(canStart){ startTest(t._id); }
       });
       actionWrap.appendChild(btn);
 
@@ -502,7 +497,7 @@ window.onload = function(){
   function loadTestsForSubject(subject){
     if (!subject) {
       testList.innerHTML =
-        "<div style='padding:22px;border:1px dashed #cbd5e1;border-radius:14px;color:#64748b;background:#f8fafc;'>" +
+        "<div style='padding:22px;border:1px dashed rgba(17,22,29,0.12);border-radius:14px;color:#3a4654;background:#f6f4ef;font-size:14px;'>" +
           "Select a subject to see assigned tests." +
         "</div>";
       updateSummary([]);
@@ -510,12 +505,9 @@ window.onload = function(){
     }
 
     testList.innerHTML =
-      "<div style='padding:22px;color:#64748b;'>Loading tests...</div>";
+      "<div style='padding:22px;color:#3a4654;font-size:14px;'>Loading tests...</div>";
 
-    fetch(
-      "/api/student/tests?subject=" +
-      encodeURIComponent(subject)
-    )
+    fetch("/api/student/tests?subject=" + encodeURIComponent(subject))
       .then(res => {
         if (!res.ok) throw new Error("API error");
         return res.json();
@@ -527,15 +519,13 @@ window.onload = function(){
         console.error("TEST LOAD ERROR:", err);
         updateSummary([]);
         testList.innerHTML =
-          "<p style='color:red;'>Failed to load tests</p>";
+          "<div style='padding:16px;color:#dc2626;font-size:14px;'>Failed to load tests. Please try again.</div>";
       });
   }
 
   window.toggleSubjectDropdown = function(){
     subjectDropdownMenu.style.display =
-      subjectDropdownMenu.style.display === "block"
-        ? "none"
-        : "block";
+      subjectDropdownMenu.style.display === "block" ? "none" : "block";
   };
 
   const subjectDropdownButton = document.getElementById("subjectDropdownButton");
@@ -552,10 +542,7 @@ window.onload = function(){
 
   document.addEventListener("click", function(event){
     const dropdown = document.getElementById("subjectDropdown");
-    if (
-      dropdown &&
-      !dropdown.contains(event.target)
-    ) {
+    if (dropdown && !dropdown.contains(event.target)) {
       subjectDropdownMenu.style.display = "none";
     }
   });
@@ -566,7 +553,7 @@ window.onload = function(){
       subjectDropdownMenu.innerHTML = "";
       if (!subjects.length) {
         subjectDropdownMenu.innerHTML =
-          "<div style='padding:12px;color:#64748b;'>No subjects found</div>";
+          "<div style='padding:12px;color:#3a4654;font-size:14px;'>No subjects found</div>";
         loadTestsForSubject("");
         return;
       }
@@ -574,23 +561,10 @@ window.onload = function(){
         const option = document.createElement("button");
         option.type = "button";
         option.innerText = sub;
-        option.addEventListener("click", function(){
-          selectSubjectOption(sub);
-        });
-        option.style.width = "100%";
-        option.style.padding = "12px 14px";
-        option.style.border = "none";
-        option.style.background = "white";
-        option.style.textAlign = "left";
-        option.style.cursor = "pointer";
-        option.style.fontWeight = "700";
-        option.style.boxSizing = "border-box";
-        option.onmouseenter = function(){
-          option.style.background = "#eef2ff";
-        };
-        option.onmouseleave = function(){
-          option.style.background = "white";
-        };
+        option.addEventListener("click", function(){ selectSubjectOption(sub); });
+        option.style.cssText = "width:100%;padding:10px 14px;border:none;background:white;text-align:left;cursor:pointer;font-family:'Inter',system-ui,sans-serif;font-size:14px;font-weight:500;color:#11161d;box-sizing:border-box;transition:background .12s;";
+        option.onmouseenter = function(){ this.style.background = "#fbeee7"; };
+        option.onmouseleave = function(){ this.style.background = "white"; };
         subjectDropdownMenu.appendChild(option);
       });
 
@@ -599,6 +573,7 @@ window.onload = function(){
 };
 </script>
 </body>
+</html>
 `);
 });
 // ======================================================
