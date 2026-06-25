@@ -288,6 +288,42 @@ Question.find({
     const averageScore = totalMarks > 0
       ? Math.round((totalScore / totalMarks) * 100)
       : 0;
+    const testPerformanceRows = tests.map(test => {
+      const testId = String(test._id);
+      const testAssignments = assignments.filter(a => String(a.testId || "") === testId);
+      const assignedSet = new Set();
+      testAssignments.forEach(assignment => {
+        const cls = assignment.className || assignment.class || "";
+        students.filter(s => String(s.class || "") === cls).forEach(s => assignedSet.add(String(s.studentId)));
+        if (Array.isArray(assignment.studentIds)) assignment.studentIds.forEach(id => assignedSet.add(String(id)));
+        if (assignment.studentId) assignedSet.add(String(assignment.studentId));
+      });
+      const testResults = results.filter(r => String(r.testId || "") === testId);
+      let testTotalScore = 0, testTotalMarks = 0;
+      testResults.forEach(r => {
+        testTotalScore += Number(r.score || 0);
+        testTotalMarks += Number(r.total || 0);
+      });
+      const testAvgScore = testTotalMarks > 0 ? Math.round((testTotalScore / testTotalMarks) * 100) : null;
+      const assigned = assignedSet.size;
+      const attempted = testResults.length;
+      const completion = assigned > 0 ? Math.round((attempted / assigned) * 100) : null;
+      const teacher = teacherById[String(test.teacherId || "")] || null;
+      const teacherName = teacher ? (teacher.name || teacher.email || "—") : "—";
+      const scoreColor = testAvgScore === null ? "var(--slate)" : testAvgScore >= 80 ? "#16a34a" : testAvgScore >= 50 ? "#ca8a04" : "#dc2626";
+      return `
+        <tr>
+          <td style="font-weight:600;">${escapeHtml(test.name || "Untitled")}</td>
+          <td>${escapeHtml(test.className || test.class || "—")}</td>
+          <td>${escapeHtml(test.subject || "—")}</td>
+          <td>${escapeHtml(teacherName)}</td>
+          <td style="text-align:center;">${assigned || "—"}</td>
+          <td style="text-align:center;">${attempted || "—"}</td>
+          <td style="text-align:center;font-weight:600;color:${scoreColor};">${testAvgScore !== null ? testAvgScore + "%" : "—"}</td>
+          <td style="text-align:center;">${completion !== null ? completion + "%" : "—"}</td>
+        </tr>
+      `;
+    }).join("");
     const allSetupDone = admins.length > 0 && teachers.length > 0 && classes.length > 0 && subjects.length > 0 && mappings.length > 0 && students.length > 0 && tests.length > 0;
     const cardData = [
       {
@@ -443,6 +479,25 @@ if(!user || user.role !== "admin"){
       <div style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);overflow-y:auto;max-height:400px;">
         <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Recent Activity</h2>
         ${recentActivityHtml || "<p style='color:var(--slate);font-size:14px;'>No recent activity yet.</p>"}
+      </div>
+    </section>
+
+    <section style="background:white;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(17,22,29,0.06);margin-bottom:24px;">
+      <h2 style="margin:0 0 16px 0;font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;">Test Performance</h2>
+      <div style="overflow-x:auto;max-height:380px;overflow-y:auto;">
+        <table class="dash-table">
+          <thead><tr>
+            <th>Test</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Teacher</th>
+            <th style="text-align:center;">Assigned</th>
+            <th style="text-align:center;">Attempted</th>
+            <th style="text-align:center;">Avg Score</th>
+            <th style="text-align:center;">Completion</th>
+          </tr></thead>
+          <tbody>${testPerformanceRows || "<tr><td colspan='8' style='color:var(--slate);padding:16px;'>No tests found</td></tr>"}</tbody>
+        </table>
       </div>
     </section>
 
