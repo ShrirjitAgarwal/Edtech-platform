@@ -235,7 +235,7 @@ fetch("/api/teacher-dashboard-data")
         font-family:'Inter',sans-serif;
       ">
         <thead>
-          <tr style="background:#f6f4ef;text-align:left;">
+          <tr style="background:#faf9f6;text-align:left;">
             <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;white-space:nowrap;">Test</th>
             <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Class</th>
             <th style="padding:10px 12px;border-bottom:\${bd};font-weight:600;color:#11161d;">Subject</th>

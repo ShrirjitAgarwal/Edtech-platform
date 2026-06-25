@@ -444,7 +444,7 @@ const adminRows = admins.map(a => `
   :root{
     --ink:#11161d;
     --slate:#3a4654;
-    --paper:#f6f4ef;
+    --paper:#faf9f6;
     --line:rgba(17,22,29,0.10);
     --line-soft:rgba(17,22,29,0.08);
     --accent:#e0633a;

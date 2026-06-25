@@ -14,7 +14,7 @@ function layout(content, active = "") {
     --ink:#11161d;
     --ink-soft:#1b232e;
     --slate:#3a4654;
-    --paper:#f6f4ef;
+    --paper:#faf9f6;
     --line-dark:rgba(17,22,29,0.10);
     --accent:#e0633a;
     --sans:'Inter',system-ui,sans-serif;

@@ -61,7 +61,7 @@ exports.loginPage = (req, res) => {
     --ink-soft:#1b232e;
     --slate:#3a4654;
     --mist:#e8eaed;
-    --paper:#f6f4ef;
+    --paper:#faf9f6;
     --line:rgba(255,255,255,0.10);
     --line-dark:rgba(17,22,29,0.10);
     --accent:#e0633a;

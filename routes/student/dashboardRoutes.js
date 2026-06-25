@@ -203,7 +203,7 @@ res.send(`<!DOCTYPE html>
   :root{
     --ink:#11161d;
     --slate:#3a4654;
-    --paper:#f6f4ef;
+    --paper:#faf9f6;
     --line:rgba(17,22,29,0.10);
     --line-soft:rgba(17,22,29,0.08);
     --accent:#e0633a;
@@ -443,7 +443,7 @@ window.onload = function(){
 
     if(!tests.length){
       testList.innerHTML =
-        "<div style='padding:22px;border:1px dashed rgba(17,22,29,0.12);border-radius:14px;color:#3a4654;background:#f6f4ef;font-size:14px;'>" +
+        "<div style='padding:22px;border:1px dashed rgba(17,22,29,0.12);border-radius:14px;color:#3a4654;background:#faf9f6;font-size:14px;'>" +
           "No tests found for this subject." +
         "</div>";
       return;
@@ -453,7 +453,7 @@ window.onload = function(){
       const status = t.studentStatus || "available";
       const canStart = status === "available";
       const card = document.createElement("div");
-      card.style.cssText = "background:#f6f4ef;border:1px solid rgba(17,22,29,0.08);border-radius:14px;padding:18px;margin:10px 0;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;transition:border-color .15s;";
+      card.style.cssText = "background:#faf9f6;border:1px solid rgba(17,22,29,0.08);border-radius:14px;padding:18px;margin:10px 0;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;transition:border-color .15s;";
       card.onmouseenter = function(){ this.style.borderColor = "rgba(17,22,29,0.16)"; };
       card.onmouseleave = function(){ this.style.borderColor = "rgba(17,22,29,0.08)"; };
 
@@ -497,7 +497,7 @@ window.onload = function(){
   function loadTestsForSubject(subject){
     if (!subject) {
       testList.innerHTML =
-        "<div style='padding:22px;border:1px dashed rgba(17,22,29,0.12);border-radius:14px;color:#3a4654;background:#f6f4ef;font-size:14px;'>" +
+        "<div style='padding:22px;border:1px dashed rgba(17,22,29,0.12);border-radius:14px;color:#3a4654;background:#faf9f6;font-size:14px;'>" +
           "Select a subject to see assigned tests." +
         "</div>";
       updateSummary([]);
