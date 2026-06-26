@@ -155,6 +155,7 @@ exports.loginPage = (req, res) => {
           <a href="/#security"><i class="ti ti-shield-check"></i>Security</a>
         </div>
       </div>
+      <a href="/pricing">Pricing</a>
       <a href="/book-demo" class="navbtn-ghost">Book a demo</a>
       <a href="/login" class="navbtn">Login</a>
     </div>
