@@ -78,7 +78,7 @@ function sidebar(active = "", role = "__USER_ROLE__") {
           display:inline-block;
           flex-shrink:0;
         "></span>
-        Wizdm.io
+        Wzdm.in
       </div>
       \${itemsHtml}
     </div>
