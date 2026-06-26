@@ -25,6 +25,9 @@ exports.bookDemo = (req, res) => {
 exports.privacyPolicy = (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "privacy.html"));
 };
+exports.pricingPage = (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "pricing.html"));
+};
 exports.loginPage = (req, res) => {
   const rawRole = String(req.query.role || "").trim().toLowerCase();
   const selectedRole = ["admin", "teacher"].includes(rawRole) ? rawRole : "";
