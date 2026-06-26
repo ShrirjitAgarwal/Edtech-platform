@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /school-dashboard
+Disallow: /teacher
+Disallow: /my-tests
+Disallow: /platform/
+
+Sitemap: https://wzdm.in/sitemap.xml
