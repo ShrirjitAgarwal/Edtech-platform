@@ -141,12 +141,10 @@
 
 <section class="hero">
   <div class="wrap">
-    <p class="eyebrow">Pricing</p>
-    <h1>Priced for the size of your school.<br><span>Not for the size of your budget.</span></h1>
-    <p>We quote each school based on student count — so a 120-student school pays far less than a 900-student one. No flat fees that punish small schools. No per-module charges that inflate the bill.</p>
+    <h1>Every school is different.<br><span>We work with you to find the right fit.</span></h1>
+    <p>Get the most out of the platform with pricing specific to the needs of your school.</p>
     <div class="cta-row">
-      <a href="#quote" class="btn-primary">Get a quote <i class="ti ti-arrow-right"></i></a>
-      <a href="/book-demo" class="btn-outline">See it first — book a demo <i class="ti ti-arrow-right"></i></a>
+      <a href="/book-demo" class="btn-primary">Contact us for more info <i class="ti ti-arrow-right"></i></a>
     </div>
   </div>
 </section>
@@ -156,17 +154,17 @@
     <div class="pill-grid">
       <div class="pillar">
         <div class="ic"><i class="ti ti-users"></i></div>
-        <h3>Based on student count</h3>
+        <h3>The more students you test, the less you pay</h3>
         <p>Your quote reflects the number of students in your school. Nothing else factors into the price.</p>
       </div>
       <div class="pillar">
         <div class="ic"><i class="ti ti-calendar"></i></div>
-        <h3>Annual, one invoice</h3>
+        <h3>Transparent pricing</h3>
         <p>Billed once a year, aligned to your academic calendar. No monthly surprises or renewal hassle.</p>
       </div>
       <div class="pillar">
         <div class="ic"><i class="ti ti-infinity"></i></div>
-        <h3>Everything included</h3>
+        <h3>No hidden costs or charges</h3>
         <p>Every feature, every teacher, every class. No add-ons, no feature tiers, no hidden charges.</p>
       </div>
     </div>
@@ -240,16 +238,7 @@
 
 <section class="quote" id="quote">
   <div class="wrap">
-    <h2>Ready to see what it costs for your school?</h2>
-    <p>Tell us your school name and approximate student count — we'll send a personalised proposal within 24 hours.</p>
-    <form class="quote-form" id="quoteForm">
-      <input type="text" name="school" placeholder="School name" required>
-      <input type="number" name="students" placeholder="Number of students" min="1" required>
-      <button type="submit" class="btn-primary">Get your quote <i class="ti ti-arrow-right"></i></button>
-    </form>
-    <p class="quote-note">Or write directly to <a href="mailto:hello@wzdm.in">hello@wzdm.in</a> — we respond within one business day.</p>
-
-    <div class="trust-strip">
+    <div class="trust-strip" style="margin-top:0;padding-top:0;border-top:none">
       <div class="trust-item"><i class="ti ti-calendar-off"></i> No lock-in contracts</div>
       <div class="trust-item"><i class="ti ti-shield-check"></i> Student data protected</div>
       <div class="trust-item"><i class="ti ti-clock"></i> Setup in days, not weeks</div>
@@ -275,14 +264,6 @@
           <li><a href="/book-demo">Book a demo</a></li>
         </ul>
       </div>
-      <div>
-        <h4>Get in</h4>
-        <ul>
-          <li><a href="/login">School login</a></li>
-          <li><a href="/student-entry">Student entry</a></li>
-          <li><a href="/privacy">Privacy policy</a></li>
-        </ul>
-      </div>
     </div>
     <div class="foot-bottom">
       <span>© 2026 Wzdm.in. All rights reserved.</span>
@@ -291,13 +272,5 @@
   </div>
 </footer>
 
-<script>
-document.getElementById("quoteForm").addEventListener("submit", function(e) {
-  e.preventDefault();
-  const school = this.school.value.trim();
-  const students = this.students.value.trim();
-  window.location.href = "mailto:hello@wzdm.in?subject=Pricing quote request — " + encodeURIComponent(school) + "&body=" + encodeURIComponent("School name: " + school + "\nNumber of students: " + students + "\n\nPlease send us a pricing proposal.");
-});
-</script>
 </body>
 </html>
