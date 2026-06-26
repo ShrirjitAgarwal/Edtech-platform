@@ -102,9 +102,22 @@
   .quote-note{font-size:13.5px;color:var(--slate)}
   .quote-note a{color:var(--accent);font-weight:500}
 
+  .faq{padding:68px 0;border-bottom:1px solid var(--line-dark)}
+  .faq-header{text-align:center;margin-bottom:24px}
+  .faq-header h2{font-family:var(--display);font-size:clamp(22px,3vw,36px);font-weight:600;letter-spacing:-0.015em;margin-bottom:10px}
+  .faq-header p{font-size:15.5px;color:var(--slate)}
+  .faq-list{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+  .faq-item{background:#fff;border:1px solid var(--line-dark);border-radius:13px;overflow:hidden}
+  .faq-q{width:100%;background:none;border:none;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--ink);text-align:left;transition:background .15s}
+  .faq-q:hover{background:#faf4f0}
+  .faq-q i{font-size:18px;color:var(--accent);flex-shrink:0;transition:transform .25s}
+  .faq-item.open .faq-q i{transform:rotate(45deg)}
+  .faq-a{font-size:14.5px;color:var(--slate);line-height:1.7;padding:0 24px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease}
+  .faq-item.open .faq-a{max-height:300px;padding:0 24px 20px}
+
   .trust-strip{display:flex;justify-content:center;gap:36px;flex-wrap:wrap;padding:36px 0 0;border-top:1px solid var(--line-dark);margin-top:52px}
-  .trust-item{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--slate)}
-  .trust-item i{font-size:18px;color:var(--accent)}
+  .trust-item{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:600;color:var(--ink)}
+  .trust-item i{font-size:22px;color:var(--accent)}
 
   footer{background:var(--ink);color:#8b95a2;padding:52px 0 34px;border-top:1px solid var(--line)}
   .foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:38px}
@@ -221,16 +234,52 @@
   </div>
 </section>
 
-<section class="pilot">
+
+<section class="faq">
   <div class="wrap">
-    <div class="pilot-inner">
-      <div class="pilot-text">
-        <div class="pilot-badge"><i class="ti ti-test-pipe" style="font-size:13px"></i> Free 30-day pilot</div>
-        <h2>Not ready to commit?<br>Run a pilot first.</h2>
-        <p>Set up one class with one teacher — no payment, no contract. We configure it, your teachers use it, and you decide if it fits your school before signing anything.</p>
+    <div class="faq-header">
+      <h2>Frequently asked questions</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q">How is pricing calculated? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">Pricing is based on the number of students at your school. We don't charge per teacher, per class, or per feature — just one annual figure tied to your student count. Contact us and we'll put together a proposal specific to your school.</div>
       </div>
-      <div>
-        <a href="mailto:hello@wzdm.in?subject=Free pilot request" class="btn-white">Request a free pilot <i class="ti ti-arrow-right"></i></a>
+      <div class="faq-item">
+        <button class="faq-q">What happens if our student count increases during the year? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">We work with you to find a fair adjustment. If your numbers grow significantly mid-year, we'll agree on a prorated addition. Small fluctuations are not a problem — we won't nickel-and-dime you for a handful of new students.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Are there any setup or onboarding fees? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">No. Onboarding, configuration, and initial training are included in your annual cost. We handle the technical setup so your team can focus on using the platform, not figuring it out.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">How is payment handled? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">We bill annually, aligned to your academic calendar so renewal never catches you off guard. You get a single invoice per year — no monthly charges, no auto-renewals without your confirmation.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Do teachers need separate licenses? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">No. All teachers at your school are included under the same annual cost. There's no per-seat charge for staff. You can add as many teachers as you need without it affecting your invoice.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">What subjects and question types does the platform support? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">The platform supports MCQ tests across any subject, as well as coding tests for computer science classes. Teachers can create their own question banks, set time limits, and assign tests to specific classes or student groups.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">How secure is our student data? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">Each school's data is completely isolated at the server level — your students' information is never mixed with another school's. Access is role-based, so students only see their own results, teachers see their classes, and admins see the full school. We take data privacy seriously and are happy to share our full privacy policy on request.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">How long does it take to get up and running? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">Most schools are fully set up within a few days of signing. We handle the configuration on our end, and all you need to do is provide your student roster and teacher list. Your team can be running their first test within a week.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Is there a lock-in contract? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">No long-term lock-in. We work on an annual basis and you're free to not renew at the end of the year. If something isn't working, we'd rather hear about it and fix it than hold you to a contract.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">We've never used an online assessment platform before — is it complicated to manage? <i class="ti ti-plus"></i></button>
+        <div class="faq-a">No. The platform is built for schools that don't have a dedicated IT team. Teachers can create and assign tests without any technical knowledge, and students just need a link to join. We provide onboarding support and are available to help whenever you need it.</div>
       </div>
     </div>
   </div>
@@ -272,5 +321,15 @@
   </div>
 </footer>
 
+<script>
+document.querySelectorAll(".faq-q").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const item = btn.closest(".faq-item");
+    const isOpen = item.classList.contains("open");
+    document.querySelectorAll(".faq-item.open").forEach(el => el.classList.remove("open"));
+    if (!isOpen) item.classList.add("open");
+  });
+});
+</script>
 </body>
 </html>
