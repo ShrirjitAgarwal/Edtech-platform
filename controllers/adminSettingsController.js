@@ -462,7 +462,7 @@ const adminRows = admins.map(a => `
   .dash-table tbody tr:hover td{background:var(--accent-bg);}
   .admin-input{padding:10px 12px;border:1px solid rgba(17,22,29,0.12);border-radius:8px;font-family:var(--sans);font-size:14px;color:var(--ink);background:white;width:100%;box-sizing:border-box;}
   .admin-input:focus{outline:none;border-color:rgba(224,99,58,0.5);}
-  .panel-card{background:white;border:1px solid var(--line);border-radius:14px;margin-bottom:20px;overflow:auto;}
+  .panel-card{background:white;border:1px solid var(--line);border-radius:14px;margin-bottom:20px;}
   .panel-card-body{padding:20px;}
   .panel-card-header{padding:14px 20px;border-bottom:1px solid var(--line-soft);}
 </style>
@@ -523,7 +523,7 @@ if(!user || user.role !== "admin"){
               <button id="saveMappingButton" style="padding:10px 16px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Save Mapping</button>
             </div>
           </div></div>
-          <div class="panel-card">
+          <div class="panel-card" style="overflow:hidden;">
             <div class="panel-card-header"><h3 style="font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);">Current Mappings</h3></div>
             <table class="dash-table"><thead><tr><th>Class</th><th>Subject</th><th>Teacher</th><th>Action</th></tr></thead>
             <tbody>${mappingRows || "<tr><td colspan='4' style='color:var(--slate);padding:16px;'>No mappings found</td></tr>"}</tbody></table>
@@ -542,7 +542,7 @@ if(!user || user.role !== "admin"){
               <button class="add-user-role-button" data-role="teacher" data-prefix="newTeacher" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Teacher</button>
             </div>
           </div></div>
-          <div class="panel-card">
+          <div class="panel-card" style="overflow:hidden;">
             <table class="dash-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created By</th><th>Created Date</th><th>Action</th></tr></thead>
             <tbody>${teacherRows || "<tr><td colspan='6' style='color:var(--slate);padding:16px;'>No teachers found</td></tr>"}</tbody></table>
           </div>
@@ -558,7 +558,7 @@ if(!user || user.role !== "admin"){
               <button id="createClassButton" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Class</button>
             </div>
           </div></div>
-          <div class="panel-card">
+          <div class="panel-card" style="overflow:hidden;">
             <table class="dash-table"><thead><tr><th>Class</th><th>Students</th><th>Mapped Teachers</th><th>Mapped Subjects</th><th>Created Date</th><th>Action</th></tr></thead>
             <tbody>${classRows || "<tr><td colspan='6' style='color:var(--slate);padding:16px;'>No classes found</td></tr>"}</tbody></table>
           </div>
@@ -574,7 +574,7 @@ if(!user || user.role !== "admin"){
               <button id="createSubjectButton" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Subject</button>
             </div>
           </div></div>
-          <div class="panel-card">
+          <div class="panel-card" style="overflow:hidden;">
             <table class="dash-table"><thead><tr><th>Subject</th><th>Mapped Classes</th><th>Mapped Teachers</th><th>Created Date</th><th>Action</th></tr></thead>
             <tbody>${subjectRows || "<tr><td colspan='5' style='color:var(--slate);padding:16px;'>No subjects found</td></tr>"}</tbody></table>
           </div>
@@ -601,7 +601,7 @@ if(!user || user.role !== "admin"){
               </div>
             </div>
           </div></div>
-          <div class="panel-card">
+          <div class="panel-card" style="overflow:hidden;">
             <table class="dash-table"><thead><tr><th>Name</th><th>Student ID</th><th>Class</th><th>Current Teacher</th><th>Assign Class</th><th>Assign Teacher</th><th>Action</th></tr></thead>
             <tbody id="studentTableBody">
               ${studentRows}
@@ -622,7 +622,7 @@ if(!user || user.role !== "admin"){
               <button class="add-user-role-button" data-role="admin" data-prefix="newAdmin" style="padding:10px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Add Admin</button>
             </div>
           </div></div>
-          <div class="panel-card">
+          <div class="panel-card" style="overflow:hidden;">
             <table class="dash-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created By</th><th>Created Date</th><th>Action</th></tr></thead>
             <tbody>${adminRows || "<tr><td colspan='6' style='color:var(--slate);padding:16px;'>No admins found</td></tr>"}</tbody></table>
           </div>
