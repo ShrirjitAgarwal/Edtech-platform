@@ -728,34 +728,33 @@ optionsContainer.addEventListener("click", function(e){
 });
 }
 function buildQuestionCard(q){
-const sourceLabel =
-q.scope === "teacher"
-? "My Question"
-: "Platform Question";
+const sourceLabel = q.scope === "teacher" ? "My Question" : "Platform";
 const questionId = jsString(q._id);
 const questionText = escapeHtml(safeText(q.question, "Untitled Question"));
 const subjectText = escapeHtml(safeText(q.subject || q.category, "No Subject"));
-const boardText = escapeHtml(safeText(q.board, "Other"));
+const boardText = escapeHtml(safeText(q.board, ""));
 const difficultyText = escapeHtml(
-q.difficulty
-? String(q.difficulty).charAt(0).toUpperCase() + String(q.difficulty).slice(1)
-: "No Difficulty"
+  q.difficulty
+  ? String(q.difficulty).charAt(0).toUpperCase() + String(q.difficulty).slice(1)
+  : "No Difficulty"
 );
-const attempted = Number(q.analytics?.attempted || 0);
-const completed = Number(q.analytics?.correct || 0);
-const incomplete = Number(q.analytics?.incorrect || 0);
+const typeText = q.type === "coding" ? "Coding" : q.type === "written" ? "Written" : "MCQ";
 const tagChips = (q.tags && q.tags.length)
-? "<div style='display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;'>" +
-  q.tags.map(t => "<span style='background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;'>" + escapeHtml(t) + "</span>").join("") +
+? "<div style='display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;'>" +
+  q.tags.map(t => "<span style='background:#e0e7ff;color:#3730a3;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:0.01em;'>" + escapeHtml(t) + "</span>").join("") +
   "</div>"
 : "";
+function badge(label, bg, color){
+  return "<span style='display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:" + bg + ";color:" + color + ";'>" + label + "</span>";
+}
 return "" +
 "<div class='library-question-card' data-question-id=" + questionId + " style='" +
-"background:#f8fafc;" +
-"padding:18px;" +
-"margin:12px 0;" +
-"border-radius:12px;" +
+"background:white;" +
+"padding:16px 18px;" +
+"margin:10px 0;" +
+"border-radius:14px;" +
 "border:1px solid #e5e7eb;" +
+"box-shadow:0 2px 6px rgba(15,23,42,0.05);" +
 "display:flex;" +
 "justify-content:space-between;" +
 "align-items:center;" +
@@ -763,31 +762,29 @@ return "" +
 "cursor:pointer;" +
 "'>" +
 "<div style='min-width:0;flex:1;'>" +
-"<p style='margin:0 0 8px 0;font-weight:600;'>" +
+"<p style='margin:0 0 10px 0;font-weight:700;font-size:14px;line-height:1.4;color:#0f172a;'>" +
 questionText +
 "</p>" +
-"<p style='margin:0;color:#666;font-size:14px;'>" +
-subjectText + " | " +
-boardText + " | " +
-difficultyText + " | " +
-escapeHtml(sourceLabel) +
-"</p>" +
-"<p style='margin:6px 0 0 0;color:#64748b;font-size:13px;'>" +
-"Attempted: " + attempted + " | " +
-"Completed: " + completed + " | " +
-"Incomplete: " + incomplete +
-"</p>" +
+"<div style='display:flex;flex-wrap:wrap;gap:6px;'>" +
+badge(typeText, "#eef2ff", "#3730a3") +
+badge(subjectText, "#ecfdf5", "#166534") +
+(boardText ? badge(boardText, "#f8fafc", "#334155") : "") +
+badge(difficultyText, "#fff7ed", "#9a3412") +
+badge(sourceLabel, "#f1f5f9", "#475569") +
+"</div>" +
 tagChips +
 "</div>" +
 "<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
-"padding:10px 14px;" +
+"padding:9px 14px;" +
 "background:#e0633a;" +
 "color:white;" +
 "border:none;" +
 "border-radius:8px;" +
-"font-weight:600;" +
+"font-weight:700;" +
+"font-size:13px;" +
 "cursor:pointer;" +
 "flex-shrink:0;" +
+"white-space:nowrap;" +
 "'>" +
 "+ Add to Test" +
 "</button>" +
@@ -816,43 +813,63 @@ const questionId = jsString(q._id);
 const difficultyText = q.difficulty
 ? String(q.difficulty).charAt(0).toUpperCase() + String(q.difficulty).slice(1)
 : "N/A";
+function previewBadge(label, bg, color){
+  return "<span style='display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:" + bg + ";color:" + color + ";'>" + label + "</span>";
+}
+const typeText = q.type === "coding" ? "Coding" : q.type === "written" ? "Written" : "MCQ";
 document.getElementById("questionPreview").innerHTML =
-"<h2 style='margin-top:0;'>Question Preview</h2>" +
-"<div style='background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:15px;'>" +
-"<b>Question:</b><br>" +
-"<div style='margin-top:8px;line-height:1.5;'>" + escapeHtml(q.question || "No question text") + "</div>" +
+"<p style='margin:0 0 14px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;'>Question Preview</p>" +
+"<div style='font-weight:700;font-size:15px;line-height:1.5;color:#0f172a;margin-bottom:14px;'>" +
+escapeHtml(q.question || "No question text") +
 "</div>" +
-"<div style='margin-bottom:15px;'>" +
-optionsHtml +
+"<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;'>" +
+previewBadge(typeText, "#eef2ff", "#3730a3") +
+previewBadge(escapeHtml(q.subject || q.category || "N/A"), "#ecfdf5", "#166534") +
+(q.board ? previewBadge(escapeHtml(q.board), "#f8fafc", "#334155") : "") +
+previewBadge(difficultyText, "#fff7ed", "#9a3412") +
+previewBadge(escapeHtml(sourceLabel), "#f1f5f9", "#475569") +
 "</div>" +
-"<div style='background:#ecfdf5;padding:12px;border-radius:10px;margin-bottom:12px;'>" +
-"<b>Correct Answer:</b> " + escapeHtml(q.correct || "N/A") +
-"</div>" +
-"<p><b>Subject:</b> " + escapeHtml(q.subject || q.category || "N/A") + "</p>" +
-"<p><b>Board:</b> " + escapeHtml(q.board || "N/A") + "</p>" +
-"<p><b>Difficulty:</b> " + escapeHtml(difficultyText) + "</p>" +
-"<p><b>Library Type:</b> " + escapeHtml(sourceLabel) + "</p>" +
 (q.tags && q.tags.length
-  ? "<div style='margin-bottom:12px;'><b>Tags:</b><div style='display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;'>" +
-    q.tags.map(t => "<span style='background:#eef2ff;color:#4338ca;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;'>" + escapeHtml(t) + "</span>").join("") +
-    "</div></div>"
-  : "<p style='color:#94a3b8;font-size:13px;'>No tags</p>") +
-"<div style='background:#eef2ff;padding:12px;border-radius:10px;margin-top:12px;'>" +
-"<b>Analytics</b><br>" +
-"Attempted: " + Number(q.analytics?.attempted || 0) + "<br>" +
-"Completed: " + Number(q.analytics?.correct || 0) + "<br>" +
-"Incomplete: " + Number(q.analytics?.incorrect || 0) +
+  ? "<div style='display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;'>" +
+    q.tags.map(t => "<span style='background:#e0e7ff;color:#3730a3;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:0.01em;'>" + escapeHtml(t) + "</span>").join("") +
+    "</div>"
+  : "") +
+(q.options && q.options.length
+  ? "<div style='margin-bottom:12px;'>" +
+    "<p style='margin:0 0 6px 0;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;'>Options</p>" +
+    q.options.map((opt, i) =>
+      "<div style='background:#f8fafc;border:1px solid #e5e7eb;padding:9px 12px;margin:5px 0;border-radius:9px;font-size:13px;color:#1e293b;'>" +
+      "<span style='font-weight:700;color:#64748b;margin-right:8px;'>" + String.fromCharCode(65 + i) + ".</span>" +
+      escapeHtml(opt) +
+      "</div>"
+    ).join("") +
+    "</div>"
+  : "") +
+(q.correct
+  ? "<div style='background:#ecfdf5;border:1px solid #bbf7d0;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;'>" +
+    "<span style='font-weight:700;color:#166534;'>Correct Answer: </span>" +
+    "<span style='color:#15803d;'>" + escapeHtml(q.correct) + "</span>" +
+    "</div>"
+  : "") +
+"<div style='background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:16px;'>" +
+"<p style='margin:0 0 8px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;'>Analytics</p>" +
+"<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;'>" +
+"<div style='text-align:center;'><div style='font-size:18px;font-weight:800;color:#0f172a;'>" + Number(q.analytics?.attempted || 0) + "</div><div style='font-size:11px;color:#64748b;'>Attempted</div></div>" +
+"<div style='text-align:center;'><div style='font-size:18px;font-weight:800;color:#16a34a;'>" + Number(q.analytics?.correct || 0) + "</div><div style='font-size:11px;color:#64748b;'>Correct</div></div>" +
+"<div style='text-align:center;'><div style='font-size:18px;font-weight:800;color:#dc2626;'>" + Number(q.analytics?.incorrect || 0) + "</div><div style='font-size:11px;color:#64748b;'>Incorrect</div></div>" +
 "</div>" +
- "<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
- "margin-top:18px;" +
- "padding:10px 14px;" +
- "background:#e0633a;" +
- "color:white;" +
- "border:none;" +
- "border-radius:8px;" +
- "font-weight:600;" +
- "cursor:pointer;" +
- "'>+ Add to Test</button>";
+"</div>" +
+"<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
+"width:100%;" +
+"padding:11px 14px;" +
+"background:#e0633a;" +
+"color:white;" +
+"border:none;" +
+"border-radius:10px;" +
+"font-weight:700;" +
+"font-size:14px;" +
+"cursor:pointer;" +
+"'>+ Add to Test</button>";
 }
 function renderLibrary(){
 document.getElementById("libraryList").innerHTML =

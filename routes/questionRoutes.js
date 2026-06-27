@@ -1188,13 +1188,20 @@ function renderMyQuestions(){
   }
   list.innerHTML = questions.map(q => {
     const questionId = escapeClientHtml(q._id || "");
+    const typeLabel = q.type === "coding" ? "Coding" : q.type === "written" ? "Written" : "MCQ";
+    const tagChipsHtml = (q.tags && q.tags.length)
+      ? "<div style=\\"display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;\\">" +
+        q.tags.map(t => "<span style=\\"background:#e0e7ff;color:#3730a3;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:0.01em;\\">" + escapeClientHtml(t) + "</span>").join("") +
+        "</div>"
+      : "";
     return "" +
       "<div class=\\"my-question-card\\" data-question-id=\\"" + questionId + "\\" style=\\"" +
-        "background:#f8fafc;" +
-        "padding:16px;" +
-        "border-radius:12px;" +
+        "background:white;" +
+        "padding:16px 18px;" +
+        "border-radius:14px;" +
         "border:1px solid #e5e7eb;" +
-        "margin-bottom:14px;" +
+        "box-shadow:0 2px 6px rgba(15,23,42,0.05);" +
+        "margin-bottom:12px;" +
         "cursor:pointer;" +
         "display:flex;" +
         "justify-content:space-between;" +
@@ -1202,24 +1209,25 @@ function renderMyQuestions(){
         "gap:16px;" +
       "\\">" +
         "<div style=\\"min-width:0;flex:1;\\">" +
-          "<div style=\\"font-weight:700;margin-bottom:8px;line-height:1.4;\\">" +
+          "<div style=\\"font-weight:700;font-size:14px;line-height:1.4;color:#0f172a;margin-bottom:10px;\\">" +
             escapeClientHtml(q.question || "Untitled Question") +
           "</div>" +
-          "<div style=\\"display:flex;gap:8px;flex-wrap:wrap;\\">" +
-            "<span style=\\"background:#e0633a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
+          "<div style=\\"display:flex;gap:6px;flex-wrap:wrap;\\">" +
+            "<span style=\\"display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#eef2ff;color:#3730a3;\\">" +
+              escapeClientHtml(typeLabel) +
+            "</span>" +
+            "<span style=\\"display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#ecfdf5;color:#166534;\\">" +
               escapeClientHtml(toTitleCase(q.subject || "No Subject")) +
             "</span>" +
-            "<span style=\\"background:#0f172a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
-              escapeClientHtml(String(q.type || "mcq").toUpperCase()) +
-            "</span>" +
-            "<span style=\\"background:#16a34a;color:white;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;\\">" +
+            "<span style=\\"display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#fff7ed;color:#9a3412;\\">" +
               escapeClientHtml(toTitleCase(q.difficulty || "easy")) +
             "</span>" +
           "</div>" +
+          tagChipsHtml +
         "</div>" +
-        "<div style=\\"display:flex;gap:10px;flex-shrink:0;align-items:center;\\">" +
-          "<button class=\\"edit-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 12px;background:#e0633a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Edit</button>" +
-          "<button class=\\"delete-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;\\">Delete</button>" +
+        "<div style=\\"display:flex;gap:8px;flex-shrink:0;align-items:center;\\">" +
+          "<button class=\\"edit-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 14px;background:#e0633a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;\\">Edit</button>" +
+          "<button class=\\"delete-question-button\\" data-question-id=\\"" + questionId + "\\" style=\\"padding:8px 14px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;\\">Delete</button>" +
         "</div>" +
       "</div>";
   }).join("");

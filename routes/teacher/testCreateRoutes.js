@@ -463,6 +463,11 @@ function buildQuestionRow(q){
       : type === "written"
       ? "Written"
       : "MCQ";
+  const tagChipsHtml = (q.tags && q.tags.length)
+    ? \`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">\${
+        q.tags.map(t => \`<span style="background:#e0e7ff;color:#3730a3;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:0.01em;">\${escapeHtml(t)}</span>\`).join("")
+      }</div>\`
+    : "";
   return \`
     <label
       class="question-preview-card"
@@ -504,6 +509,7 @@ function buildQuestionRow(q){
             \${getBadge(difficulty, "#fff7ed", "#9a3412")}
             \${getBadge(scope === "teacher" ? "My Question" : "Public", "#f1f5f9", "#475569")}
           </div>
+          \${tagChipsHtml}
         </div>
       </div>
     </label>
