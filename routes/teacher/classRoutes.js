@@ -164,25 +164,23 @@ flex-wrap:wrap;
   </div>
   <input
     id="studentSearch"
-    placeholder="Search student name or ID"
+    placeholder="Search by name or student ID"
     style="
-      padding:10px;
+      padding:10px 12px;
       border-radius:8px;
       border:1px solid #cbd5e1;
-      min-width:280px;
+      min-width:260px;
+      font-size:14px;
     "
   />
-  <button id="classSearchButton" style="
-    padding:10px 14px;
-    background:#e0633a;
-    color:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    font-weight:700;
-  ">
-    Search
-  </button>
+  <div style="display:flex;align-items:center;gap:6px;background:white;border:1px solid #cbd5e1;border-radius:8px;padding:4px 6px;">
+    <span style="font-size:12px;color:#64748b;font-weight:500;white-space:nowrap;padding:0 4px;">Sort by</span>
+    <button id="sortFieldName" class="sort-field-btn" data-field="name" style="padding:5px 10px;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:#3a4654;">Name</button>
+    <button id="sortFieldStudentId" class="sort-field-btn" data-field="studentId" style="padding:5px 10px;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:#3a4654;">Student ID</button>
+    <button id="sortFieldCreatedAt" class="sort-field-btn" data-field="createdAt" style="padding:5px 10px;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:#3a4654;">Date added</button>
+    <div style="width:1px;height:20px;background:#e2e8f0;margin:0 2px;"></div>
+    <button id="sortOrderToggle" style="padding:5px 10px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:#e0633a;min-width:52px;">↑ Asc</button>
+  </div>
   <button id="clearClassFiltersButton" style="
     padding:10px 14px;
     background:#64748b;
@@ -191,8 +189,9 @@ flex-wrap:wrap;
     border-radius:8px;
     cursor:pointer;
     font-weight:700;
+    font-size:13px;
   ">
-    Clear Filters
+    Clear
   </button>
 </div>
 <div id="classContainer"></div>
@@ -287,6 +286,36 @@ let teachersData = [];
 let resultsData = [];
 let paginationData = null;
 let dropdownReady = false;
+let sortField = localStorage.getItem("classesSortField") || "createdAt";
+let sortOrder = localStorage.getItem("classesSortOrder") || "asc";
+let searchDebounceTimer = null;
+
+function applySortUI(){
+  document.querySelectorAll(".sort-field-btn").forEach(function(btn){
+    const isActive = btn.dataset.field === sortField;
+    btn.style.background = isActive ? "#fbeee7" : "transparent";
+    btn.style.color = isActive ? "#e0633a" : "#3a4654";
+    btn.style.fontWeight = isActive ? "600" : "500";
+  });
+  document.getElementById("sortOrderToggle").textContent = sortOrder === "asc" ? "↑ Asc" : "↓ Desc";
+}
+
+document.querySelectorAll(".sort-field-btn").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    sortField = btn.dataset.field;
+    localStorage.setItem("classesSortField", sortField);
+    applySortUI();
+    loadClasses(1);
+  });
+});
+document.getElementById("sortOrderToggle").addEventListener("click", function(){
+  sortOrder = sortOrder === "asc" ? "desc" : "asc";
+  localStorage.setItem("classesSortOrder", sortOrder);
+  applySortUI();
+  loadClasses(1);
+});
+applySortUI();
+
 window.loadClasses = function(page){
   const selectedClass = document.getElementById("classFilter").value || "all";
   const search = document.getElementById("studentSearch").value || "";
@@ -294,7 +323,9 @@ window.loadClasses = function(page){
     studentPage: String(page || 1),
     studentLimit: "100",
     className: selectedClass,
-    search
+    search,
+    sortField,
+    sortOrder
   });
   document.getElementById("classContainer").innerHTML =
     "<p style='color:#64748b;'>Loading classes...</p>";
@@ -630,6 +661,11 @@ window.clearClassFilters = function(){
   document.getElementById("classFilter").value = "all";
   document.getElementById("classFilterLabel").textContent = "All Classes";
   localStorage.setItem("selectedClass", "all");
+  sortField = "createdAt";
+  sortOrder = "asc";
+  localStorage.setItem("classesSortField", sortField);
+  localStorage.setItem("classesSortOrder", sortOrder);
+  applySortUI();
   loadClasses(1);
 };
 document.addEventListener("click", function(event){
@@ -672,14 +708,13 @@ document.addEventListener("click", function(event){
     clearClassFilters();
   }
 });
-const classSearchButton = document.getElementById("classSearchButton");
-if(classSearchButton){
-  classSearchButton.addEventListener("click", function(){
-    loadClasses(1);
-  });
-}
+document.getElementById("studentSearch").addEventListener("input", function(){
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(function(){ loadClasses(1); }, 350);
+});
 document.getElementById("studentSearch").addEventListener("keydown", function(event){
   if(event.key === "Enter"){
+    clearTimeout(searchDebounceTimer);
     loadClasses(1);
   }
 });
@@ -790,6 +825,10 @@ router.get("/api/classes-data", authMiddleware, async (req, res) => {
       .trim()
       .toUpperCase();
     const search = String(req.query.search || "").trim();
+    const validSortFields = { name: 1, studentId: 1, createdAt: 1 };
+    const rawSortField = String(req.query.sortField || "createdAt");
+    const sortField = validSortFields[rawSortField] ? rawSortField : "createdAt";
+    const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
     const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const searchFilter = search
       ? {
@@ -835,8 +874,8 @@ router.get("/api/classes-data", authMiddleware, async (req, res) => {
           : [],
         assignedClassNames.length
           ? Student.find(studentQuery)
-              .select("studentId name class teacherId")
-              .sort({ createdAt: 1 })
+              .select("studentId name class teacherId createdAt")
+              .sort({ [sortField]: sortOrder })
               .skip(studentSkip)
               .limit(studentLimit)
               .lean()
