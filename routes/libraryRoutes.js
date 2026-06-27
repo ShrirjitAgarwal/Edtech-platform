@@ -667,14 +667,29 @@ const optionsContainer = document.getElementById("tagFilterOptions");
 if(!optionsContainer) return;
 function renderTagOptions(query){
   const q = (query || "").trim().toLowerCase();
-  const filtered = [{ value: "all", label: "All" }, ...tags.map(t => ({ value: t, label: t }))].filter(
-    opt => !q || opt.label.toLowerCase().includes(q)
-  );
-  const currentTag = document.getElementById("tagFilter")?.value || "all";
-  optionsContainer.innerHTML = filtered.map(opt => {
+  const allOptions = [{ value: "all", label: "All" }].concat(tags.map(function(t){ return { value: t, label: t }; }));
+  const filtered = allOptions.filter(function(opt){ return !q || opt.label.toLowerCase().indexOf(q) !== -1; });
+  const currentTag = (document.getElementById("tagFilter") || {}).value || "all";
+  optionsContainer.innerHTML = "";
+  if(!filtered.length){
+    const msg = document.createElement("p");
+    msg.style.cssText = "padding:8px 12px;color:#94a3b8;font-size:12px;margin:0;";
+    msg.textContent = "No tags found";
+    optionsContainer.appendChild(msg);
+    return;
+  }
+  filtered.forEach(function(opt){
     const isActive = opt.value === currentTag;
-    return "<button type='button' class='tag-filter-option' data-value='" + opt.value + "' style='width:100%;padding:9px 12px;text-align:left;border:none;background:" + (isActive ? "#eef2ff" : "white") + ";cursor:pointer;font-size:13px;box-sizing:border-box;font-weight:" + (isActive ? "700" : "400") + ";' onmouseenter=\"this.style.background='#eef2ff'\" onmouseleave=\"this.style.background='" + (isActive ? "#eef2ff" : "white") + "'\">" + opt.label + "</button>";
-  }).join("") || "<p style='padding:8px 12px;color:#94a3b8;font-size:12px;margin:0;'>No tags found</p>";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tag-filter-option";
+    btn.dataset.value = opt.value;
+    btn.textContent = opt.label;
+    btn.style.cssText = "width:100%;padding:9px 12px;text-align:left;border:none;background:" + (isActive ? "#eef2ff" : "white") + ";cursor:pointer;font-size:13px;box-sizing:border-box;font-weight:" + (isActive ? "700" : "400") + ";";
+    btn.addEventListener("mouseenter", function(){ this.style.background = "#eef2ff"; });
+    btn.addEventListener("mouseleave", function(){ this.style.background = isActive ? "#eef2ff" : "white"; });
+    optionsContainer.appendChild(btn);
+  });
 }
 renderTagOptions("");
 const tagFilterSearch = document.getElementById("tagFilterSearch");
@@ -689,7 +704,8 @@ optionsContainer.addEventListener("click", function(e){
   const label = document.getElementById("tagFilterLabel");
   if(input) input.value = value;
   if(label) label.textContent = value === "all" ? "All" : value;
-  document.getElementById("tagFilterMenu").style.display = "none";
+  const menu = document.getElementById("tagFilterMenu");
+  if(menu) menu.style.display = "none";
   loadLibrary(1);
 });
 }
