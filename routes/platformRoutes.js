@@ -253,6 +253,13 @@ router.post(
   express.urlencoded({ extended: true }),
   platformSchoolController.createAdminForSchool
 );
+router.post(
+  "/platform/schools/:schoolId/admins/:adminId/update",
+  authMiddleware,
+  platformAdminMiddleware,
+  express.urlencoded({ extended: true }),
+  platformSchoolController.updateAdmin
+);
 router.get(
   "/platform-import",
   authMiddleware,

@@ -645,6 +645,35 @@ exports.listSchoolsPage = async (req, res) => {
                                 ">
                                   <b>${escapeHtml(admin.name)}</b><br>
                                   <span style="color:#64748b;">${escapeHtml(admin.email)}</span>
+                                  <details style="margin-top:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+                                    <summary style="cursor:pointer;font-weight:800;color:#1e293b;font-size:13px;">Edit Admin</summary>
+                                    <form method="POST" action="/platform/schools/${school._id}/admins/${admin._id}/update" style="margin-top:10px;">
+                                      <input
+                                        name="name"
+                                        value="${escapeHtml(admin.name)}"
+                                        required
+                                        placeholder="Name"
+                                        style="width:100%;padding:9px;margin-bottom:8px;border:1px solid #cbd5e1;border-radius:7px;box-sizing:border-box;"
+                                      />
+                                      <input
+                                        name="email"
+                                        type="email"
+                                        value="${escapeHtml(admin.email)}"
+                                        required
+                                        placeholder="Email"
+                                        style="width:100%;padding:9px;margin-bottom:8px;border:1px solid #cbd5e1;border-radius:7px;box-sizing:border-box;"
+                                      />
+                                      <input
+                                        name="password"
+                                        type="password"
+                                        placeholder="New password (leave blank to keep current)"
+                                        style="width:100%;padding:9px;margin-bottom:8px;border:1px solid #cbd5e1;border-radius:7px;box-sizing:border-box;"
+                                      />
+                                      <button type="submit" style="padding:9px 14px;background:#e0633a;color:white;border:none;border-radius:7px;font-weight:900;cursor:pointer;font-size:13px;">
+                                        Save Changes
+                                      </button>
+                                    </form>
+                                  </details>
                                 </div>
                               `).join("")}
                             </div>
@@ -1773,6 +1802,59 @@ exports.schoolCompliancePage = async (req, res) => {
   } catch (err) {
     console.error("SCHOOL COMPLIANCE PAGE ERROR:", err);
     res.status(500).send("Failed to load school compliance page");
+  }
+};
+
+exports.updateAdmin = async (req, res) => {
+  try {
+    const { schoolId, adminId } = req.params;
+    const name = String(req.body.name || "").trim();
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "").trim();
+
+    if (!name || !email) {
+      return res.redirect(
+        "/platform/schools?error=" + encodeURIComponent("Name and email are required.")
+      );
+    }
+
+    const admin = await User.findOne({ _id: adminId, schoolId, role: "admin" });
+    if (!admin) {
+      return res.redirect(
+        "/platform/schools?error=" + encodeURIComponent("Admin not found.")
+      );
+    }
+
+    const emailConflict = await User.findOne({ email, _id: { $ne: admin._id } }).lean();
+    if (emailConflict) {
+      return res.redirect(
+        "/platform/schools?error=" + encodeURIComponent("A user with this email already exists.")
+      );
+    }
+
+    admin.name = name;
+    admin.email = email;
+
+    if (password) {
+      const passwordPolicyError = validatePasswordPolicy(password);
+      if (passwordPolicyError) {
+        return res.redirect(
+          "/platform/schools?error=" + encodeURIComponent(passwordPolicyError)
+        );
+      }
+      admin.password = await bcrypt.hash(password, 10);
+      admin.mustChangePassword = true;
+    }
+
+    await admin.save();
+    return res.redirect(
+      "/platform/schools?success=" + encodeURIComponent("Admin updated successfully.")
+    );
+  } catch (err) {
+    console.error("UPDATE ADMIN ERROR:", err);
+    res.redirect(
+      "/platform/schools?error=" + encodeURIComponent("Failed to update admin. Please try again.")
+    );
   }
 };
 
