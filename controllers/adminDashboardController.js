@@ -469,7 +469,7 @@ if(!user || user.role !== "admin"){
   ">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:28px;">
       <div>
-        <h1 style="margin:0 0 4px 0;font-family:var(--display);font-size:30px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;">Dashboard</h1>
+        <h1 style="margin:0 0 4px 0;font-family:var(--display);font-size:30px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;">Hello, ${escapeHtml(req.user.name || "Admin")}</h1>
         <p style="margin:0;color:var(--slate);font-size:14px;">${escapeHtml(school?.name || "School")}${school?.code ? " (" + escapeHtml(school.code) + ")" : ""}</p>
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
