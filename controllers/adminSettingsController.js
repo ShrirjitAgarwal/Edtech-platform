@@ -1034,7 +1034,15 @@ function showAdminPanel(panelName, button){
     button.style.color = "#e0633a";
     button.style.fontWeight = "600";
   }
+  sessionStorage.setItem("adminSettingsPanel", panelName);
 }
+(function(){
+  const saved = sessionStorage.getItem("adminSettingsPanel");
+  if(saved){
+    const btn = document.querySelector('.adminPanelButton[data-panel="' + saved + '"]');
+    showAdminPanel(saved, btn || null);
+  }
+})();
 function go(path){
   window.location.replace(path);
 }
