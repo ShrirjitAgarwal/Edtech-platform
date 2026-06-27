@@ -934,6 +934,12 @@ document.addEventListener("click", function(event){
     return;
   }
 
+  const deleteTeacherButton = event.target.closest(".delete-teacher-button");
+  if(deleteTeacherButton){
+    deleteUser(deleteTeacherButton.dataset.teacherId || "");
+    return;
+  }
+
   const deleteUserButton = event.target.closest(".delete-user-button");
   if(deleteUserButton){
     deleteUser(deleteUserButton.dataset.userId || "");
