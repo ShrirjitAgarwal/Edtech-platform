@@ -36,7 +36,7 @@ router.get("/students", authMiddleware, async (req, res) => {
       ...(schoolId ? { schoolId } : {})
     })
       .select("name class studentId teacherId")
-      .sort({ class: 1, name: 1 })
+      .sort({ createdAt: 1 })
       .lean();
 
     const rows = students.map(s => {
@@ -836,7 +836,7 @@ router.get("/api/classes-data", authMiddleware, async (req, res) => {
         assignedClassNames.length
           ? Student.find(studentQuery)
               .select("studentId name class teacherId")
-              .sort({ class: 1, name: 1 })
+              .sort({ createdAt: 1 })
               .skip(studentSkip)
               .limit(studentLimit)
               .lean()
