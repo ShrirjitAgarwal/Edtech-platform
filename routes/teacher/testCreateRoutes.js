@@ -596,6 +596,12 @@ document.addEventListener("click", function(event){
     return;
   }
 
+  const questionPreviewCard = event.target.closest(".question-preview-card");
+  if(questionPreviewCard){
+    previewQuestion(questionPreviewCard.dataset.questionId || "");
+    return;
+  }
+
   const clickedInsideDropdown =
     event.target.closest("[id$='Button']") ||
     event.target.closest("[id$='Menu']");

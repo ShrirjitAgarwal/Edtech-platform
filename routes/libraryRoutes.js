@@ -543,6 +543,24 @@ if(menu){
 return;
 }
 
+const paginationButton = event.target.closest(".library-pagination-button");
+if(paginationButton){
+loadLibrary(parseInt(paginationButton.dataset.page || "1", 10));
+return;
+}
+
+const addToTestButton = event.target.closest(".library-add-to-test-button");
+if(addToTestButton){
+addToTest(addToTestButton.dataset.questionId || "");
+return;
+}
+
+const questionCard = event.target.closest(".library-question-card");
+if(questionCard){
+previewQuestion(questionCard.dataset.questionId || "");
+return;
+}
+
 const clickedInsideDropdown = event.target.closest("[id$='Button']") ||
 event.target.closest("[id$='Menu']") ||
 event.target.closest("#tagFilterMenu");
