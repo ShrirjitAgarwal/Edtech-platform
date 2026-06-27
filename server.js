@@ -88,6 +88,7 @@ require("./models/School");
 require("./models/UsageEvent");
 require("./models/SchoolComplianceAcceptance");
 require("./models/RevokedToken");
+require("./models/QuestionTag");
 // ROUTES
 const publicRoutes = require("./routes/publicRoutes");
 const codeRoutes = require("./routes/codeRoutes");

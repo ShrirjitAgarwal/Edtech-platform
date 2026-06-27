@@ -97,6 +97,10 @@ correctAnswers: {
       default: 0
     }
   },
+  tags: {
+    type: [String],
+    default: []
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -123,4 +127,5 @@ questionSchema.index({ teacherId: 1, createdAt: -1 });
 questionSchema.index({ schoolId: 1 });
 questionSchema.index({ schoolId: 1, teacherId: 1 });
 questionSchema.index({ schoolId: 1, subject: 1 });
+questionSchema.index({ tags: 1 });
 module.exports = mongoose.model("Question", questionSchema);

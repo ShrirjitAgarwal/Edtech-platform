@@ -311,6 +311,36 @@ if(!pageUser || pageUser.role !== "teacher"){
       </div>
     </div>
   </div>
+  <div style="margin-bottom:20px;">
+    <label style="font-weight:600;">Tags</label>
+    <p style="margin:2px 0 8px 0;font-size:12px;color:#64748b;">Search for existing tags or type a new name to create one.</p>
+    <div id="selectedTagsDisplay" style="display:flex;flex-wrap:wrap;gap:6px;min-height:26px;margin-bottom:8px;"></div>
+    <div style="position:relative;">
+      <input
+        id="tagSearchInput"
+        placeholder="Search or create a tag..."
+        autocomplete="off"
+        style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:13px;"
+      />
+      <div
+        id="tagDropdown"
+        style="
+          display:none;
+          position:absolute;
+          top:calc(100% + 4px);
+          left:0;
+          right:0;
+          background:white;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          box-shadow:0 8px 24px rgba(15,23,42,0.16);
+          max-height:200px;
+          overflow-y:auto;
+          z-index:200;
+        "
+      ></div>
+    </div>
+  </div>
   <div id="mcqSection">
     <h3>Options</h3>
     <div style="
@@ -665,7 +695,8 @@ function saveQuestion(){
       functionName:
         document.getElementById("functionName")?.value || ""
      },
-    testCases: []
+    testCases: [],
+    tags: selectedTags.map(t => t.name)
   };
   if(!payload.question){
     return alert("Question is required");
@@ -733,6 +764,134 @@ headers:{
     alert("Failed to save question");
   });
 }
+// ---- TAG PICKER ----
+let selectedTags = ${safeJsonForScript((editQuestion?.tags || []).map(t => ({ _id: t, name: t })))};
+let allSchoolTags = [];
+function escapeTagHtml(value){
+  const div = document.createElement("div");
+  div.textContent = String(value || "");
+  return div.innerHTML;
+}
+function renderSelectedTags(){
+  const container = document.getElementById("selectedTagsDisplay");
+  if(!container) return;
+  if(!selectedTags.length){
+    container.innerHTML = "<span style='color:#94a3b8;font-size:13px;'>No tags added yet</span>";
+    return;
+  }
+  container.innerHTML = selectedTags.map(tag =>
+    "<span style='background:#e0633a;color:white;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;'>" +
+    escapeTagHtml(tag.name) +
+    "<button type='button' data-remove-tag='" + escapeTagHtml(tag.name) + "' style='background:none;border:none;color:white;cursor:pointer;padding:0;font-size:15px;line-height:1;margin-left:2px;'>×</button>" +
+    "</span>"
+  ).join("");
+}
+function renderTagDropdown(query){
+  const dropdown = document.getElementById("tagDropdown");
+  if(!dropdown) return;
+  const q = (query || "").trim().toLowerCase();
+  const filtered = allSchoolTags.filter(tag =>
+    !selectedTags.some(st => st.name.toLowerCase() === tag.name.toLowerCase()) &&
+    (!q || tag.name.toLowerCase().includes(q))
+  );
+  let html = filtered.map(tag =>
+    "<button type='button' class='tag-option-btn' data-tag-name='" + escapeTagHtml(tag.name) + "' style='width:100%;padding:9px 12px;text-align:left;border:none;background:white;cursor:pointer;font-size:13px;box-sizing:border-box;' onmouseenter=\"this.style.background='#eef2ff'\" onmouseleave=\"this.style.background='white'\">" +
+    escapeTagHtml(tag.name) +
+    "</button>"
+  ).join("");
+  const exactMatch = allSchoolTags.find(t => t.name.toLowerCase() === q);
+  if(query.trim() && !exactMatch){
+    html += "<button type='button' id='createNewTagBtn' data-new-tag='" + escapeTagHtml(query.trim()) + "' style='width:100%;padding:9px 12px;text-align:left;border:none;border-top:1px solid #e5e7eb;background:#f8fafc;cursor:pointer;font-size:13px;font-weight:700;color:#e0633a;box-sizing:border-box;' onmouseenter=\"this.style.background='#eef2ff'\" onmouseleave=\"this.style.background='#f8fafc'\">+ Create &ldquo;" + escapeTagHtml(query.trim()) + "&rdquo;</button>";
+  }
+  if(!html){
+    html = "<p style='padding:10px 12px;color:#94a3b8;font-size:13px;margin:0;'>No matching tags</p>";
+  }
+  dropdown.innerHTML = html;
+  dropdown.style.display = "block";
+}
+function addTag(name){
+  if(!name) return;
+  if(selectedTags.some(t => t.name.toLowerCase() === name.toLowerCase())) return;
+  selectedTags.push({ name });
+  renderSelectedTags();
+  const input = document.getElementById("tagSearchInput");
+  if(input){ input.value = ""; }
+  document.getElementById("tagDropdown").style.display = "none";
+}
+async function createAndAddTag(name){
+  try{
+    const res = await fetch("/api/teacher/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    if(data.tag){
+      if(!allSchoolTags.find(t => t.name.toLowerCase() === data.tag.name.toLowerCase())){
+        allSchoolTags.push(data.tag);
+        allSchoolTags.sort((a,b) => a.name.localeCompare(b.name));
+      }
+    }
+    addTag(name);
+  } catch(err){
+    addTag(name);
+  }
+}
+async function loadSchoolTags(){
+  try{
+    const res = await fetch("/api/teacher/tags");
+    const data = await res.json();
+    allSchoolTags = data.tags || [];
+  } catch(e){}
+  renderSelectedTags();
+}
+const tagSearchInput = document.getElementById("tagSearchInput");
+const tagDropdown = document.getElementById("tagDropdown");
+if(tagSearchInput){
+  tagSearchInput.addEventListener("focus", function(){
+    renderTagDropdown(tagSearchInput.value);
+  });
+  tagSearchInput.addEventListener("input", function(){
+    renderTagDropdown(tagSearchInput.value);
+  });
+  tagSearchInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){
+      e.preventDefault();
+      const val = tagSearchInput.value.trim();
+      if(!val) return;
+      const existing = allSchoolTags.find(t => t.name.toLowerCase() === val.toLowerCase());
+      if(existing){ addTag(existing.name); }
+      else { createAndAddTag(val); }
+    }
+    if(e.key === "Escape"){
+      tagDropdown.style.display = "none";
+    }
+  });
+}
+document.addEventListener("click", function(e){
+  const removeBtn = e.target.closest("[data-remove-tag]");
+  if(removeBtn){
+    const name = removeBtn.dataset.removeTag;
+    selectedTags = selectedTags.filter(t => t.name !== name);
+    renderSelectedTags();
+    return;
+  }
+  const tagOptionBtn = e.target.closest(".tag-option-btn");
+  if(tagOptionBtn){
+    addTag(tagOptionBtn.dataset.tagName || "");
+    return;
+  }
+  const createTagBtn = e.target.closest("#createNewTagBtn");
+  if(createTagBtn){
+    createAndAddTag(createTagBtn.dataset.newTag || "");
+    return;
+  }
+  if(tagDropdown && !tagDropdown.contains(e.target) && e.target !== tagSearchInput){
+    tagDropdown.style.display = "none";
+  }
+}, true);
+loadSchoolTags();
+// ---- END TAG PICKER ----
 initializeCustomDropdowns();
 toggleQuestionType();
 </script>
@@ -743,6 +902,39 @@ toggleQuestionType();
     res.send("Error loading create question page");
   }
 });
+// ---------- TAG API ----------
+router.get("/api/teacher/tags", authMiddleware, async (req, res) => {
+  try {
+    const QuestionTag = require("../models/QuestionTag");
+    const schoolId = req.user.schoolId;
+    if (!schoolId) return res.json({ tags: [] });
+    const tags = await QuestionTag.find({ schoolId }).sort({ name: 1 }).lean();
+    res.json({ tags });
+  } catch (err) {
+    console.error("GET TAGS ERROR:", err);
+    res.status(500).json({ error: "Failed to load tags" });
+  }
+});
+
+router.post("/api/teacher/tags", authMiddleware, async (req, res) => {
+  try {
+    const QuestionTag = require("../models/QuestionTag");
+    const name = String(req.body.name || "").trim();
+    const schoolId = req.user.schoolId;
+    if (!name) return res.status(400).json({ error: "Tag name required" });
+    if (!schoolId) return res.status(400).json({ error: "School context required" });
+    const tag = await QuestionTag.findOneAndUpdate(
+      { name, schoolId },
+      { $setOnInsert: { name, schoolId, createdBy: String(req.user.id) } },
+      { upsert: true, new: true }
+    );
+    res.json({ tag });
+  } catch (err) {
+    console.error("CREATE TAG ERROR:", err);
+    res.status(500).json({ error: "Failed to create tag" });
+  }
+});
+
 // ---------- SAVE QUESTION ----------
 async function saveQuestionHandler(req, res) {
   try {
@@ -758,7 +950,8 @@ async function saveQuestionHandler(req, res) {
       board,
       difficulty,
       codingMeta,
-      testCases
+      testCases,
+      tags
     } = req.body;
     if(!question){
       return res.status(400).json({
@@ -790,6 +983,9 @@ const questionData = {
       },
       testCases: Array.isArray(testCases)
         ? testCases
+        : [],
+      tags: Array.isArray(tags)
+        ? tags.map(t => String(t).trim()).filter(Boolean)
         : []
     };
     if(questionId){

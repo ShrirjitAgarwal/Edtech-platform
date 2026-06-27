@@ -304,6 +304,65 @@ box-sizing:border-box;
 </div>
 </div>
 </div>
+<div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:10px;">
+<label style="font-size:13px;white-space:nowrap;">Tags</label>
+<div style="position:relative;">
+  <button
+    id="tagFilterButton"
+    type="button"
+    style="
+      min-width:140px;
+      padding:7px 8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:white;
+      font-size:13px;
+      cursor:pointer;
+      text-align:left;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      box-sizing:border-box;
+    "
+  >
+    <span id="tagFilterLabel">All tags</span>
+    <span>▾</span>
+  </button>
+  <div
+    id="tagFilterMenu"
+    style="
+      display:none;
+      position:absolute;
+      top:calc(100% + 6px);
+      left:0;
+      min-width:200px;
+      background:white;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(15,23,42,0.16);
+      z-index:100;
+    "
+  >
+    <div style="padding:8px;">
+      <input
+        id="tagFilterSearch"
+        placeholder="Search tags..."
+        style="
+          width:100%;
+          padding:6px 8px;
+          border:1px solid #e2e8f0;
+          border-radius:6px;
+          font-size:12px;
+          box-sizing:border-box;
+        "
+      />
+    </div>
+    <div id="tagFilterOptions" style="max-height:180px;overflow-y:auto;"></div>
+  </div>
+  <input id="tagFilter" type="hidden" value="all">
+</div>
+</div>
 </div>
 <div style="
 display:grid;
@@ -469,10 +528,27 @@ toggleCustomDropdown(dropdownId);
 return;
 }
 
+const tagFilterButton = event.target.closest("#tagFilterButton");
+if(tagFilterButton){
+const menu = document.getElementById("tagFilterMenu");
+if(menu){
+  const isOpen = menu.style.display === "block";
+  closeCustomDropdowns();
+  menu.style.display = isOpen ? "none" : "block";
+  if(!isOpen){
+    const search = document.getElementById("tagFilterSearch");
+    if(search){ search.value = ""; search.dispatchEvent(new Event("input")); search.focus(); }
+  }
+}
+return;
+}
+
 const clickedInsideDropdown = event.target.closest("[id$='Button']") ||
-event.target.closest("[id$='Menu']");
+event.target.closest("[id$='Menu']") ||
+event.target.closest("#tagFilterMenu");
 if(!clickedInsideDropdown){
 closeCustomDropdowns();
+document.getElementById("tagFilterMenu") && (document.getElementById("tagFilterMenu").style.display = "none");
 }
 });
 setCustomDropdownOptions("difficultyFilter", [
@@ -522,6 +598,10 @@ params.set("difficulty", difficulty);
 if(attempt !== "all"){
 params.set("attempt", attempt);
 }
+const tag = document.getElementById("tagFilter")?.value || "all";
+if(tag !== "all"){
+params.set("tag", tag);
+}
 return params;
 }
 function scheduleLibrarySearch(){
@@ -559,6 +639,7 @@ document.getElementById("libraryList").innerHTML =
 function populateFilters(filters){
 const subjects = (filters?.subjects || []).filter(Boolean).sort();
 const boards = (filters?.boards || []).filter(Boolean).sort();
+const tags = (filters?.tags || []).filter(Boolean).sort();
 setCustomDropdownOptions(
 "subjectFilter",
 [
@@ -579,6 +660,38 @@ label: board
 }))
 ]
 );
+populateTagFilter(tags);
+}
+function populateTagFilter(tags){
+const optionsContainer = document.getElementById("tagFilterOptions");
+if(!optionsContainer) return;
+function renderTagOptions(query){
+  const q = (query || "").trim().toLowerCase();
+  const filtered = [{ value: "all", label: "All" }, ...tags.map(t => ({ value: t, label: t }))].filter(
+    opt => !q || opt.label.toLowerCase().includes(q)
+  );
+  const currentTag = document.getElementById("tagFilter")?.value || "all";
+  optionsContainer.innerHTML = filtered.map(opt => {
+    const isActive = opt.value === currentTag;
+    return "<button type='button' class='tag-filter-option' data-value='" + opt.value + "' style='width:100%;padding:9px 12px;text-align:left;border:none;background:" + (isActive ? "#eef2ff" : "white") + ";cursor:pointer;font-size:13px;box-sizing:border-box;font-weight:" + (isActive ? "700" : "400") + ";' onmouseenter=\"this.style.background='#eef2ff'\" onmouseleave=\"this.style.background='" + (isActive ? "#eef2ff" : "white") + "'\">" + opt.label + "</button>";
+  }).join("") || "<p style='padding:8px 12px;color:#94a3b8;font-size:12px;margin:0;'>No tags found</p>";
+}
+renderTagOptions("");
+const tagFilterSearch = document.getElementById("tagFilterSearch");
+if(tagFilterSearch){
+  tagFilterSearch.addEventListener("input", function(){ renderTagOptions(tagFilterSearch.value); });
+}
+optionsContainer.addEventListener("click", function(e){
+  const btn = e.target.closest(".tag-filter-option");
+  if(!btn) return;
+  const value = btn.dataset.value;
+  const input = document.getElementById("tagFilter");
+  const label = document.getElementById("tagFilterLabel");
+  if(input) input.value = value;
+  if(label) label.textContent = value === "all" ? "All" : value;
+  document.getElementById("tagFilterMenu").style.display = "none";
+  loadLibrary(1);
+});
 }
 function buildQuestionCard(q){
 const sourceLabel =
@@ -597,6 +710,11 @@ q.difficulty
 const attempted = Number(q.analytics?.attempted || 0);
 const completed = Number(q.analytics?.correct || 0);
 const incomplete = Number(q.analytics?.incorrect || 0);
+const tagChips = (q.tags && q.tags.length)
+? "<div style='display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;'>" +
+  q.tags.map(t => "<span style='background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;'>" + escapeHtml(t) + "</span>").join("") +
+  "</div>"
+: "";
 return "" +
 "<div class='library-question-card' data-question-id=" + questionId + " style='" +
 "background:#f8fafc;" +
@@ -610,7 +728,7 @@ return "" +
 "gap:16px;" +
 "cursor:pointer;" +
 "'>" +
-"<div>" +
+"<div style='min-width:0;flex:1;'>" +
 "<p style='margin:0 0 8px 0;font-weight:600;'>" +
 questionText +
 "</p>" +
@@ -625,6 +743,7 @@ escapeHtml(sourceLabel) +
 "Completed: " + completed + " | " +
 "Incomplete: " + incomplete +
 "</p>" +
+tagChips +
 "</div>" +
 "<button class='library-add-to-test-button' data-question-id=" + questionId + " style='" +
 "padding:10px 14px;" +
@@ -634,6 +753,7 @@ escapeHtml(sourceLabel) +
 "border-radius:8px;" +
 "font-weight:600;" +
 "cursor:pointer;" +
+"flex-shrink:0;" +
 "'>" +
 "+ Add to Test" +
 "</button>" +
@@ -678,6 +798,11 @@ optionsHtml +
 "<p><b>Board:</b> " + escapeHtml(q.board || "N/A") + "</p>" +
 "<p><b>Difficulty:</b> " + escapeHtml(difficultyText) + "</p>" +
 "<p><b>Library Type:</b> " + escapeHtml(sourceLabel) + "</p>" +
+(q.tags && q.tags.length
+  ? "<div style='margin-bottom:12px;'><b>Tags:</b><div style='display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;'>" +
+    q.tags.map(t => "<span style='background:#eef2ff;color:#4338ca;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;'>" + escapeHtml(t) + "</span>").join("") +
+    "</div></div>"
+  : "<p style='color:#94a3b8;font-size:13px;'>No tags</p>") +
 "<div style='background:#eef2ff;padding:12px;border-radius:10px;margin-top:12px;'>" +
 "<b>Analytics</b><br>" +
 "Attempted: " + Number(q.analytics?.attempted || 0) + "<br>" +
@@ -770,6 +895,7 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
     const scope = String(req.query.scope || "").trim();
     const difficulty = String(req.query.difficulty || "").trim().toLowerCase();
     const attempt = String(req.query.attempt || "").trim();
+    const tag = String(req.query.tag || "").trim();
     const publicQuestionQuery = {
       $or: [
         { scope: "public" },
@@ -853,6 +979,9 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
         });
       }
     }
+    if (tag && tag !== "all") {
+      query.$and.push({ tags: tag });
+    }
     const filterBaseQuery = {
       $or: [
         publicQuestionQuery,
@@ -861,14 +990,14 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
     };
     const [questions, total, filterQuestions] = await Promise.all([
       Question.find(query)
-        .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics createdAt")
+        .select("question options correct correctAnswers subject category board difficulty scope teacherId type analytics tags createdAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Question.countDocuments(query),
       Question.find(filterBaseQuery)
-        .select("subject category board")
+        .select("subject category board tags")
         .lean()
     ]);
     const subjects = [...new Set(
@@ -883,11 +1012,18 @@ router.get("/api/library-data", authMiddleware, async (req, res) => {
         .filter(Boolean)
         .map(value => String(value))
     )];
+    const tags = [...new Set(
+      filterQuestions
+        .flatMap(q => Array.isArray(q.tags) ? q.tags : [])
+        .filter(Boolean)
+        .map(value => String(value))
+    )].sort();
     res.json({
       questions,
       filters: {
         subjects,
-        boards
+        boards,
+        tags
       },
       pagination: {
         page,

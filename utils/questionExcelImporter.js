@@ -86,6 +86,13 @@ function parseCorrectAnswers(value, optionsMap) {
   });
   return answers;
 }
+function parseTags(value) {
+  return clean(value)
+    .split(",")
+    .map(t => clean(t))
+    .filter(Boolean);
+}
+
 function buildPublicQuestion(base) {
   const question = {
     ...base,
@@ -116,6 +123,7 @@ function parseMCQRows(rows, errors) {
     const board = clean(row.board) || "General";
     const difficulty = normalizeDifficulty(row.difficulty);
     const category = clean(row.category);
+    const tags = parseTags(row.tags);
     if (!questionText) {
       addError(errors, "MCQ", rowNumber, "Missing question");
       return;
@@ -164,6 +172,7 @@ function parseMCQRows(rows, errors) {
       board,
       difficulty,
       category,
+      tags,
       testCases: [],
       codingMeta: {
         language: "javascript",
@@ -191,6 +200,7 @@ function parseCodingRows(rows, errors) {
     const board = clean(row.board) || "General";
     const difficulty = normalizeDifficulty(row.difficulty);
     const category = clean(row.category);
+    const tags = parseTags(row.tags);
     const hiddenTests = parseHiddenTests(row.hiddenTests);
     if (!questionText) {
       addError(errors, "Coding", rowNumber, "Missing question");
@@ -247,6 +257,7 @@ function parseCodingRows(rows, errors) {
       board,
       difficulty,
       category,
+      tags,
       testCases,
       codingMeta: {
         language: "javascript",
@@ -266,6 +277,7 @@ function parseWrittenRows(rows, errors) {
     const board = clean(row.board) || "General";
     const difficulty = normalizeDifficulty(row.difficulty);
     const category = clean(row.category);
+    const tags = parseTags(row.tags);
     const sampleAnswer = clean(row.sampleAnswer);
     if (!questionText) {
       addError(errors, "Written", rowNumber, "Missing question");
@@ -291,6 +303,7 @@ function parseWrittenRows(rows, errors) {
       board,
       difficulty,
       category,
+      tags,
       testCases: [],
       codingMeta: {
         language: "javascript",
