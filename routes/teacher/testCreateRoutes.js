@@ -596,6 +596,12 @@ document.addEventListener("click", function(event){
     return;
   }
 
+  const clearQuestionFiltersButton = event.target.closest("#clearQuestionFiltersButton");
+  if(clearQuestionFiltersButton){
+    clearFilters();
+    return;
+  }
+
   const questionPreviewCard = event.target.closest(".question-preview-card");
   if(questionPreviewCard){
     previewQuestion(questionPreviewCard.dataset.questionId || "");

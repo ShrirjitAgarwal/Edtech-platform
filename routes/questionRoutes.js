@@ -790,23 +790,40 @@ function renderTagDropdown(query){
   const dropdown = document.getElementById("tagDropdown");
   if(!dropdown) return;
   const q = (query || "").trim().toLowerCase();
-  const filtered = allSchoolTags.filter(tag =>
-    !selectedTags.some(st => st.name.toLowerCase() === tag.name.toLowerCase()) &&
-    (!q || tag.name.toLowerCase().includes(q))
-  );
-  let html = filtered.map(tag =>
-    "<button type='button' class='tag-option-btn' data-tag-name='" + escapeTagHtml(tag.name) + "' style='width:100%;padding:9px 12px;text-align:left;border:none;background:white;cursor:pointer;font-size:13px;box-sizing:border-box;' onmouseenter=\"this.style.background='#eef2ff'\" onmouseleave=\"this.style.background='white'\">" +
-    escapeTagHtml(tag.name) +
-    "</button>"
-  ).join("");
-  const exactMatch = allSchoolTags.find(t => t.name.toLowerCase() === q);
+  const filtered = allSchoolTags.filter(function(tag){
+    return !selectedTags.some(function(st){ return st.name.toLowerCase() === tag.name.toLowerCase(); }) &&
+      (!q || tag.name.toLowerCase().indexOf(q) !== -1);
+  });
+  dropdown.innerHTML = "";
+  filtered.forEach(function(tag){
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tag-option-btn";
+    btn.dataset.tagName = tag.name;
+    btn.textContent = tag.name;
+    btn.style.cssText = "width:100%;padding:9px 12px;text-align:left;border:none;background:white;cursor:pointer;font-size:13px;box-sizing:border-box;";
+    btn.addEventListener("mouseenter", function(){ this.style.background = "#eef2ff"; });
+    btn.addEventListener("mouseleave", function(){ this.style.background = "white"; });
+    dropdown.appendChild(btn);
+  });
+  const exactMatch = allSchoolTags.find(function(t){ return t.name.toLowerCase() === q; });
   if(query.trim() && !exactMatch){
-    html += "<button type='button' id='createNewTagBtn' data-new-tag='" + escapeTagHtml(query.trim()) + "' style='width:100%;padding:9px 12px;text-align:left;border:none;border-top:1px solid #e5e7eb;background:#f8fafc;cursor:pointer;font-size:13px;font-weight:700;color:#e0633a;box-sizing:border-box;' onmouseenter=\"this.style.background='#eef2ff'\" onmouseleave=\"this.style.background='#f8fafc'\">+ Create &ldquo;" + escapeTagHtml(query.trim()) + "&rdquo;</button>";
+    const createBtn = document.createElement("button");
+    createBtn.type = "button";
+    createBtn.id = "createNewTagBtn";
+    createBtn.dataset.newTag = query.trim();
+    createBtn.style.cssText = "width:100%;padding:9px 12px;text-align:left;border:none;border-top:1px solid #e5e7eb;background:#f8fafc;cursor:pointer;font-size:13px;font-weight:700;color:#e0633a;box-sizing:border-box;";
+    createBtn.innerHTML = "+ Create “" + escapeTagHtml(query.trim()) + "”";
+    createBtn.addEventListener("mouseenter", function(){ this.style.background = "#eef2ff"; });
+    createBtn.addEventListener("mouseleave", function(){ this.style.background = "#f8fafc"; });
+    dropdown.appendChild(createBtn);
   }
-  if(!html){
-    html = "<p style='padding:10px 12px;color:#94a3b8;font-size:13px;margin:0;'>No matching tags</p>";
+  if(!dropdown.children.length){
+    const msg = document.createElement("p");
+    msg.style.cssText = "padding:10px 12px;color:#94a3b8;font-size:13px;margin:0;";
+    msg.textContent = "No matching tags";
+    dropdown.appendChild(msg);
   }
-  dropdown.innerHTML = html;
   dropdown.style.display = "block";
 }
 function addTag(name){
