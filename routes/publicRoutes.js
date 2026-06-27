@@ -9,6 +9,8 @@ router.get("/admin-login", publicController.adminLoginPage);
 router.get("/book-demo", publicController.bookDemo);
 router.get("/privacy", publicController.privacyPolicy);
 router.get("/pricing", publicController.pricingPage);
+router.get("/forgot-password", publicController.forgotPasswordPage);
+router.get("/reset-password/:token", publicController.resetPasswordPage);
 router.get("/robots.txt", (req, res) => {
   res.set("Content-Type", "text/plain");
   res.send(

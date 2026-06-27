@@ -187,6 +187,63 @@ router.post(
   "/register-teacher",
   authController.registerTeacher
 );
+// ---------- FORGOT PASSWORD ----------
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again after 15 minutes." }
+});
+
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
+  const email = (req.body.email || "").trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: "Email is required" });
+  try {
+    const user = await User.findOne({ email, role: { $in: ["teacher", "admin"] } });
+    if (user) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      user.passwordResetToken = tokenHash;
+      user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
+      await user.save();
+      const baseUrl = process.env.BASE_URL || "https://wzdm.in";
+      const resetUrl = `${baseUrl}/reset-password/${rawToken}`;
+      const { sendPasswordResetEmail } = require("../services/emailService");
+      await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+    }
+    // Always return success so we don't reveal whether the email exists
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("FORGOT PASSWORD ERROR:", err);
+    return res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
+});
+
+// ---------- RESET PASSWORD ----------
+router.post("/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: "Token and password are required" });
+  if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
+  try {
+    const tokenHash = crypto.createHash("sha256").update(String(token)).digest("hex");
+    const user = await User.findOne({
+      passwordResetToken: tokenHash,
+      passwordResetExpires: { $gt: new Date() }
+    });
+    if (!user) return res.status(400).json({ error: "Reset link is invalid or has expired" });
+    user.password = await bcrypt.hash(password, 10);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    user.mustChangePassword = false;
+    await user.save();
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("RESET PASSWORD ERROR:", err);
+    return res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
+});
+
 router.post("/logout", async (req, res) => {
   const token =
     (req.cookies && req.cookies.authToken) ||

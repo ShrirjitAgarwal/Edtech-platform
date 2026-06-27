@@ -13,6 +13,8 @@ createdByName: String,
 mustChangePassword: {
   type: Boolean,
   default: false
-}
+},
+passwordResetToken: String,
+passwordResetExpires: Date
 }, { timestamps: true });
 module.exports = mongoose.model("User", userSchema);

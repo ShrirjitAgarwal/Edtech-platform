@@ -182,7 +182,7 @@ exports.loginPage = (req, res) => {
       </div>
       <div class="secondary">
         <button id="publicBackToLoginButton" type="button">← All login options</button>
-        <p>Forgot your password? Contact your school admin.</p>
+        <p>Forgot your password? <a href="/forgot-password">Reset it here</a></p>
       </div>
     ` : `
       <div class="role-list">
@@ -390,4 +390,174 @@ window.location.replace("/login");
 };
 exports.adminLoginPage = (req, res) => {
   res.redirect("/login?role=admin");
+};
+
+const PAGE_SHELL_START = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  :root{--ink:#11161d;--slate:#3a4654;--paper:#faf9f6;--line:rgba(255,255,255,0.10);--line-dark:rgba(17,22,29,0.10);--accent:#e0633a;--sans:'Inter',system-ui,sans-serif;--display:'Fraunces',Georgia,serif;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+  nav{position:sticky;top:0;z-index:50;background:rgba(17,22,29,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{font-family:var(--display);font-size:23px;font-weight:600;color:#fff;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  .brand .dot{width:11px;height:11px;border-radius:3px;background:var(--accent);display:inline-block}
+  .navlinks{display:flex;gap:30px;align-items:center}
+  .navlinks a{color:#e8eaed;font-size:14.5px;font-weight:400;transition:color .2s}
+  .navlinks a:hover{color:#fff}
+  .navbtn{background:var(--accent);color:#fff !important;padding:9px 18px;border-radius:8px;font-weight:500;font-size:14.5px}
+  .navbtn-ghost{border:1px solid rgba(255,255,255,0.22);color:#fff !important;padding:8px 16px;border-radius:8px;font-weight:500;font-size:14.5px}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:52px 28px 64px}
+  .card{width:100%;max-width:460px;background:#fff;border:1px solid var(--line-dark);border-radius:16px;padding:36px 32px;box-shadow:0 4px 32px rgba(17,22,29,0.08)}
+  .card-icon{width:48px;height:48px;border-radius:13px;background:#fbeee7;color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 20px}
+  .card-title{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:-0.02em;text-align:center;margin-bottom:8px;color:var(--ink)}
+  .card-sub{font-size:14.5px;color:var(--slate);text-align:center;margin-bottom:28px;line-height:1.5}
+  .form{display:flex;flex-direction:column;gap:16px}
+  .field label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--ink)}
+  .field input{width:100%;border:1px solid var(--line-dark);border-radius:10px;padding:12px 14px;font-size:15px;outline:none;font-family:var(--sans);color:var(--ink);background:#fff;transition:border-color .2s,box-shadow .2s}
+  .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(224,99,58,0.12)}
+  .btn-submit{width:100%;border:none;border-radius:10px;padding:13px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:background .2s,transform .15s;margin-top:2px}
+  .btn-submit:hover{background:#c9542e;transform:translateY(-1px)}
+  .error{display:none;margin:0 0 16px;padding:11px 13px;border-radius:10px;background:#fef2f2;color:#991b1b;font-size:13.5px;border:1px solid #fecaca}
+  .success{display:none;margin:0 0 16px;padding:11px 13px;border-radius:10px;background:#f0fdf4;color:#166534;font-size:13.5px;border:1px solid #bbf7d0}
+  .secondary{margin-top:20px;padding-top:18px;border-top:1px solid var(--line-dark);text-align:center}
+  .secondary a{color:var(--accent);font-size:14px;font-weight:500}
+  .secondary a:hover{text-decoration:underline}
+  @media(max-width:480px){.card{padding:28px 20px}}
+</style>`;
+
+const PAGE_NAV = `
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand"><span class="dot"></span>Wzdm.in</a>
+    <div class="navlinks">
+      <a href="/pricing">Pricing</a>
+      <a href="/book-demo" class="navbtn-ghost">Book a demo</a>
+      <a href="/login" class="navbtn">Login</a>
+    </div>
+  </div>
+</nav>`;
+
+exports.forgotPasswordPage = (req, res) => {
+  res.send(`${PAGE_SHELL_START}
+<title>Forgot password — Wzdm.in</title>
+</head>
+<body>
+${PAGE_NAV}
+<main>
+  <div class="card">
+    <div class="card-icon"><i class="ti ti-lock-open"></i></div>
+    <h1 class="card-title">Forgot your password?</h1>
+    <p class="card-sub">Enter your account email and we'll send you a link to reset your password.</p>
+    <p id="errorBox" class="error"></p>
+    <p id="successBox" class="success"></p>
+    <div class="form" id="forgotForm">
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" type="email" placeholder="you@school.edu" autocomplete="email">
+      </div>
+      <button id="submitBtn" class="btn-submit" type="button">Send reset link</button>
+    </div>
+    <div class="secondary"><a href="/login">← Back to login</a></div>
+  </div>
+</main>
+<script>
+document.getElementById("submitBtn").addEventListener("click", function(){
+  var email = document.getElementById("email").value.trim();
+  var errBox = document.getElementById("errorBox");
+  var sucBox = document.getElementById("successBox");
+  errBox.style.display = "none";
+  sucBox.style.display = "none";
+  if(!email){ errBox.textContent = "Please enter your email address."; errBox.style.display = "block"; return; }
+  var btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+  fetch("/forgot-password", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ email: email })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.error){ errBox.textContent = data.error; errBox.style.display = "block"; btn.disabled = false; btn.textContent = "Send reset link"; return; }
+    document.getElementById("forgotForm").style.display = "none";
+    sucBox.textContent = "If an account exists for that email, a reset link has been sent. Check your inbox.";
+    sucBox.style.display = "block";
+  })
+  .catch(function(){ errBox.textContent = "Something went wrong. Please try again."; errBox.style.display = "block"; btn.disabled = false; btn.textContent = "Send reset link"; });
+});
+document.getElementById("email").addEventListener("keydown", function(e){ if(e.key === "Enter") document.getElementById("submitBtn").click(); });
+</script>
+</body>
+</html>`);
+};
+
+exports.resetPasswordPage = (req, res) => {
+  const token = String(req.params.token || "").trim();
+  if (!token) return res.redirect("/forgot-password");
+  res.send(`${PAGE_SHELL_START}
+<title>Reset password — Wzdm.in</title>
+</head>
+<body>
+${PAGE_NAV}
+<main>
+  <div class="card">
+    <div class="card-icon"><i class="ti ti-lock"></i></div>
+    <h1 class="card-title">Set a new password</h1>
+    <p class="card-sub">Choose a strong password for your Wzdm.in account.</p>
+    <p id="errorBox" class="error"></p>
+    <p id="successBox" class="success"></p>
+    <div class="form" id="resetForm">
+      <div class="field">
+        <label for="password">New password</label>
+        <input id="password" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="confirm">Confirm new password</label>
+        <input id="confirm" type="password" placeholder="Repeat your password" autocomplete="new-password">
+      </div>
+      <button id="submitBtn" class="btn-submit" type="button">Set new password</button>
+    </div>
+    <div class="secondary" id="loginLink" style="display:none;"><a href="/login">Sign in with your new password →</a></div>
+  </div>
+</main>
+<script>
+var TOKEN = ${JSON.stringify(token)};
+document.getElementById("submitBtn").addEventListener("click", function(){
+  var pw = document.getElementById("password").value;
+  var cf = document.getElementById("confirm").value;
+  var errBox = document.getElementById("errorBox");
+  errBox.style.display = "none";
+  if(pw.length < 8){ errBox.textContent = "Password must be at least 8 characters."; errBox.style.display = "block"; return; }
+  if(pw !== cf){ errBox.textContent = "Passwords do not match."; errBox.style.display = "block"; return; }
+  var btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+  fetch("/reset-password", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ token: TOKEN, password: pw })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.error){ errBox.textContent = data.error; errBox.style.display = "block"; btn.disabled = false; btn.textContent = "Set new password"; return; }
+    document.getElementById("resetForm").style.display = "none";
+    document.getElementById("successBox").textContent = "Password updated successfully!";
+    document.getElementById("successBox").style.display = "block";
+    document.getElementById("loginLink").style.display = "block";
+  })
+  .catch(function(){ errBox.textContent = "Something went wrong. Please try again."; errBox.style.display = "block"; btn.disabled = false; btn.textContent = "Set new password"; });
+});
+</script>
+</body>
+</html>`);
 };
